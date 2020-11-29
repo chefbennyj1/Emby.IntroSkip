@@ -74,7 +74,7 @@ namespace IntroSkip
                         foreach (var episode in episodes)
                         {
                             //Identify the missing episode
-                            if (!introData.Series.FirstOrDefault(s => s.InternalId == seriesItem.InternalId).EpisodeIntros.Any(ep => episode.InternalId == ep.InternalId))
+                            if (!introData.Series.FirstOrDefault(s => s.InternalId == seriesItem.InternalId).EpisodeTitleSequences.Any(ep => episode.InternalId == ep.InternalId))
                             {
                                 //Create Missing Episode Intro Data
                                 //We have to Take(2) episodes at a time, the new one, and one of the episodes in the library.
@@ -115,7 +115,7 @@ namespace IntroSkip
                 IncludeItemTypes = new[] { "Episode" }
             });
 
-            return episodes.Count() > introData.Series.FirstOrDefault(s => s.InternalId == series.InternalId).EpisodeIntros.Count();
+            return episodes.Count() > introData.Series.FirstOrDefault(s => s.InternalId == series.InternalId).EpisodeTitleSequences.Count();
         }
 
         public string Name        => "Detect Episode Intro Skip";

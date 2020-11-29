@@ -1,22 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using IntroSkip.Api;
 
 namespace IntroSkip 
 {
-    public class IntroData
+    public class IntroData : IntroDataService
     {
         public List<SeriesIntro> Series { get; set; }
     }
-    public class SeriesIntro
+    public class SeriesIntro : IntroData
     {
-        public long InternalId                  { get; set; }
-        public List<EpisodeIntro> EpisodeIntros { get; set; }
-    }
-    public class EpisodeIntro 
-    {
-        public long InternalId     { get; set; }
-        public bool HasIntro       { get; set; }
-        public TimeSpan IntroStart { get; set; }
-        public TimeSpan IntroEnd   { get; set; }
+        public long InternalId                                  { get; set; }
+        public List<EpisodeTitleSequence> EpisodeTitleSequences { get; set; }
     }
 }

@@ -245,7 +245,7 @@ namespace IntroSkip
             return json;
         }
         
-        public List<EpisodeIntro> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
+        public List<EpisodeTitleSequence> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
         {
 
             Logger.Info("Starting episode intro detection process.");
@@ -349,16 +349,16 @@ namespace IntroSkip
 
             Logger.Info("Found intro ranges.");
             Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
-            return new List<EpisodeIntro>()
+            return new List<EpisodeTitleSequence>()
             {
-                new EpisodeIntro()
+                new EpisodeTitleSequence()
                 {
                     HasIntro   = true,
                     InternalId = episode1Input.InternalId,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
                 },
-                new EpisodeIntro()
+                new EpisodeTitleSequence()
                 {
                     HasIntro   = true,
                     InternalId = episode2Input.InternalId,
