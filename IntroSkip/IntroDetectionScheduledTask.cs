@@ -25,11 +25,7 @@ namespace IntroSkip
             Log = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager = libMan;
         }
-
-        public async Task<List<TitleSequenceDataService.EpisodeIntroDto>> DetectIntro(BaseItem episode1, BaseItem episode2)
-        {
-            return await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episode1, episode2));
-        }
+        
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
@@ -57,23 +53,43 @@ namespace IntroSkip
                         IncludeItemTypes = new[] { "Episode" }
                     });
 
+                    var episodeIntroData = new List<TitleSequenceDataService.EpisodeIntroDto>();
+                    var (episodeIndexComparable, episodeIndexToCompare) = new Tuple<int, int>(1, 2);
+
                     //If the Series doesn't have an entry in our saved intro data - attempt to create intro data for all episodes in the series
                     if (introData.FirstOrDefault(s => s.SeriesInternalId == seriesItem.InternalId) is null)
                     {
-                        //Create intro data by:
-                        //Iterating episodes (We have to Take(2) episodes at a time)
-                        //
-                        // if episodes 1 and 2 are successful matches, take 1 and 3, 1 and 4, 1 and 5 ...
-                        // if episodes 1 and 2 fail matching, take 1 and 3, if successful take 2 and 3, 3 and 4
-                        // we throw an error in the detection method if nothing is found, it will have to be wrapped in try catch.
-                        // if none of this is successful
-                        // create an empty SeriesIntro entry in our saved data, with the InternalId - come back to it later.
-
-                        //continue; to the next series item
-
-                        var nextEpisodeIndex = GetEpisodeOffset(0,1);
-
-
+                        //Step though the index of episodes
+                        while (episodeIndexToCompare <= episodes.Count() -1)
+                        {
+                            try
+                            {
+                                var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeIndexComparable], episodes[episodeIndexToCompare]));
+                                foreach (var item in data)
+                                {
+                                    if (!episodeIntroData.Contains(item))
+                                    {
+                                        episodeIntroData.Add(item);
+                                    }
+                                }
+                                episodeIndexToCompare++;
+                            }
+                            catch (InvalidIntroDetectionException)
+                            {
+                                episodeIndexComparable++; //2
+                                episodeIndexToCompare++;  //3
+                                //We've skipped 1, we need to return to calculate it.
+                                var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeIndexComparable], episodes[episodeIndexToCompare]));
+                                foreach (var item in data)
+                                {
+                                    if (!episodeIntroData.Contains(item))
+                                    {
+                                        episodeIntroData.Add(item);
+                                    }
+                                }
+                            }
+                        }
+                        
                     }
 
                     // There is an entry in our data for this series, but it is not complete, create the missing episode entry
@@ -97,24 +113,8 @@ namespace IntroSkip
 
             progress.Report(100.0);
         }
-
-        private static Tuple<int, int> GetEpisodeOffset(int episodeComparableIndex, int episodeToCompareIndex)
-        {
-            //Calculate which episodes to scan next based on the result of the first scan
-
-            //If the first scan is successful (1 and 2) increment episodeToCompareIndex by one to scan  1 and 3
-            //If the first scan is successful (1 and 2)  and the second was successful (1 and 3) keep incrementing episodeToCompareIndex by one
-
-
-            //If the first scan failed, increment episodeToCompareIndex by one. 1 and 3
-
-            //If the first scan failed, and the second one was successful (1 and 3) increment episodeComparableIndex by one
-           
-            //Condition to NOT compare the same episode with itself.
-
-            return new Tuple<int, int>(episodeComparableIndex, episodeToCompareIndex + 1);
-        }
         
+
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
             return new[]
