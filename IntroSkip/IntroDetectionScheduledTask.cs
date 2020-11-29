@@ -59,6 +59,7 @@ namespace IntroSkip
                         //
                         // if episodes 1 and 2 are successful matches, take 1 and 3, 1 and 4, 1 and 5 ...
                         // if episodes 1 and 2 fail matching, take 1 and 3, if successful take 2 and 3, 3 and 4
+                        // we throw an error in the detection method if nothing is found, it will have to be wrapped in try catch.
                         // if none of this is successful
                         // create an empty SeriesIntro entry in our saved data, with the InternalId - come back to it later.
 
