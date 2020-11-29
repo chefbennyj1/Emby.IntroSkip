@@ -23,12 +23,14 @@ namespace IntroSkip
         private IJsonSerializer JsonSerializer { get; }
         private IFileSystem FileSystem         { get; }
         private ILogger Logger                 { get; }
+        public static IntroDetection Instance  { get; private set; }
 
         public IntroDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
         {
             JsonSerializer = json;
             FileSystem = file;
             Logger = logMan.GetLogger(Plugin.Instance.Name);
+            Instance = this;
         }
 
         // Keep integer in specified range
@@ -245,17 +247,8 @@ namespace IntroSkip
 
             return json;
         }
-
-        private static bool IsEquitableIntro(double fileRegionStart, double fileRegionEnd)
-        {
-            if(TimeSpan.FromSeconds(Math.Round(fileRegionEnd)) - TimeSpan.FromSeconds(Math.Round(fileRegionStart)) <= TimeSpan.FromSeconds(10))
-            {
-                return false;
-            }
-            return !(fileRegionStart <= -1) && !(fileRegionEnd <= -1);
-        }
-
-        public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
+        
+        public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
 
             Logger.Info("Starting episode intro detection process.");
@@ -351,7 +344,7 @@ namespace IntroSkip
 
             //TODO: We need to return EpisodeIntro data, with HasIntro = false, after many failed attempts on the same episode.
 
-            if (!(IsEquitableIntro(firstFileRegionStart, firstFileRegionEnd)) || !(IsEquitableIntro(secondFileRegionStart, secondFileRegionEnd)))
+            if (firstFileRegionStart <= -1 || secondFileRegionStart <= -1)
             {
                 Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); 
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");

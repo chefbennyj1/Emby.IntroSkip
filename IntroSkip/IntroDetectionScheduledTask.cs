@@ -26,7 +26,11 @@ namespace IntroSkip
             LibraryManager = libMan;
         }
 
-        
+        public async Task<List<TitleSequenceDataService.EpisodeIntroDto>> DetectIntro(BaseItem episode1, BaseItem episode2)
+        {
+            return await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episode1, episode2));
+        }
+
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var config = Plugin.Instance.Configuration;
@@ -67,9 +71,9 @@ namespace IntroSkip
 
                         //continue; to the next series item
 
+                        var nextEpisodeIndex = GetEpisodeOffset(0,1);
 
 
-                        
                     }
 
                     // There is an entry in our data for this series, but it is not complete, create the missing episode entry
@@ -94,7 +98,13 @@ namespace IntroSkip
             progress.Report(100.0);
         }
 
-
+        private static Tuple<int, int> GetEpisodeOffset(int currentEpisode1Index, int currentEpisode2Index)
+        {
+            //Calculate which episodes to scan next based on the result of the first scan
+            //If the first scan is successful increment currentEpisode2Index by one.
+            
+            return new Tuple<int, int>(currentEpisode1Index, currentEpisode2Index + 1);
+        }
         
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
