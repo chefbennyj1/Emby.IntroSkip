@@ -339,14 +339,16 @@ namespace IntroSkip
                 secondFileRegionEnd   = -1.0;
             }
 
+            //TODO: We need to return EpisodeIntro data, with HasIntro = false, after many failed attempts on the same episode.
+
             if (firstFileRegionStart <= -1)
             {
-                Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
+                Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); //<-- no need to wait for this.
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
 
             Logger.Info("Found intro ranges.");
-            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
+            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);//<-- no need to wait for this.
             return new List<EpisodeIntro>()
             {
                 new EpisodeIntro()
