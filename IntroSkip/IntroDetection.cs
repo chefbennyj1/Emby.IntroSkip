@@ -211,11 +211,10 @@ namespace IntroSkip
             process.Start();
 
             string processOutput = null;
-
-            var time = "";
+            
             while ((processOutput = process.StandardError.ReadLine()) != null)
             {
-                Console.WriteLine(processOutput);
+                //Console.WriteLine(processOutput);
             }
         }
 
