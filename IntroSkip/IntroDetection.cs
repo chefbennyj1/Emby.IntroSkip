@@ -343,12 +343,12 @@ namespace IntroSkip
 
             if (firstFileRegionStart <= -1)
             {
-                Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); //<-- no need to wait for this.
+                Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); 
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
 
             Logger.Info("Found intro ranges.");
-            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);//<-- no need to wait for this.
+            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
             return new List<EpisodeIntro>()
             {
                 new EpisodeIntro()
