@@ -82,13 +82,13 @@ namespace IntroSkip
         // Slide fingerprints to find best offset
         private static int getBestOffset(List<uint> f1, List<uint> f2)
         {
-            var length = f1.Count;
+            var length     = f1.Count;
             var iterations = length + 1;
-            var diff = length / 2 - 1;
-            var a = length / 2;
-            var b = length - 1;
-            var x = 0;
-            var y = length / 2 - 1;
+            var diff       = length / 2 - 1;
+            var a          = length / 2;
+            var b          = length - 1;
+            var x          = 0;
+            var y          = length / 2 - 1;
 
             var output = new List<double>();
 
