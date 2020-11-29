@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
@@ -340,12 +341,12 @@ namespace IntroSkip
 
             if (firstFileRegionStart <= -1)
             {
-                AudioFileCleanUp(audio1_save_path, audio2_save_path);
+                Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
 
-            Logger.Info("Found intro ranges");
-
+            Logger.Info("Found intro ranges.");
+            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
             return new List<EpisodeIntro>()
             {
                 new EpisodeIntro()
