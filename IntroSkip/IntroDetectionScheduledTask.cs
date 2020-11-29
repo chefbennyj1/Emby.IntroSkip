@@ -35,7 +35,8 @@ namespace IntroSkip
             //All our series (...even the ones emby likes to ghost in the database)
             var seriesResult = LibraryManager.GetItemsResult(new InternalItemsQuery()
             {
-                IncludeItemTypes = new[] { "Series" }
+                IncludeItemTypes = new[] { "Series" },
+                Limit = 5 //This limit can be removed after extensive testing. If we remove this it will run the task on the entire library
             });
 
             foreach (var seriesItem in seriesResult.Items)
@@ -65,6 +66,9 @@ namespace IntroSkip
                         // create an empty SeriesIntro entry in our saved data, with the InternalId - come back to it later.
 
                         //continue; to the next series item
+
+
+
                         
                     }
 

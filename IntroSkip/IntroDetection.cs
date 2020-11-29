@@ -245,7 +245,16 @@ namespace IntroSkip
 
             return json;
         }
-        
+
+        private static bool IsEquitableIntro(double fileRegionStart, double fileRegionEnd)
+        {
+            if(TimeSpan.FromSeconds(Math.Round(fileRegionEnd)) - TimeSpan.FromSeconds(Math.Round(fileRegionStart)) <= TimeSpan.FromSeconds(10))
+            {
+                return false;
+            }
+            return !(fileRegionStart <= -1) && !(fileRegionEnd <= -1);
+        }
+
         public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
         {
 
@@ -342,7 +351,7 @@ namespace IntroSkip
 
             //TODO: We need to return EpisodeIntro data, with HasIntro = false, after many failed attempts on the same episode.
 
-            if (firstFileRegionStart <= -1)
+            if (!(IsEquitableIntro(firstFileRegionStart, firstFileRegionEnd)) || !(IsEquitableIntro(secondFileRegionStart, secondFileRegionEnd)))
             {
                 Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); 
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
