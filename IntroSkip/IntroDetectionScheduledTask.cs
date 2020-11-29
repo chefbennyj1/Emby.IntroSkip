@@ -64,12 +64,7 @@ namespace IntroSkip
                         // create an empty SeriesIntro entry in our saved data, with the InternalId - come back to it later.
 
                         //continue; to the next series item
-
-
-
-
-
-
+                        
                     }
 
                     // There is an entry in our data for this series, but it is not complete, create the missing episode entry
