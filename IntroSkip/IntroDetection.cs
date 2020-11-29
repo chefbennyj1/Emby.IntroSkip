@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using IntroSkip.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
@@ -17,7 +18,7 @@ using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip
 {
-    public class IntroDetection : IServerEntryPoint
+    public class IntroDetection : TitleSequenceDataService, IServerEntryPoint
     {
         private IJsonSerializer JsonSerializer { get; }
         private IFileSystem FileSystem         { get; }
@@ -245,7 +246,7 @@ namespace IntroSkip
             return json;
         }
         
-        public List<EpisodeTitleSequence> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
+        public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input, IProgress<double> progress)
         {
 
             Logger.Info("Starting episode intro detection process.");
@@ -349,19 +350,21 @@ namespace IntroSkip
 
             Logger.Info("Found intro ranges.");
             Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
-            return new List<EpisodeTitleSequence>()
+            return new List<EpisodeIntroDto>()
             {
-                new EpisodeTitleSequence()
+                new EpisodeIntroDto()
                 {
                     HasIntro   = true,
+                    SeriesInternalId = episode1Input.Parent.Parent.InternalId,
                     InternalId = episode1Input.InternalId,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
                 },
-                new EpisodeTitleSequence()
+                new TitleSequenceDataService.EpisodeIntroDto()
                 {
                     HasIntro   = true,
                     InternalId = episode2Input.InternalId,
+                    SeriesInternalId = episode1Input.Parent.Parent.InternalId,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd))
                 }

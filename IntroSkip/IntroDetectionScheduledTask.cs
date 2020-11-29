@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Api;
 using IntroSkip.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -52,7 +53,7 @@ namespace IntroSkip
                     });
 
                     //If the Series doesn't have an entry in our saved intro data - attempt to create intro data for all episodes in the series
-                    if (introData.Series.FirstOrDefault(s => s.InternalId == seriesItem.InternalId) is null)
+                    if (introData.FirstOrDefault(s => s.SeriesInternalId == seriesItem.InternalId) is null)
                     {
                         //Create intro data by:
                         //Iterating episodes (We have to Take(2) episodes at a time)
@@ -69,14 +70,15 @@ namespace IntroSkip
 
                     // There is an entry in our data for this series, but it is not complete, create the missing episode entry
                     // (Most likely a new episode has been added to the library)
-                    if (!(introData.Series.FirstOrDefault(s => s.InternalId == seriesItem.InternalId) is null))
+                    if (!(introData.FirstOrDefault(s => s.SeriesInternalId == seriesItem.InternalId) is null))
                     {
+                        var episodeQuery = introData.Where(s => s.SeriesInternalId == seriesItem.InternalId);
                         foreach (var episode in episodes)
                         {
                             //Identify the missing episode
-                            if (!introData.Series.FirstOrDefault(s => s.InternalId == seriesItem.InternalId).EpisodeTitleSequences.Any(ep => episode.InternalId == ep.InternalId))
+                            if (!episodeQuery.Any(e => e.InternalId == episode.InternalId))
                             {
-                                //Create Missing Episode Intro Data
+                                //Create Missing Episode Intro Data using "episode"
                                 //We have to Take(2) episodes at a time, the new one, and one of the episodes in the library.
                             }
                         }
@@ -104,9 +106,9 @@ namespace IntroSkip
 
 
         //Do the amount of episodes we have scanned equal the amount of episodes in the Series 
-        private bool IsCompleteSeriesData(IntroData introData, BaseItem series)
+        private bool IsCompleteSeriesData(List<TitleSequenceDataService.EpisodeIntroDto> introData, BaseItem series)
         {
-            if (!introData.Series.Any()) return false;
+            if (!introData.Any()) return false;
 
             var episodes = LibraryManager.GetItemList(new InternalItemsQuery()
             {
@@ -115,7 +117,8 @@ namespace IntroSkip
                 IncludeItemTypes = new[] { "Episode" }
             });
 
-            return episodes.Count() > introData.Series.FirstOrDefault(s => s.InternalId == series.InternalId).EpisodeTitleSequences.Count();
+            var seriesIntroData = introData.Select(s => s.SeriesInternalId == series.InternalId);
+            return episodes.Count() <= seriesIntroData.Count();
         }
 
         public string Name        => "Detect Episode Intro Skip";
