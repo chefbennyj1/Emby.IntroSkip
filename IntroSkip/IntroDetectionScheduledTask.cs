@@ -98,12 +98,21 @@ namespace IntroSkip
             progress.Report(100.0);
         }
 
-        private static Tuple<int, int> GetEpisodeOffset(int currentEpisode1Index, int currentEpisode2Index)
+        private static Tuple<int, int> GetEpisodeOffset(int episodeComparableIndex, int episodeToCompareIndex)
         {
             //Calculate which episodes to scan next based on the result of the first scan
-            //If the first scan is successful increment currentEpisode2Index by one.
-            
-            return new Tuple<int, int>(currentEpisode1Index, currentEpisode2Index + 1);
+
+            //If the first scan is successful (1 and 2) increment episodeToCompareIndex by one to scan  1 and 3
+            //If the first scan is successful (1 and 2)  and the second was successful (1 and 3) keep incrementing episodeToCompareIndex by one
+
+
+            //If the first scan failed, increment episodeToCompareIndex by one. 1 and 3
+
+            //If the first scan failed, and the second one was successful (1 and 3) increment episodeComparableIndex by one
+           
+            //Condition to NOT compare the same episode with itself.
+
+            return new Tuple<int, int>(episodeComparableIndex, episodeToCompareIndex + 1);
         }
         
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
