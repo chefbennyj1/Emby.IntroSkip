@@ -258,9 +258,16 @@ namespace IntroSkip
             var audio1_save_path = "audio1.wav";
             var audio2_save_path = "audio2.wav";
             
-            Logger.Info($"First  Episode Path: {episode1Input.Path}");
-            Logger.Info($"Second Episode Path: {episode2Input.Path}");
-            ExtractPCMAudio(episode1Input.Path, audio1_save_path);
+            
+            //Only encode the first audio if:
+            //1. It is the first time encoding a series
+            //2. Our first attempt at encoding failed so we have to match new episodes
+            //Otherwise we succeeded, so we can reuse this file.
+            if (!FileSystem.FileExists(audio1_save_path))
+            {
+                ExtractPCMAudio(episode1Input.Path, audio1_save_path);
+            }
+
             ExtractPCMAudio(episode2Input.Path, audio2_save_path);
             Logger.Info("Audio Extraction Done.");
 
@@ -354,7 +361,7 @@ namespace IntroSkip
             }
 
             Logger.Info("Found intro ranges.");
-            Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false);
+            Task.Run(() => AudioFileCleanUp(audio2_save_path)).ConfigureAwait(false);
             return new List<EpisodeIntroDto>()
             {
                 new EpisodeIntroDto()
@@ -383,11 +390,15 @@ namespace IntroSkip
         }
 
 
-        private void AudioFileCleanUp(string audio_file_1, string audio_file_2)
+        private void AudioFileCleanUp(string audio_file_2, string audio_file_1 = null)
         {
-            if(FileSystem.FileExists(audio_file_1))
+            //If we had a success scan for episodes we can keep audio_file_1 so we don;t have to encode it again.
+            if (!(audio_file_1 is null))
             {
-                FileSystem.DeleteFile(audio_file_1);
+                if (FileSystem.FileExists(audio_file_1))
+                {
+                    FileSystem.DeleteFile(audio_file_1);
+                }
             }
 
             if (FileSystem.FileExists(audio_file_2))
