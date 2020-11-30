@@ -22,7 +22,7 @@ namespace IntroSkip
     {
         private IJsonSerializer JsonSerializer { get; }
         private IFileSystem FileSystem         { get; }
-        private ILogger Logger                 { get; }
+        private static ILogger Logger          { get; set; }
         public static IntroDetection Instance  { get; private set; }
 
         public IntroDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
@@ -218,7 +218,7 @@ namespace IntroSkip
             
             while ((processOutput = process.StandardError.ReadLine()) != null)
             {
-                //Console.WriteLine(processOutput);
+                Logger.Info(processOutput);
             }
         }
 
@@ -243,6 +243,7 @@ namespace IntroSkip
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
             {
                 json += (processOutput);
+                Logger.Info(processOutput);
             }
 
             return json;
@@ -250,7 +251,6 @@ namespace IntroSkip
         
         public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
-
             Logger.Info("Starting episode intro detection process.");
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
             Logger.Info($" {episode2Input.Parent.Parent.Name} - Season {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
@@ -258,21 +258,24 @@ namespace IntroSkip
             var audio1_save_path = "audio1.wav";
             var audio2_save_path = "audio2.wav";
             
+            Logger.Info($"First  Episode Path: {episode1Input.Path}");
+            Logger.Info($"Second Episode Path: {episode2Input.Path}");
             ExtractPCMAudio(episode1Input.Path, audio1_save_path);
             ExtractPCMAudio(episode2Input.Path, audio2_save_path);
             Logger.Info("Audio Extraction Done.");
 
 
-
             Logger.Info("Fingerprinting audio.");
-            var fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(FingerPrintAudio(audio1_save_path));
-            var fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(FingerPrintAudio(audio2_save_path));
-            Logger.Info("Audio Finger Printing Done.");
+            var audio1Json = FingerPrintAudio(audio1_save_path);
+            var audio2Json = FingerPrintAudio(audio2_save_path);
+            var fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio1Json);
+            var fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio2Json);
             
-
             var fingerprint1 = fingerPrintDataEpisode1.fingerprint;
             var fingerprint2 = fingerPrintDataEpisode2.fingerprint;
             
+            Logger.Info("Audio Finger Printing Done.");
+
 
             Logger.Info("Analyzing fingerprints.");
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
