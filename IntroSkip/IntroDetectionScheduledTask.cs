@@ -35,7 +35,7 @@ namespace IntroSkip
         {
             Log.Info("Beginning Intro Task");
             var config = Plugin.Instance.Configuration;
-
+            
             if (!FileSystem.DirectoryExists("../programdata/IntroEncodings"))
             {
                 FileSystem.CreateDirectory("../programdata/IntroEncodings");
@@ -65,34 +65,31 @@ namespace IntroSkip
                 });
                 foreach (var season in seasonQuery.Items)
                 {
-                    Log.Info(series.Name + " season: " + season.Name);
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent = season,
                         Recursive = true,
                         IncludeItemTypes = new[] { "Episode" },
-                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                        IsVirtualItem = false
                     });
 
                     var episodeComparableIndex = 1;
-                    var workingEpisodeSet = new List<BaseItem>();
-                    foreach (var episode in episodeQuery.Items)
-                    {
-                        if (string.IsNullOrEmpty(episode.Path)) continue;
-                        if (config.Intros.Exists(e => e.InternalId == episode.InternalId)) continue;
-                        workingEpisodeSet.Add(episode);
-                    }
-                    Log.Info("working episode set has: " + workingEpisodeSet.Count + " item(s).");
+                    //DO a foreach loop here using indexAt something is wrong!!
 
-                    for(var i = 0; i <= workingEpisodeSet.Count -1; i++)
+                    for(var i = 0; i <= episodeQuery.Items.Count() - 1; i++)
                     {
+                        if (config.Intros.Exists(e => e.InternalId == episodeQuery.Items[i].InternalId)) continue;
+                        
+                        //Don't compare the same episode with it's self
                         if (i == episodeComparableIndex) episodeComparableIndex++;
                         
-                        if (config.Intros.Exists(e => e.InternalId == workingEpisodeSet[i].InternalId)) continue;
-
+                        Log.Info($"episodeComparableIndex: {episodeComparableIndex} i: {i}");
                         try
                         {
-                            var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(workingEpisodeSet[episodeComparableIndex], workingEpisodeSet[i]));
+                            var data = await Task.FromResult(
+                                IntroDetection.Instance.CompareAudioFingerPrint(
+                                    episodeQuery.Items[episodeComparableIndex], episodeQuery.Items[i]));
 
                             foreach (var data_point in data)
                             {
@@ -101,96 +98,38 @@ namespace IntroSkip
                                     config.Intros.Add(data_point);
                                 }
                             }
-                            
-                            Plugin.Instance.UpdateConfiguration(config);
-                            episodeComparableIndex = 1;
-                            Log.Info("Episode Intro Data obtained successfully.");
-                            
 
+                            Plugin.Instance.UpdateConfiguration(config);
+
+                            //If the episodeComparableIndex was changed because the episode would've compared itself, change it back;
+                            if (i == (episodeComparableIndex -= 1)) episodeComparableIndex--;
+
+                            Log.Info("Episode Intro Data obtained successfully.");
                         }
                         catch (InvalidIntroDetectionException)
                         {
                             Log.Info("Episode Intro Data obtained failed. Trying new episode match");
-                            episodeComparableIndex ++; 
-                            i = 0; 
-                        }
+                            if (episodeComparableIndex <= episodeQuery.Items.Count() -1)
+                            {
+                                episodeComparableIndex++;
+                            }
+                            else
+                            {
+                                episodeComparableIndex = 1;
+                                config.Intros.Add(new TitleSequenceDataService.EpisodeIntroDto()
+                                {
+                                    HasIntro = false,
+                                    SeriesInternalId = series.InternalId,
+                                    InternalId = episodeQuery.Items[i].InternalId
+                                });
+                            }
+                           
+                        } 
                     }
                 }
             }
 
-            /*
-            //All the episodes from a particular series
-            var episodesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
-            {
-                Recursive = true,
-                IncludeItemTypes = new[] { "Episode" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                //Limit = limit,
-                //StartIndex = config.StartIndex
-            });
-
-            var episodeItems = episodesQuery.Items; //.GroupBy(e => e.Parent.Id);
-
             
-            var episodes = episodeItems.Where(episode => config.Intros.All(ep => ep.InternalId != episode.InternalId)).ToList();
-            
-            (int episodeComparableIndex, int episodeToCompareIndex) = new Tuple<int, int>(1, 0);
-
-            Log.Info($"Scanning {episodesQuery.TotalRecordCount} episodes");
-            var scanningEnabled = true;
-           
-            
-            while(scanningEnabled)
-            {
-                if (config.Intros.Count() >= episodesQuery.TotalRecordCount - 1) scanningEnabled = false;
-
-                if (episodes[episodeToCompareIndex].Parent.InternalId != episodes[episodeComparableIndex].Parent.InternalId)
-                {
-                    episodeComparableIndex++;
-                }
-
-                try
-                {
-                    var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeComparableIndex], episodes[episodeToCompareIndex]));
-                    
-                    var newIntroItem = data.FirstOrDefault(dataPoint => config.Intros.All(item => item.InternalId != dataPoint.InternalId));
-                    
-                    config.Intros.Add(newIntroItem);
-                    Plugin.Instance.UpdateConfiguration(config);
-                    //episodeIntroData.Add(data.FirstOrDefault(dataPoint => episodeIntroData.All(item => item.InternalId != dataPoint.InternalId)));
-                    
-                    Log.Info("Episode Intro Data obtained successfully.");
-                    //Skip over the episode if the indexes are the same.
-                    if (episodeToCompareIndex == episodeComparableIndex)
-                    {
-                        episodeToCompareIndex += 2;
-                    }
-                    else
-                    {
-                        episodeToCompareIndex += 1;
-                    }
-
-                }
-                catch (InvalidIntroDetectionException)
-                {
-                    Log.Info("Episode Intro Data obtained failed. Trying new episode match");
-                    episodeComparableIndex = episodeToCompareIndex ++; 
-                    episodeToCompareIndex = 0; 
-                }
-
-                //Stop the scan if we have made it through all the elements.
-                if (episodeComparableIndex > episodesQuery.TotalRecordCount || episodeToCompareIndex > episodesQuery.TotalRecordCount ) scanningEnabled = false;
-                
-
-            }
-
-          
-
-            //config.Intros.AddRange(episodeIntroData);
-            config.StartIndex += limit;
-
-            Plugin.Instance.UpdateConfiguration(config);
-              */
             progress.Report(100.0);
         }
         
@@ -218,10 +157,10 @@ namespace IntroSkip
             return episodeCount <= seriesIntroData.Count();
         }
 
-        public string Name        => "Detect Episode Intro Skip";
+        public string Name        => "Detect Episode Title Sequence";
         public string Key         => "Intro Skip Options";
-        public string Description => "Detect start and finish time of episode title sequences to allow for a 'skip' option";
-        public string Category    =>  "Detect Episode Intro Skip";
+        public string Description => "Detect start and finish times of episode title sequences to allow for a 'skip' option";
+        public string Category    => "Detect Episode Title Sequence";
         public bool IsHidden      => false;
         public bool IsEnabled     => true;
         public bool IsLogged      => true;

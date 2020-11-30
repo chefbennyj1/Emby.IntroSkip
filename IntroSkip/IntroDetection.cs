@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using IntroSkip.Api;
 using MediaBrowser.Controller.Entities;
@@ -98,28 +99,31 @@ namespace IntroSkip
 
             foreach (var i in Enumerable.Range(0, iterations))
             {
-
                 var upper = Math.Abs(a - b);
-
-                output.Add(compareFingerprints(f1.GetRange(a, upper), f2.GetRange(x, upper)));
-
-
-                a = clip(a - 1, 0, length - 1);
-                if (diff < 0)
+                try
                 {
-                    b = clip(b - 1, 0, length - 1);
-                    x = clip(x + 1, 0, length - 1);
-                    y = clip(y, 0, length - 1);
+                    output.Add(compareFingerprints(f1.GetRange(a, upper), f2.GetRange(x, upper)));
+                
+                    a = clip(a - 1, 0, length - 1);
+                    if (diff < 0)
+                    {
+                        b = clip(b - 1, 0, length - 1);
+                        x = clip(x + 1, 0, length - 1);
+                        y = clip(y, 0, length - 1);
+                    }
+                    else
+                    {
+                        b = clip(b, 0, length - 1);
+                        x = clip(x, 0, length - 1);
+                        y = clip(y + 1, 0, length - 1);
+                    }
+
+                    diff = diff - 1;
                 }
-                else
+                catch (Exception ex)
                 {
-                    b = clip(b, 0, length - 1);
-                    x = clip(x, 0, length - 1);
-                    y = clip(y + 1, 0, length - 1);
+                    throw new InvalidIntroDetectionException(ex.Message);
                 }
-
-                diff = diff - 1;
-
             }
 
             var index = output.IndexOf(output.Max());
@@ -163,8 +167,6 @@ namespace IntroSkip
                 }
                 if (arr[i] < upperLimit && nextOnesAreAlsoSmall(arr, i, upperLimit))
                 {
-                    
-
                     if (start == -1)
                     {
                         start = i;
@@ -249,7 +251,8 @@ namespace IntroSkip
             return json;
         }
 
-        private string audio1_save_path { get; set; }
+        //private string audio1_save_path { get; set; } //Is the season ID+Episode ID
+        private const string EncodingDir = "../programdata/IntroEncodings/";
 
         public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
@@ -258,20 +261,21 @@ namespace IntroSkip
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
             Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
 
-            if (audio1_save_path is null || episode2Input.Parent.InternalId.ToString() != audio1_save_path)
-            {
-                if (FileSystem.FileExists(audio1_save_path)) FileSystem.DeleteFile(audio1_save_path);
-                
-                audio1_save_path = $"../programdata/IntroEncodings/{episode1Input.Parent.InternalId}.wav";
-                ExtractPCMAudio(episode1Input.Path, audio1_save_path);
-            }
+            //if (audio1_save_path is null || $"{episode2Input.Parent.InternalId}{episode1Input.InternalId}" != audio1_save_path)
+            //{
+            //    if (FileSystem.FileExists($"{EncodingDir}{audio1_save_path}.wav")) FileSystem.DeleteFile($"{EncodingDir}{audio1_save_path}.wav");
+
+            var audio1_save_path =$"{EncodingDir}audio1.wav";//$"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
+            ExtractPCMAudio(episode1Input.Path, audio1_save_path);
+            //}
             
-            var audio2_save_path = "../programdata/IntroEncodings/audio2.wav";
+            var audio2_save_path = $"{EncodingDir}audio2.wav";
             ExtractPCMAudio(episode2Input.Path, audio2_save_path);
             
             Logger.Info("Audio Extraction Done.");
             
             Logger.Info("Fingerprinting audio.");
+
             var audio1Json = FingerPrintAudio(audio1_save_path);
             var audio2Json = FingerPrintAudio(audio2_save_path);
             var fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio1Json);
