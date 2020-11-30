@@ -7,6 +7,7 @@ using IntroSkip.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.TV;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 
@@ -18,88 +19,178 @@ namespace IntroSkip
         private static ILogger Log                  { get; set; }
         private ILibraryManager LibraryManager      { get; }
         private IUserManager UserManager            { get; set; }
-
+        private IFileSystem FileSystem { get; set; }
         public long CurrentSeriesEncodingInternalId { get; set; }
 
         private static double Step = 0.0;
-        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user)
+        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file)
         {
-            Log = logManager.GetLogger(Plugin.Instance.Name);
+            Log            = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager = libMan;
-            UserManager = user;
-            
+            UserManager    = user;
+            FileSystem     = file;
         }
         
-
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             Log.Info("Beginning Intro Task");
             var config = Plugin.Instance.Configuration;
-            var limit = 10;
-            var episodeIntroData = new List<TitleSequenceDataService.EpisodeIntroDto>();
+
+            if (!FileSystem.DirectoryExists("../programdata/IntroEncodings"))
+            {
+                FileSystem.CreateDirectory("../programdata/IntroEncodings");
+            }
+
+            if (config.Intros is null)
+            {
+                config.Intros = new List<TitleSequenceDataService.EpisodeIntroDto>();
+            }
+
+            var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
+            {
+                Recursive = true,
+                IncludeItemTypes = new[] { "Series" },
+                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+            });
+
+            foreach (var series in seriesQuery.Items)
+            {
+                Log.Info(series.Name);
+                var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+                {
+                    Parent = series,
+                    Recursive = true,
+                    IncludeItemTypes = new[] { "Season" },
+                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+                });
+                foreach (var season in seasonQuery.Items)
+                {
+                    Log.Info(series.Name + " season: " + season.Name);
+                    var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+                    {
+                        Parent = season,
+                        Recursive = true,
+                        IncludeItemTypes = new[] { "Episode" },
+                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+                    });
+
+                    var episodeComparableIndex = 1;
+                    var workingEpisodeSet = new List<BaseItem>();
+                    foreach (var episode in episodeQuery.Items)
+                    {
+                        if (string.IsNullOrEmpty(episode.Path)) continue;
+                        if (config.Intros.Exists(e => e.InternalId == episode.InternalId)) continue;
+                        workingEpisodeSet.Add(episode);
+                    }
+                    Log.Info("working episode set has: " + workingEpisodeSet.Count + " item(s).");
+
+                    for(var i = 0; i <= workingEpisodeSet.Count -1; i++)
+                    {
+                        if (i == episodeComparableIndex) episodeComparableIndex++;
+                        
+                        if (config.Intros.Exists(e => e.InternalId == workingEpisodeSet[i].InternalId)) continue;
+
+                        try
+                        {
+                            var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(workingEpisodeSet[episodeComparableIndex], workingEpisodeSet[i]));
+
+                            foreach (var data_point in data)
+                            {
+                                if (!config.Intros.Exists(intro => intro.InternalId == data_point.InternalId))
+                                {
+                                    config.Intros.Add(data_point);
+                                }
+                            }
+                            
+                            Plugin.Instance.UpdateConfiguration(config);
+                            episodeComparableIndex = 1;
+                            Log.Info("Episode Intro Data obtained successfully.");
+                            
+
+                        }
+                        catch (InvalidIntroDetectionException)
+                        {
+                            Log.Info("Episode Intro Data obtained failed. Trying new episode match");
+                            episodeComparableIndex ++; 
+                            i = 0; 
+                        }
+                    }
+                }
+            }
+
+            /*
             //All the episodes from a particular series
             var episodesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
                 Recursive = true,
                 IncludeItemTypes = new[] { "Episode" },
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                Limit = limit,
-                StartIndex = config.StartIndex
+                //Limit = limit,
+                //StartIndex = config.StartIndex
             });
 
-            var episodes = episodesQuery.Items; //.GroupBy(e => e.Parent.Id);
-            (int episodeIndexComparable, int episodeIndexToCompare) = new Tuple<int, int>(0, 1);
+            var episodeItems = episodesQuery.Items; //.GroupBy(e => e.Parent.Id);
 
-            Log.Info("Begin step through episodes");
-            //Step though the index of episodes
-            Log.Info($"First episodes to compare: {episodeIndexToCompare} and {episodeIndexComparable}");
+            
+            var episodes = episodeItems.Where(episode => config.Intros.All(ep => ep.InternalId != episode.InternalId)).ToList();
+            
+            (int episodeComparableIndex, int episodeToCompareIndex) = new Tuple<int, int>(1, 0);
 
-            while (episodeIndexToCompare <= episodesQuery.TotalRecordCount - 1)
+            Log.Info($"Scanning {episodesQuery.TotalRecordCount} episodes");
+            var scanningEnabled = true;
+           
+            
+            while(scanningEnabled)
             {
+                if (config.Intros.Count() >= episodesQuery.TotalRecordCount - 1) scanningEnabled = false;
+
+                if (episodes[episodeToCompareIndex].Parent.InternalId != episodes[episodeComparableIndex].Parent.InternalId)
+                {
+                    episodeComparableIndex++;
+                }
+
                 try
                 {
-                    var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeIndexComparable], episodes[episodeIndexToCompare]));
-                    foreach (var item in data)
+                    var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeComparableIndex], episodes[episodeToCompareIndex]));
+                    
+                    var newIntroItem = data.FirstOrDefault(dataPoint => config.Intros.All(item => item.InternalId != dataPoint.InternalId));
+                    
+                    config.Intros.Add(newIntroItem);
+                    Plugin.Instance.UpdateConfiguration(config);
+                    //episodeIntroData.Add(data.FirstOrDefault(dataPoint => episodeIntroData.All(item => item.InternalId != dataPoint.InternalId)));
+                    
+                    Log.Info("Episode Intro Data obtained successfully.");
+                    //Skip over the episode if the indexes are the same.
+                    if (episodeToCompareIndex == episodeComparableIndex)
                     {
-                        if (!episodeIntroData.Contains(item))
-                        {
-                            episodeIntroData.Add(item);
-                        }
+                        episodeToCompareIndex += 2;
                     }
-                    episodeIndexToCompare++;
+                    else
+                    {
+                        episodeToCompareIndex += 1;
+                    }
+
                 }
                 catch (InvalidIntroDetectionException)
                 {
-                    episodeIndexComparable++; //2
-                    episodeIndexToCompare++;  //3
-                                              //We've skipped 1, we need to return to calculate it.
-                    var data = await Task.FromResult(IntroDetection.Instance.CompareAudioFingerPrint(episodes[episodeIndexComparable], episodes[episodeIndexToCompare]));
-                    foreach (var item in data)
-                    {
-                        if (!episodeIntroData.Contains(item))
-                        {
-                            episodeIntroData.Add(item);
-                        }
-                    }
+                    Log.Info("Episode Intro Data obtained failed. Trying new episode match");
+                    episodeComparableIndex = episodeToCompareIndex ++; 
+                    episodeToCompareIndex = 0; 
                 }
-            }
 
-
-
-            var nextEpisodeSet = episodes.Where(episode => !config.Intros.Any(ep => ep.InternalId == episode.InternalId));
-            
-            foreach (var episode in nextEpisodeSet)
-            {
-
+                //Stop the scan if we have made it through all the elements.
+                if (episodeComparableIndex > episodesQuery.TotalRecordCount || episodeToCompareIndex > episodesQuery.TotalRecordCount ) scanningEnabled = false;
+                
 
             }
 
+          
 
-            config.Intros.AddRange(episodeIntroData);
+            //config.Intros.AddRange(episodeIntroData);
             config.StartIndex += limit;
 
             Plugin.Instance.UpdateConfiguration(config);
-
+              */
             progress.Report(100.0);
         }
         

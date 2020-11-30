@@ -218,7 +218,7 @@ namespace IntroSkip
             
             while ((processOutput = process.StandardError.ReadLine()) != null)
             {
-                Logger.Info(processOutput);
+                //Logger.Info(processOutput);
             }
         }
 
@@ -248,30 +248,29 @@ namespace IntroSkip
 
             return json;
         }
-        
+
+        private string audio1_save_path { get; set; }
+
         public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
-            Logger.Info("Starting episode intro detection process.");
-            Logger.Info($" {episode1Input.Parent.Parent.Name} - Season {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
-            Logger.Info($" {episode2Input.Parent.Parent.Name} - Season {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
 
-            var audio1_save_path = "audio1.wav";
-            var audio2_save_path = "audio2.wav";
-            
-            
-            //Only encode the first audio if:
-            //1. It is the first time encoding a series
-            //2. Our first attempt at encoding failed so we have to match new episodes
-            //Otherwise we succeeded, so we can reuse this file.
-            if (!FileSystem.FileExists(audio1_save_path))
+            Logger.Info("Starting episode intro detection process.");
+            Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
+            Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
+
+            if (audio1_save_path is null || episode2Input.Parent.InternalId.ToString() != audio1_save_path)
             {
+                if (FileSystem.FileExists(audio1_save_path)) FileSystem.DeleteFile(audio1_save_path);
+                
+                audio1_save_path = $"../programdata/IntroEncodings/{episode1Input.Parent.InternalId}.wav";
                 ExtractPCMAudio(episode1Input.Path, audio1_save_path);
             }
-
+            
+            var audio2_save_path = "../programdata/IntroEncodings/audio2.wav";
             ExtractPCMAudio(episode2Input.Path, audio2_save_path);
+            
             Logger.Info("Audio Extraction Done.");
-
-
+            
             Logger.Info("Fingerprinting audio.");
             var audio1Json = FingerPrintAudio(audio1_save_path);
             var audio2Json = FingerPrintAudio(audio2_save_path);
@@ -352,8 +351,7 @@ namespace IntroSkip
                 secondFileRegionEnd   = -1.0;
             }
 
-            //TODO: We need to return EpisodeIntro data, with HasIntro = false, after many failed attempts on the same episode.
-
+            
             if (firstFileRegionStart <= -1 || secondFileRegionStart <= -1)
             {
                 Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); 
