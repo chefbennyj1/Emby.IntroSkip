@@ -40,16 +40,13 @@ namespace IntroSkip
             Log.Info("Beginning Intro Task");
             var config = Plugin.Instance.Configuration;
             
-            if (!FileSystem.DirectoryExists("../programdata/IntroEncodings"))
-            {
-                FileSystem.CreateDirectory("../programdata/IntroEncodings");
-            }
+            IntroFileDirectory.Instance.MaintainIntroEncodingDirectory();
 
             if (config.Intros is null)
             {
                 config.Intros = new List<IntroDto>();
             }
-
+            
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
                 Recursive        = true,
@@ -94,12 +91,10 @@ namespace IntroSkip
                         //Don't compare the same episode with it's self
                         if (episodeToCompareIndex == episodeComparableIndex) episodeComparableIndex++;
                         
-                        Log.Info($"episodeComparableIndex: {episodeComparableIndex} episodeToCompareIndex: {episodeToCompareIndex}");
-
                         try
                         {
                             var data = await Task.FromResult(
-                                IntroDetection.Instance.CompareAudioFingerPrint(
+                                IntroDetection.Instance.SearchAudioFingerPrint(
                                     episodeQuery.Items[episodeComparableIndex],
                                     episodeQuery.Items[episodeToCompareIndex]));
 
@@ -115,9 +110,10 @@ namespace IntroSkip
 
                             Log.Info("Episode Intro Data obtained successfully.");
                         }
-                        catch (InvalidIntroDetectionException)
+                        catch (InvalidIntroDetectionException ex)
                         {
-                            Log.Info("Episode Intro Data failed to compare episodes. Trying new episode match.");
+                            Log.Info(ex.Message);
+                            Log.Info(ex.InnerException?.Message);
 
                             if (episodeComparableIndex <= episodeQuery.Items.Count() - 2)
                             {
