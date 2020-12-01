@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using IntroSkip.Api;
 using MediaBrowser.Controller.Entities;
@@ -17,9 +16,11 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
+// ReSharper disable ComplexConditionExpression
+
 namespace IntroSkip
 {
-    public class IntroDetection : TitleSequenceDataService, IServerEntryPoint
+    public class IntroDetection : IntroDto, IServerEntryPoint
     {
         private IJsonSerializer JsonSerializer { get; }
         private IFileSystem FileSystem         { get; }
@@ -103,7 +104,7 @@ namespace IntroSkip
                 try
                 {
                     output.Add(compareFingerprints(f1.GetRange(a, upper), f2.GetRange(x, upper)));
-                
+                   
                     a = clip(a - 1, 0, length - 1);
                     if (diff < 0)
                     {
@@ -245,32 +246,49 @@ namespace IntroSkip
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
             {
                 json += (processOutput);
-                Logger.Info(processOutput);
+                //Logger.Info(processOutput);
             }
 
             return json;
         }
 
-        //private string audio1_save_path { get; set; } //Is the season ID+Episode ID
+        private string audio1_save_path { get; set; }
+        private string audio2_save_path { get; set; }
+
         private const string EncodingDir = "../programdata/IntroEncodings/";
 
-        public List<EpisodeIntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
-        {
+        private static string EpisodeComparable { get; set; }
+        private static string EpisodeToCompare { get; set; }
 
+        public List<IntroDto> CompareAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
+        {
             Logger.Info("Starting episode intro detection process.");
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
             Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
 
-            //if (audio1_save_path is null || $"{episode2Input.Parent.InternalId}{episode1Input.InternalId}" != audio1_save_path)
-            //{
-            //    if (FileSystem.FileExists($"{EncodingDir}{audio1_save_path}.wav")) FileSystem.DeleteFile($"{EncodingDir}{audio1_save_path}.wav");
+            if (EpisodeComparable is null || $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}" != EpisodeComparable)
+            {
+                if (FileSystem.FileExists($"{EncodingDir}{EpisodeComparable}.wav")) FileSystem.DeleteFile($"{EncodingDir}{EpisodeComparable}.wav");
+                
+                EpisodeComparable = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
+                
+                audio1_save_path = $"{EncodingDir}{EpisodeComparable}.wav";
 
-            var audio1_save_path =$"{EncodingDir}audio1.wav";//$"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
-            ExtractPCMAudio(episode1Input.Path, audio1_save_path);
-            //}
-            
-            var audio2_save_path = $"{EncodingDir}audio2.wav";
-            ExtractPCMAudio(episode2Input.Path, audio2_save_path);
+                ExtractPCMAudio(episode1Input.Path, audio1_save_path);
+            }
+
+            if (EpisodeToCompare is null || $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}" != EpisodeToCompare)
+            {
+                if (FileSystem.FileExists($"{EncodingDir}{EpisodeToCompare}.wav")) FileSystem.DeleteFile($"{EncodingDir}{EpisodeToCompare}.wav");
+                
+                EpisodeToCompare = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
+                
+                audio2_save_path = $"{EncodingDir}{EpisodeToCompare}.wav";
+
+                ExtractPCMAudio(episode2Input.Path, audio2_save_path);
+            }
+
+           
             
             Logger.Info("Audio Extraction Done.");
             
@@ -361,12 +379,17 @@ namespace IntroSkip
                 Task.Run(() => AudioFileCleanUp(audio1_save_path, audio2_save_path)).ConfigureAwait(false); 
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-
+           
             Logger.Info("Found intro ranges.");
+
+            Logger.Info($" {episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} Starts: {TimeSpan.FromSeconds(Math.Round(firstFileRegionStart))} End: {TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))}");
+            Logger.Info($" {episode2Input.Parent.Parent.Name} - S: {episode2Input.Parent.IndexNumber} - E: {episode2Input.IndexNumber} Starts: {TimeSpan.FromSeconds(Math.Round(secondFileRegionStart))} End: {TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd))}");
+            
             Task.Run(() => AudioFileCleanUp(audio2_save_path)).ConfigureAwait(false);
-            return new List<EpisodeIntroDto>()
+            
+            return new List<IntroDto>()
             {
-                new EpisodeIntroDto()
+                new IntroDto()
                 {
                     HasIntro   = true,
                     SeriesInternalId = episode1Input.Parent.Parent.InternalId,
@@ -374,7 +397,7 @@ namespace IntroSkip
                     IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
                 },
-                new TitleSequenceDataService.EpisodeIntroDto()
+                new IntroDto()
                 {
                     HasIntro   = true,
                     InternalId = episode2Input.InternalId,
@@ -384,11 +407,7 @@ namespace IntroSkip
                 }
             };
 
-            // Logger.Info(
-            //    $"{episode1Input.Substring(0, 80)}\nStarts: {TimeSpan.FromSeconds(Math.Round(firstFileRegionStart))}\nEnd: {TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))} ");
-
-            // Logger.Info(
-            //    $"\n{episode2Input.Substring(0, 80)}\nStarts: {TimeSpan.FromSeconds(Math.Round(secondFileRegionStart))}\nEnd: {TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd))} ");
+            
         }
 
 
