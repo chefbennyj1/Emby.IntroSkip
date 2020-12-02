@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Api;
+using IntroSkip.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
@@ -24,7 +25,8 @@ namespace IntroSkip
         private IFileSystem FileSystem              { get; }
         public long CurrentSeriesEncodingInternalId { get; set; }
         private static double Step                  { get; set; }
-    
+        
+        public static Dictionary<string, IntroAudioFingerprint> AudioFingerPrints { get; private set; }
         
         public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file)
         {
@@ -32,7 +34,6 @@ namespace IntroSkip
             LibraryManager = libMan;
             UserManager    = user;
             FileSystem     = file;
-            Step           = CalculateStep();
         }
       
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
@@ -40,13 +41,11 @@ namespace IntroSkip
             Log.Info("Beginning Intro Task");
             var config = Plugin.Instance.Configuration;
             
-            IntroFileDirectory.Instance.MaintainIntroEncodingDirectory();
-
             if (config.Intros is null)
             {
                 config.Intros = new List<IntroDto>();
             }
-            
+
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
                 Recursive        = true,
@@ -54,8 +53,13 @@ namespace IntroSkip
                 User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             });
 
+            Step = CalculateStep(seriesQuery.TotalRecordCount, config);
+
             foreach (var series in seriesQuery.Items)
             {
+                Step =+ Step;
+                progress.Report(Step);
+
                 Log.Info(series.Name);
                 var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                 {
@@ -68,6 +72,10 @@ namespace IntroSkip
 
                 foreach (var season in seasonQuery.Items)
                 {
+                    //Only keep finger print data for an individual seasons
+                    AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
+                    
+
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent           = season,
@@ -80,16 +88,45 @@ namespace IntroSkip
 
                     var episodeComparableIndex = 1;
                     var episodeToCompareIndex  = 0;
-
-                    for(episodeToCompareIndex = 0; episodeToCompareIndex <= episodeQuery.Items.Count() - 1; episodeToCompareIndex++)
+                    var episodeMissed          = false;
+                    var totalRecordIndex       = episodeQuery.TotalRecordCount -1; //Zero based total record count.
+                    var failedMatches          = new Dictionary<int, int>();
+                    
+                    for(episodeToCompareIndex = 0; episodeToCompareIndex <= totalRecordIndex; episodeToCompareIndex++)
                     {
-                        Step =+ Step;
-                        progress.Report(Step);
+                        if (episodeMissed)
+                        {
+                            episodeComparableIndex = episodeComparableIndex == totalRecordIndex ? totalRecordIndex : episodeComparableIndex++;
+                            episodeToCompareIndex  = 0;
+                            episodeMissed          = false;
+                        }
 
-                        if (config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeToCompareIndex].InternalId)) continue;
+                        //Check to see if this match has been attempted before
+                        if (failedMatches.Any())
+                        {
+                            if (failedMatches.ContainsKey(episodeToCompareIndex) || failedMatches.ContainsKey(episodeComparableIndex))
+                            {
+                                try
+                                {
+                                    if (failedMatches[episodeToCompareIndex] == episodeComparableIndex) continue;
+                                }
+                                catch { }
+
+                                try
+                                {
+                                    if (failedMatches[episodeComparableIndex] == episodeToCompareIndex) continue;
+                                }
+                                catch { }
+                            }
+                        }
+
+
+                        //We already have both these episode;
+                        if (config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeToCompareIndex].InternalId) && 
+                            config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId)) continue;
                         
-                        //Don't compare the same episode with it's self
-                        if (episodeToCompareIndex == episodeComparableIndex) episodeComparableIndex++;
+                        //Don't compare the same episode with it's self 
+                        if (episodeToCompareIndex == episodeComparableIndex) continue;
                         
                         try
                         {
@@ -109,18 +146,14 @@ namespace IntroSkip
                             Plugin.Instance.UpdateConfiguration(config);
 
                             Log.Info("Episode Intro Data obtained successfully.");
+                            
                         }
                         catch (InvalidIntroDetectionException ex)
                         {
                             Log.Info(ex.Message);
-                            Log.Info(ex.InnerException?.Message);
-
-                            if (episodeComparableIndex <= episodeQuery.Items.Count() - 2)
-                            {
-                                episodeComparableIndex++;
-                                episodeToCompareIndex--;
-                            }
-                            else
+                            
+                            //We have exhausted all our episode comparing
+                            if (episodeComparableIndex >= totalRecordIndex - 1 && episodeToCompareIndex == totalRecordIndex)
                             {
                                 config.Intros.Add(new IntroDto()
                                 {
@@ -128,14 +161,22 @@ namespace IntroSkip
                                     SeriesInternalId = series.InternalId,
                                     InternalId = episodeQuery.Items[episodeToCompareIndex].InternalId
                                 });
-
-                                episodeToCompareIndex = 1;
+                            }
+                            else
+                            {
+                                episodeMissed = true;
+                                try //This key value pair should never get to exist, however it might - catch the error.
+                                {
+                                    failedMatches.Add(episodeToCompareIndex, episodeComparableIndex);
+                                }
+                                catch { }
                             }
 
                         }
                         catch (Exception ex)
                         {
                             Log.Info(ex.Message);
+                            episodeMissed = true;
                             //We missed a positive scan here. We will try again at another time.
                             //If this is first scan, there is no time to stop now! We're huge!
                             //We'll catch these the next time.
@@ -146,16 +187,12 @@ namespace IntroSkip
             progress.Report(100.0);
         }
 
-        private double CalculateStep()
+        private static double CalculateStep(int seriesTotalRecordCount, PluginConfiguration config)
         {
-            var episodeQuery = LibraryManager.QueryItems(new InternalItemsQuery()
-            {
-                IncludeItemTypes = new[] {"Episode"},
-                IsVirtualItem    = false,
-                Recursive        = true
-            });
-
-            return 100.0 / episodeQuery.TotalRecordCount;
+            
+            var step =  100.0 / (seriesTotalRecordCount - config.Intros.GroupBy(savedIntros => savedIntros.SeriesInternalId).Count());
+            Log.Info($"Scheduled Task step: {step}");
+            return step;
         }
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()

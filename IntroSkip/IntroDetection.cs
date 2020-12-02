@@ -253,55 +253,82 @@ namespace IntroSkip
             return json;
         }
 
-        private string audio1_save_path = "";
+        private string audio1_save_path  = "";
         private string  audio2_save_path = "";
-
-        private const string EncodingDir = "../programdata/IntroEncodings/";
-
+        private const string EncodingDir = "../programdata/plugins/TitleSequence/";
+        
         private static string EpisodeComparable { get; set; }
-        private static string EpisodeToCompare { get; set; }
-
+        private static string EpisodeToCompare  { get; set; }
+        
         public List<IntroDto> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
+
             Logger.Info("Starting episode intro detection process.");
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
             Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
 
-           
+            //Create the the current episode input key. Season.InternalId + episode.InternalId
+            var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
+            var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
 
-            //if (!FileSystem.FileExists($"{EncodingDir}{episode1Input.Parent.InternalId}.wav"))
-            //{
-                if (EpisodeComparable is null || $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}" != EpisodeComparable)
+            IntroAudioFingerprint fingerPrintDataEpisode1 = null;
+            IntroAudioFingerprint fingerPrintDataEpisode2 = null;
+            
+            //check the fingerprint dictionary for the current episode key, it may have already been scanned.
+            if (IntroDetectionScheduledTask.AudioFingerPrints.ContainsKey(episode1InputKey))
+            {
+                fingerPrintDataEpisode1 = IntroDetectionScheduledTask.AudioFingerPrints[episode1InputKey];
+            }
+
+            if (IntroDetectionScheduledTask.AudioFingerPrints.ContainsKey(episode2InputKey))
+            {
+                fingerPrintDataEpisode2 = IntroDetectionScheduledTask.AudioFingerPrints[episode2InputKey];
+            }
+
+            //It is a new key we'll have to encode an audio clip
+            if (fingerPrintDataEpisode1 is null)
+            {
+                if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
                 {
-                    if (FileSystem.FileExists($"{EncodingDir}{EpisodeComparable}.wav"))
-                        FileSystem.DeleteFile($"{EncodingDir}{EpisodeComparable}.wav");
+                    try
+                    {
+                        //previous saved audio clip for episode1Input - remove it.
+                        if (FileSystem.FileExists($"{EncodingDir}{EpisodeComparable}.wav"))
+                            FileSystem.DeleteFile($"{EncodingDir}{EpisodeComparable}.wav");
+                    }
+                    catch { }
 
-                    EpisodeComparable = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
+                    EpisodeComparable = episode1InputKey;
 
                     audio1_save_path = $"{EncodingDir}{EpisodeComparable}.wav";
 
                     ExtractPCMAudio(episode1Input.Path, audio1_save_path);
                 }
-            //}
-            //else
-            //{
-            //    audio1_save_path = $"{EncodingDir}{episode1Input.Parent.InternalId}.wav";
-            //}
-
-            if (EpisodeToCompare is null || $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}" != EpisodeToCompare)
-            {
-                if (FileSystem.FileExists($"{EncodingDir}{EpisodeToCompare}.wav")) FileSystem.DeleteFile($"{EncodingDir}{EpisodeToCompare}.wav");
-                
-                EpisodeToCompare = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
-                
-                audio2_save_path = $"{EncodingDir}{EpisodeToCompare}.wav";
-
-                ExtractPCMAudio(episode2Input.Path, audio2_save_path);
             }
 
-            Logger.Info("Audio Extraction Done.");
+            if (fingerPrintDataEpisode2 is null)
+            {
+                if (EpisodeToCompare is null || episode2InputKey != EpisodeToCompare)
+                {
+                    try
+                    {
+                        //previous saved audio clip for episode2Input - remove it.
+                        if (FileSystem.FileExists($"{EncodingDir}{EpisodeToCompare}.wav"))
+                            FileSystem.DeleteFile($"{EncodingDir}{EpisodeToCompare}.wav");
+                    }
+                    catch { }
 
-            var introDto =  AnalyzeAudio();
+                    EpisodeToCompare = episode2InputKey;
+
+                    audio2_save_path = $"{EncodingDir}{EpisodeToCompare}.wav";
+
+                    ExtractPCMAudio(episode2Input.Path, audio2_save_path);
+                }
+            }
+
+            Logger.Info("Audio Extraction Ready.");
+
+            var introDto =  AnalyzeAudio(fingerPrintDataEpisode1, fingerPrintDataEpisode2);
 
             introDto[0].InternalId       = episode1Input.InternalId;
             introDto[0].SeriesInternalId = episode1Input.Parent.Parent.InternalId;
@@ -319,17 +346,23 @@ namespace IntroSkip
             return introDto;
         }
 
-        private List<IntroDto> AnalyzeAudio()
+        private List<IntroDto> AnalyzeAudio(IntroAudioFingerprint fingerPrintDataEpisode1, IntroAudioFingerprint fingerPrintDataEpisode2)
         {
             Logger.Info("Analyzing Audio...");
             Logger.Info(audio1_save_path);
 
-            var audio1Json = FingerPrintAudio(audio1_save_path);
-            var audio2Json = FingerPrintAudio(audio2_save_path);
+            if (fingerPrintDataEpisode1 is null && fingerPrintDataEpisode2 is null)
+            {
+                var audio1Json = FingerPrintAudio(audio1_save_path);
+                var audio2Json = FingerPrintAudio(audio2_save_path);
 
-            var fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio1Json);
-            var fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio2Json);
-            
+                fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio1Json);
+                fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio2Json);
+
+                IntroDetectionScheduledTask.AudioFingerPrints.Add(EpisodeComparable, fingerPrintDataEpisode1);
+                IntroDetectionScheduledTask.AudioFingerPrints.Add(EpisodeToCompare, fingerPrintDataEpisode2);
+            }
+
             var fingerprint1 = fingerPrintDataEpisode1.fingerprint;
             var fingerprint2 = fingerPrintDataEpisode2.fingerprint;
             
@@ -392,16 +425,17 @@ namespace IntroSkip
                 firstFileRegionEnd = 0.0;
                 secondFileRegionStart = 0.0;
                 secondFileRegionEnd = 0.0;
-                throw new InvalidIntroDetectionException("Episode common region is deemed too short to be considered an intro.");
+                throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-            if (commonRegionEnd - commonRegionStart < 10)
+            if (commonRegionEnd - commonRegionStart < 7)
             {
                 // -1 means intro does not exists
                 firstFileRegionStart  = -1.0;
                 firstFileRegionEnd    = -1.0;
                 secondFileRegionStart = -1.0;
                 secondFileRegionEnd   = -1.0;
-                throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
+                throw new InvalidIntroDetectionException("Episode common region is deemed too short to be considered an intro.");
+                
             } 
             else if (start == 0 && end == 0)
             {
@@ -412,7 +446,7 @@ namespace IntroSkip
             Logger.Info("Audio Analysis Complete.");
             
             
-            Task.Run(() => IntroFileDirectory.Instance.AudioFileCleanUp(audio2_save_path)).ConfigureAwait(false);
+            Task.Run(() => IntroServerEntryPoint.Instance.AudioFileCleanUp(audio2_save_path)).ConfigureAwait(false);
             
             return new List<IntroDto>()
             {
