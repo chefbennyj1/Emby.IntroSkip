@@ -10,29 +10,36 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using IntroSkip.Api;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
 // ReSharper disable ComplexConditionExpression
+// ReSharper disable once TooManyDependencies
 
 namespace IntroSkip
 {
     public class IntroDetection : IntroDto, IServerEntryPoint
     {
-        private IJsonSerializer JsonSerializer { get; }
-        private IFileSystem FileSystem         { get; }
-        private static ILogger Logger          { get; set; }
-        public static IntroDetection Instance  { get; private set; }
-
-        public IntroDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
+        private IJsonSerializer JsonSerializer     { get; }
+        private IFileSystem FileSystem             { get; }
+        private IFfmpegManager FfmpegManager       { get; }
+        private static ILogger Logger              { get; set; }
+        public static IntroDetection Instance      { get; private set; }
+        private IApplicationPaths ApplicationPaths { get; }
+        
+        public IntroDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan, IFfmpegManager f, IApplicationPaths applicationPaths)
         {
-            JsonSerializer = json;
-            FileSystem = file;
-            Logger = logMan.GetLogger(Plugin.Instance.Name);
-            Instance = this;
+            JsonSerializer   = json;
+            FileSystem       = file;
+            ApplicationPaths = applicationPaths;
+            FfmpegManager    = f;
+            Logger           = logMan.GetLogger(Plugin.Instance.Name);
+            Instance         = this;
         }
 
         // Keep integer in specified range
@@ -201,17 +208,18 @@ namespace IntroSkip
             return false;
         }
 
-        private static void ExtractPCMAudio(string input, string audioOut)
+        private void ExtractPCMAudio(string input, string audioOut)
         {
-            var ffmpegPath = "ffmpeg.exe";
+            var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
+            Logger.Info(ffmpegPath);
             var procStartInfo =
                 new ProcessStartInfo(ffmpegPath,
                     $"-t 00:10:00 -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
                 {
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true,
                 };
 
             var process = new Process {StartInfo = procStartInfo};
@@ -226,17 +234,20 @@ namespace IntroSkip
             }
         }
 
-        private static string FingerPrintAudio(string inputFileName)
+        private string FingerPrintAudio(string inputFileName)
         {
             // Using 300 second length to get a more accurate fingerprint, but it's not required
-            var fpcalc = "fpcalc.exe";
+            
+            var configPath = ApplicationPaths.PluginConfigurationsPath;
+            
+            var fpcalc = configPath + "/fpcalc.exe";//FfmpegManager.FfmpegConfiguration.EncoderPath.Replace("ffmpeg", "fpcalc");
             var procStartInfo =
                 new ProcessStartInfo(fpcalc, $"{inputFileName} -raw -length 600 -json")
                 {
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true,
                 };
 
             var process = new Process {StartInfo = procStartInfo};
@@ -254,15 +265,15 @@ namespace IntroSkip
         }
 
         private string audio1_save_path  = "";
-        private string  audio2_save_path = "";
-        private const string EncodingDir = "../programdata/plugins/TitleSequence/";
+        private string audio2_save_path  = "";
+        //private string EncodingDir = ApplicationPaths.PluginConfigurationsPath + "/";
         
         private static string EpisodeComparable { get; set; }
         private static string EpisodeToCompare  { get; set; }
         
         public List<IntroDto> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
-
+            var configPath = ApplicationPaths.PluginConfigurationsPath + "/";
             Logger.Info("Starting episode intro detection process.");
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
             Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
@@ -277,30 +288,33 @@ namespace IntroSkip
             //check the fingerprint dictionary for the current episode key, it may have already been scanned.
             if (IntroDetectionScheduledTask.AudioFingerPrints.ContainsKey(episode1InputKey))
             {
+                Logger.Info($"Finger print dictionary contains episode input");
                 fingerPrintDataEpisode1 = IntroDetectionScheduledTask.AudioFingerPrints[episode1InputKey];
             }
 
             if (IntroDetectionScheduledTask.AudioFingerPrints.ContainsKey(episode2InputKey))
             {
+                Logger.Info($"Finger print dictionary contains episode input");
                 fingerPrintDataEpisode2 = IntroDetectionScheduledTask.AudioFingerPrints[episode2InputKey];
             }
 
             //It is a new key we'll have to encode an audio clip
             if (fingerPrintDataEpisode1 is null)
             {
+                Logger.Info($"Beginning Audio Extraction for Comparer Episode");
                 if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
                 {
                     try
                     {
                         //previous saved audio clip for episode1Input - remove it.
-                        if (FileSystem.FileExists($"{EncodingDir}{EpisodeComparable}.wav"))
-                            FileSystem.DeleteFile($"{EncodingDir}{EpisodeComparable}.wav");
+                        if (FileSystem.FileExists($"{configPath}{EpisodeComparable}.wav"))
+                            FileSystem.DeleteFile($"{configPath}{EpisodeComparable}.wav");
                     }
                     catch { }
 
                     EpisodeComparable = episode1InputKey;
 
-                    audio1_save_path = $"{EncodingDir}{EpisodeComparable}.wav";
+                    audio1_save_path = $"{configPath}{EpisodeComparable}.wav";
 
                     ExtractPCMAudio(episode1Input.Path, audio1_save_path);
                 }
@@ -308,19 +322,20 @@ namespace IntroSkip
 
             if (fingerPrintDataEpisode2 is null)
             {
+                Logger.Info($"Beginning Audio Extraction for Comparing Episode");
                 if (EpisodeToCompare is null || episode2InputKey != EpisodeToCompare)
                 {
                     try
                     {
                         //previous saved audio clip for episode2Input - remove it.
-                        if (FileSystem.FileExists($"{EncodingDir}{EpisodeToCompare}.wav"))
-                            FileSystem.DeleteFile($"{EncodingDir}{EpisodeToCompare}.wav");
+                        if (FileSystem.FileExists($"{configPath}{EpisodeToCompare}.wav"))
+                            FileSystem.DeleteFile($"{configPath}{EpisodeToCompare}.wav");
                     }
                     catch { }
 
                     EpisodeToCompare = episode2InputKey;
 
-                    audio2_save_path = $"{EncodingDir}{EpisodeToCompare}.wav";
+                    audio2_save_path = $"{configPath}{EpisodeToCompare}.wav";
 
                     ExtractPCMAudio(episode2Input.Path, audio2_save_path);
                 }
@@ -351,22 +366,30 @@ namespace IntroSkip
             Logger.Info("Analyzing Audio...");
             Logger.Info(audio1_save_path);
 
-            if (fingerPrintDataEpisode1 is null && fingerPrintDataEpisode2 is null)
+            if (fingerPrintDataEpisode1 is null)
             {
                 var audio1Json = FingerPrintAudio(audio1_save_path);
-                var audio2Json = FingerPrintAudio(audio2_save_path);
-
                 fingerPrintDataEpisode1 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio1Json);
-                fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio2Json);
-
+                Logger.Info($"Adding new finger print data to dictionary. Dictionary Count {IntroDetectionScheduledTask.AudioFingerPrints.Count}");
                 IntroDetectionScheduledTask.AudioFingerPrints.Add(EpisodeComparable, fingerPrintDataEpisode1);
-                IntroDetectionScheduledTask.AudioFingerPrints.Add(EpisodeToCompare, fingerPrintDataEpisode2);
+                Logger.Info($"Finger print data added to dictionary. Dictionary Count {IntroDetectionScheduledTask.AudioFingerPrints.Count}");
             }
+
+            if (fingerPrintDataEpisode2 is null)
+            {
+                var audio2Json = FingerPrintAudio(audio2_save_path);
+                fingerPrintDataEpisode2 = JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(audio2Json);
+                Logger.Info($"Adding new finger print data to dictionary. Dictionary Count {IntroDetectionScheduledTask.AudioFingerPrints.Count}");
+                IntroDetectionScheduledTask.AudioFingerPrints.Add(EpisodeToCompare, fingerPrintDataEpisode2);
+                Logger.Info($"Finger print data added to dictionary. Dictionary Count {IntroDetectionScheduledTask.AudioFingerPrints.Count}");
+            }
+            
 
             var fingerprint1 = fingerPrintDataEpisode1.fingerprint;
             var fingerprint2 = fingerPrintDataEpisode2.fingerprint;
             
             Logger.Info("Analyzing Finger Prints..");
+
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
             if (fingerprint1.Count % 2 != 0)
             {
@@ -380,8 +403,8 @@ namespace IntroSkip
             Logger.Info($"The calculated fingerprint offset is {offset}");
 
             var _tup_1 = getAlignedFingerprints(offset, fingerprint1, fingerprint2);
-            var f1 = _tup_1.Item1;
-            var f2 = _tup_1.Item2;
+            var f1     = _tup_1.Item1;
+            var f2     = _tup_1.Item2;
 
 
             //Logger.Info("Calculating Hamming Distances.");
@@ -466,32 +489,7 @@ namespace IntroSkip
 
             
         }
-
-        private static void ExtractFingerPrintedIntroAudio(string input, string output, TimeSpan start, TimeSpan length)
-        {
-            var ffmpegPath = "ffmpeg.exe";
-            var procStartInfo =
-                new ProcessStartInfo(ffmpegPath,
-                    $"-ss {start:c} -t {length:c} -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{output}.wav\"")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                };
-
-            var process = new Process {StartInfo = procStartInfo};
-
-            process.Start();
-
-            string processOutput = null;
-            
-            while ((processOutput = process.StandardError.ReadLine()) != null)
-            {
-                //Logger.Info(processOutput);
-            }
-        }
-
+        
         public List<IntroDto> CompareAudioFingerPrint(List<uint> fingerPrint, BaseItem episodeToCompare)
         {
             ExtractPCMAudio(episodeToCompare.Path, $"{episodeToCompare.InternalId.ToString()}.wav");
@@ -507,7 +505,7 @@ namespace IntroSkip
 
         public void Run()
         {
-            throw new NotImplementedException();
+            
         }
 
 

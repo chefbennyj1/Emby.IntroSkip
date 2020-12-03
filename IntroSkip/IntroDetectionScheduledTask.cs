@@ -88,19 +88,11 @@ namespace IntroSkip
 
                     var episodeComparableIndex = 1;
                     var episodeToCompareIndex  = 0;
-                    var episodeMissed          = false;
                     var totalRecordIndex       = episodeQuery.TotalRecordCount -1; //Zero based total record count.
                     var failedMatches          = new Dictionary<int, int>();
                     
                     for(episodeToCompareIndex = 0; episodeToCompareIndex <= totalRecordIndex; episodeToCompareIndex++)
                     {
-                        if (episodeMissed)
-                        {
-                            episodeComparableIndex = episodeComparableIndex == totalRecordIndex ? totalRecordIndex : episodeComparableIndex++;
-                            episodeToCompareIndex  = 0;
-                            episodeMissed          = false;
-                        }
-
                         //Check to see if this match has been attempted before
                         if (failedMatches.Any())
                         {
@@ -108,18 +100,25 @@ namespace IntroSkip
                             {
                                 try
                                 {
-                                    if (failedMatches[episodeToCompareIndex] == episodeComparableIndex) continue;
+                                    if (failedMatches[episodeToCompareIndex] == episodeComparableIndex)
+                                    {
+                                        Log.Info($"Audio Finger print has already been attempted. Move next");
+                                        continue;
+                                    }
                                 }
                                 catch { }
 
                                 try
                                 {
-                                    if (failedMatches[episodeComparableIndex] == episodeToCompareIndex) continue;
+                                    if (failedMatches[episodeComparableIndex] == episodeToCompareIndex) 
+                                    {
+                                        Log.Info($"Audio Finger print has already been attempted. Move next");
+                                        continue;
+                                    }
                                 }
                                 catch { }
                             }
                         }
-
 
                         //We already have both these episode;
                         if (config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeToCompareIndex].InternalId) && 
@@ -128,6 +127,7 @@ namespace IntroSkip
                         //Don't compare the same episode with it's self 
                         if (episodeToCompareIndex == episodeComparableIndex) continue;
                         
+                        Log.Info($"No intro recorded for episode {episodeToCompareIndex + 1}");
                         try
                         {
                             var data = await Task.FromResult(
@@ -144,17 +144,27 @@ namespace IntroSkip
                             }
 
                             Plugin.Instance.UpdateConfiguration(config);
-
+                            
                             Log.Info("Episode Intro Data obtained successfully.");
+
+                            if (episodeToCompareIndex == totalRecordIndex && episodeComparableIndex < totalRecordIndex)
+                            {
+                                episodeComparableIndex++;
+                                episodeToCompareIndex = 0;
+                            }
                             
                         }
                         catch (InvalidIntroDetectionException ex)
                         {
                             Log.Info(ex.Message);
+                            //var maxFailedMatches = (totalRecordIndex * 2) - 2; //-2 because we are zero based, and also we don't compare an episode with itself.
+                            //if (failedMatches.Count() >= maxFailedMatches)
+                            //{
                             
-                            //We have exhausted all our episode comparing
-                            if (episodeComparableIndex >= totalRecordIndex - 1 && episodeToCompareIndex == totalRecordIndex)
+                            if (episodeComparableIndex > totalRecordIndex -2 && episodeToCompareIndex > totalRecordIndex -2)
                             {
+                                //We have exhausted all our episode comparing
+                                Log.Info("To many failed attempts, episode has no intro.");
                                 config.Intros.Add(new IntroDto()
                                 {
                                     HasIntro = false,
@@ -162,10 +172,16 @@ namespace IntroSkip
                                     InternalId = episodeQuery.Items[episodeToCompareIndex].InternalId
                                 });
                             }
-                            else
+                            //}
+                            
+                            if (episodeToCompareIndex >= totalRecordIndex - 2)
                             {
-                                episodeMissed = true;
-                                try //This key value pair should never get to exist, however it might - catch the error.
+                                episodeComparableIndex++;
+                                episodeToCompareIndex = 0;
+                            } 
+                            else 
+                            {
+                                try //This key value pair should never have been added twice, however it might - catch the error.
                                 {
                                     failedMatches.Add(episodeToCompareIndex, episodeComparableIndex);
                                 }
@@ -176,7 +192,7 @@ namespace IntroSkip
                         catch (Exception ex)
                         {
                             Log.Info(ex.Message);
-                            episodeMissed = true;
+                            
                             //We missed a positive scan here. We will try again at another time.
                             //If this is first scan, there is no time to stop now! We're huge!
                             //We'll catch these the next time.

@@ -1,4 +1,6 @@
-﻿using MediaBrowser.Controller.Plugins;
+﻿using System.Runtime.InteropServices;
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 
 namespace IntroSkip
@@ -6,22 +8,19 @@ namespace IntroSkip
     public class IntroServerEntryPoint : IServerEntryPoint
     {
         private IFileSystem FileSystem { get; }
-      
+        public IApplicationPaths ApplicationPaths { get; }
+        public string FolderPathDelimiter { get; set; }
+        
         public static IntroServerEntryPoint Instance { get; private set; }
         
-        public IntroServerEntryPoint(IFileSystem file)
+        public IntroServerEntryPoint(IFileSystem file, IApplicationPaths applicationPaths)
         {
             FileSystem = file;
+            ApplicationPaths = applicationPaths;
             Instance = this;
         }
 
-        private void MaintainIntroEncodingDirectory()
-        {
-            if (!FileSystem.DirectoryExists("../programdata/plugins/TitleSequence/"))
-            {
-                FileSystem.CreateDirectory("../programdata/plugins/TitleSequence/");
-            }
-        }
+        
         
         public void AudioFileCleanUp(string audio_file_2, string audio_file_1 = null)
         {
@@ -40,6 +39,15 @@ namespace IntroSkip
             }
         }
 
+        private static bool IsUnix()
+        {
+            var isUnix = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                         RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+            return isUnix;
+        }
+    
+
+
         public void Dispose()
         {
             
@@ -47,7 +55,7 @@ namespace IntroSkip
 
         public void Run()
         {
-            MaintainIntroEncodingDirectory();
+            
         }
     }
 }
