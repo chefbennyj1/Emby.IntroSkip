@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Api;
 using IntroSkip.Configuration;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
@@ -23,17 +24,19 @@ namespace IntroSkip
         private ILibraryManager LibraryManager      { get; }
         private IUserManager UserManager            { get; }
         private IFileSystem FileSystem              { get; }
+        private IApplicationPaths ApplicationPaths  { get; set; }
         public long CurrentSeriesEncodingInternalId { get; set; }
         private static double Step                  { get; set; }
         
-        public static Dictionary<string, IntroAudioFingerprint> AudioFingerPrints { get; private set; }
+        //public static Dictionary<string, IntroAudioFingerprint> AudioFingerPrints { get; private set; }
         
-        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file)
+        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths)
         {
             Log            = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager = libMan;
             UserManager    = user;
             FileSystem     = file;
+            ApplicationPaths = paths;
         }
       
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
@@ -57,10 +60,12 @@ namespace IntroSkip
 
             foreach (var series in seriesQuery.Items)
             {
-                Step =+ Step;
+                Step =+ 0.1;
+
                 progress.Report(Step);
 
                 Log.Info(series.Name);
+
                 var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                 {
                     Parent           = series,
@@ -72,9 +77,11 @@ namespace IntroSkip
 
                 foreach (var season in seasonQuery.Items)
                 {
+
+                    RemoveAllPreviousSeasonEncodings();
+
                     //Only keep finger print data for an individual seasons
-                    AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
-                    
+                    //AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
 
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
@@ -85,122 +92,93 @@ namespace IntroSkip
                         IsVirtualItem    = false
 
                     });
-
-                    var episodeComparableIndex = 1;
-                    var episodeToCompareIndex  = 0;
-                    var totalRecordIndex       = episodeQuery.TotalRecordCount -1; //Zero based total record count.
-                    var failedMatches          = new Dictionary<int, int>();
+                   
+                    var index = 0;
                     
-                    for(episodeToCompareIndex = 0; episodeToCompareIndex <= totalRecordIndex; episodeToCompareIndex++)
+                    //All the episodes which haven't been matched.
+                    var exceptIds = new HashSet<long>(config.Intros.Select(y => y.InternalId).Distinct());
+                    var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
+
+                    for(index = 0; index <= unmatched.Count() -1; index++)
                     {
-                        //Check to see if this match has been attempted before
-                        if (failedMatches.Any())
+                        Log.Info($"No intro recorded for { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }");
+                        
+                        for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() -1; episodeComparableIndex ++)
                         {
-                            if (failedMatches.ContainsKey(episodeToCompareIndex) || failedMatches.ContainsKey(episodeComparableIndex))
+                            Log.Info($" Comparing: \n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }" +
+                                     $"\n{ episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name } S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: { episodeQuery.Items[episodeComparableIndex].IndexNumber }");
+                           
+                            //Don't compare the same episode with itself.
+                            if (episodeQuery.Items[episodeComparableIndex].InternalId == unmatched[index].InternalId)
                             {
-                                try
+                                Log.Info($" Can not compare: \n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } with itself MoveNext()");
+                                continue;
+                            }
+
+                            if (config.Intros.Exists(e => e.InternalId == unmatched[index].InternalId) &&
+                                config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId)) continue;
+
+                            try
+                            {
+                                var data = await Task.FromResult(IntroDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex],unmatched[index]));
+
+                                foreach (var dataPoint in data)
                                 {
-                                    if (failedMatches[episodeToCompareIndex] == episodeComparableIndex)
+                                    if (!config.Intros.Exists(intro => intro.InternalId == dataPoint.InternalId))
                                     {
-                                        Log.Info($"Audio Finger print has already been attempted. Move next");
-                                        continue;
+                                        config.Intros.Add(dataPoint);
                                     }
                                 }
-                                catch { }
 
-                                try
+                                Plugin.Instance.UpdateConfiguration(config);
+                            
+                                Log.Info("Episode Intro Data obtained successfully.");
+
+                            }
+                            catch (InvalidIntroDetectionException ex)
+                            {
+                                Log.Info(ex.Message);
+
+                                if (episodeComparableIndex + 1 > episodeQuery.Items.Count() - 1)
                                 {
-                                    if (failedMatches[episodeComparableIndex] == episodeToCompareIndex) 
+                                    //We have exhausted all our episode comparing
+                                    Log.Info($"{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } has no intro.");
+                                    config.Intros.Add(new IntroDto()
                                     {
-                                        Log.Info($"Audio Finger print has already been attempted. Move next");
-                                        continue;
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-
-                        //We already have both these episode;
-                        if (config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeToCompareIndex].InternalId) && 
-                            config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId)) continue;
-                        
-                        //Don't compare the same episode with it's self 
-                        if (episodeToCompareIndex == episodeComparableIndex) continue;
-                        
-                        Log.Info($"No intro recorded for episode {episodeToCompareIndex + 1}");
-                        try
-                        {
-                            var data = await Task.FromResult(
-                                IntroDetection.Instance.SearchAudioFingerPrint(
-                                    episodeQuery.Items[episodeComparableIndex],
-                                    episodeQuery.Items[episodeToCompareIndex]));
-
-                            foreach (var dataPoint in data)
-                            {
-                                if (!config.Intros.Exists(intro => intro.InternalId == dataPoint.InternalId))
-                                {
-                                    config.Intros.Add(dataPoint);
+                                        HasIntro = false,
+                                        SeriesInternalId = series.InternalId,
+                                        InternalId = episodeQuery.Items[index].InternalId
+                                    });
+                                
                                 }
                             }
-
-                            Plugin.Instance.UpdateConfiguration(config);
-                            
-                            Log.Info("Episode Intro Data obtained successfully.");
-
-                            if (episodeToCompareIndex == totalRecordIndex && episodeComparableIndex < totalRecordIndex)
+                            catch (Exception ex)
                             {
-                                episodeComparableIndex++;
-                                episodeToCompareIndex = 0;
+                                Log.Info(ex.Message);
+                            
+                                //We missed a positive scan here. We will try again at another time.
+                                //If this is first scan, there is no time to stop now! We're huge!
+                                //We'll catch these the next time.
                             }
-                            
-                        }
-                        catch (InvalidIntroDetectionException ex)
-                        {
-                            Log.Info(ex.Message);
-                            //var maxFailedMatches = (totalRecordIndex * 2) - 2; //-2 because we are zero based, and also we don't compare an episode with itself.
-                            //if (failedMatches.Count() >= maxFailedMatches)
-                            //{
-                            
-                            if (episodeComparableIndex > totalRecordIndex -2 && episodeToCompareIndex > totalRecordIndex -2)
-                            {
-                                //We have exhausted all our episode comparing
-                                Log.Info("To many failed attempts, episode has no intro.");
-                                config.Intros.Add(new IntroDto()
-                                {
-                                    HasIntro = false,
-                                    SeriesInternalId = series.InternalId,
-                                    InternalId = episodeQuery.Items[episodeToCompareIndex].InternalId
-                                });
-                            }
-                            //}
-                            
-                            if (episodeToCompareIndex >= totalRecordIndex - 2)
-                            {
-                                episodeComparableIndex++;
-                                episodeToCompareIndex = 0;
-                            } 
-                            else 
-                            {
-                                try //This key value pair should never have been added twice, however it might - catch the error.
-                                {
-                                    failedMatches.Add(episodeToCompareIndex, episodeComparableIndex);
-                                }
-                                catch { }
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Info(ex.Message);
-                            
-                            //We missed a positive scan here. We will try again at another time.
-                            //If this is first scan, there is no time to stop now! We're huge!
-                            //We'll catch these the next time.
                         }
                     }
                 }
             }
             progress.Report(100.0);
+        }
+
+        private void RemoveAllPreviousSeasonEncodings()
+        {
+            var introEncodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
+            
+            var files = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
+            if (!files.Any()) return;
+            
+            foreach (var file in files)
+            {
+                Log.Info($"Removing encoding file {file.FullName}");
+                FileSystem.DeleteFile(file.FullName);
+            }           
         }
 
         private static double CalculateStep(int seriesTotalRecordCount, PluginConfiguration config)
