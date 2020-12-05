@@ -44,6 +44,11 @@ namespace IntroSkip
             {
                 Name                 = "IntroSkipConfigurationPageJS",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.js"
+            },
+            new PluginPageInfo
+            {
+            Name                 = "momentJs",
+            EmbeddedResourcePath = GetType().Namespace + ".Configuration.moment.js"
             }
         };
     }

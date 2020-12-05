@@ -214,7 +214,7 @@ namespace IntroSkip
             Logger.Info(ffmpegPath);
             var procStartInfo =
                 new ProcessStartInfo(ffmpegPath,
-                    $"-t 00:10:00 -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
+                    $"-t 00:15:00 -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError  = true,
@@ -242,7 +242,7 @@ namespace IntroSkip
             
             var fpcalc = configPath + "fpcalc.exe";
             var procStartInfo =
-                new ProcessStartInfo(fpcalc, $"{inputFileName} -raw -length 600 -json")
+                new ProcessStartInfo(fpcalc, $"{inputFileName} -raw -length 900 -json")
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError  = true,
@@ -397,7 +397,7 @@ namespace IntroSkip
             var start  = _tup_2.Item1;
             var end    = _tup_2.Item2;
 
-            double secondsPerSample = 600.0 / fingerprint1.Count;
+            double secondsPerSample = 900.0 / fingerprint1.Count;
 
             var offsetInSeconds   = offset * secondsPerSample;
             var commonRegionStart = start * secondsPerSample;

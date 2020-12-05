@@ -13,11 +13,13 @@
 <ItemGroup>
   <None Remove="Configuration\IntroSkipConfigurationPage.html" />
   <None Remove="Configuration\IntroSkipConfigurationPage.js" />
+  <None Remove="Configuration\moment.js" />
 </ItemGroup>
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
+  <EmbeddedResource Include="Configuration\moment.js" />
 </ItemGroup>
 
 

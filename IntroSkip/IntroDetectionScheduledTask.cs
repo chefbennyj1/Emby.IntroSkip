@@ -99,6 +99,11 @@ namespace IntroSkip
                     var exceptIds = new HashSet<long>(config.Intros.Select(y => y.InternalId).Distinct());
                     var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
+                    if (!unmatched.Any())
+                    {
+                        Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
+                    }
+
                     for(index = 0; index <= unmatched.Count() -1; index++)
                     {
                         Log.Info($"No intro recorded for { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }");
@@ -111,12 +116,30 @@ namespace IntroSkip
                             //Don't compare the same episode with itself.
                             if (episodeQuery.Items[episodeComparableIndex].InternalId == unmatched[index].InternalId)
                             {
-                                Log.Info($" Can not compare: \n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } with itself MoveNext()");
+                                Log.Info($" Can not compare { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } with itself MoveNext()");
+                                
+                                //We have exhausted all our episode comparing
+                                if (episodeComparableIndex == episodeQuery.Items.Count() - 1)
+                                {
+                                    
+                                    Log.Info($"{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } has no intro.");
+                                    config.Intros.Add(new IntroDto()
+                                    {
+                                        HasIntro = false,
+                                        SeriesInternalId = series.InternalId,
+                                        InternalId = episodeQuery.Items[index].InternalId
+                                    });
+                                }
                                 continue;
                             }
 
                             if (config.Intros.Exists(e => e.InternalId == unmatched[index].InternalId) &&
-                                config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId)) continue;
+                                config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId))
+                            {
+                                Log.Info($"\n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } OK" +
+                                         $"\n{ episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name } S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: { episodeQuery.Items[episodeComparableIndex].IndexNumber } OK");
+                                continue;
+                            }
 
                             try
                             {
@@ -131,8 +154,8 @@ namespace IntroSkip
                                 }
 
                                 Plugin.Instance.UpdateConfiguration(config);
-                            
                                 Log.Info("Episode Intro Data obtained successfully.");
+                                episodeComparableIndex = episodeQuery.Items.Count() -1; //Exit out of this loop
 
                             }
                             catch (InvalidIntroDetectionException ex)

@@ -3,26 +3,28 @@
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
                 
-                <div class="scrollY" style="max-height: 35em; margin:0 2em 2em 2em">
-                    <table class="tblEpisodeIntroSuccessfulResults table detailTable" style="width: 100%;">
-                        <thead>
-                        <tr style="text-align: left;">
-                            <th class="detailTableHeaderCell" data-priority="2" style="width: 5%">Series</th>
-                            <th class="detailTableHeaderCell" data-priority="2" style="width: 5%">Season</th>
-                            <th class="detailTableHeaderCell" data-priority="2" style="width: 5%">Episode</th>
-                            <th class="detailTableHeaderCell" data-priority="3" style="width: 20%">Has Intro</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="width: 5%">Intro Start</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="width: 5%">Intro End</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="width: 5%">Remove</th>
-                            <th class="detailTableHeaderCell" data-priority="1"></th>
-                        </tr>
-                        </thead>
-                        <tbody class="introResultBody"></tbody>
-                    </table>
+                <div style="display: flex; align-items: center; padding-bottom: 6%">
+                    <!-- Emby Series List -->
+                    <div style="flex-grow: 1;" class="selectContainer">
+                        <label class="selectLabel" for="selectEmbySeries">Series:</label>
+                        <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                        <div class="selectArrowContainer">
+                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                        </div>
+                        <div class="fieldDescription">
+                            Show saved intro data for this series.
+                        </div>
+                    </div>
+                    <!-- Select Button -->
+                    <button id="addButton" is="paper-icon-button-light" type="button" data-theme="b" class="emby-input-iconbutton paper-icon-button-light" style="margin-left: 1em; bottom: 3em;">
+                        <i class="md-icon">list</i>
+                    </button>
                 </div>
                 
-                <div class="scrollY" style="max-height: 35em; margin:0 2em 2em 2em">
-                    <table class="tblEpisodeIntroFailedResults table detailTable" style="width: 100%;">
+                <hr/>
+
+                <div class="introResults scrollY" style="max-height: 34em; margin:0 2em 2em 2em">
+                    <table class="tblEpisodeIntroResults table detailTable" style="width: 100%;">
                         <thead>
                         <tr style="text-align: left;">
                             <th class="detailTableHeaderCell" data-priority="2" style="width: 5%">Series</th>
