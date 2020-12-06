@@ -10,6 +10,13 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceDataService : IService
     {
+        [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        public class RemoveTitleSequenceRequest : IReturn<string>
+        {
+            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long InternalId { get; set; }
+        }
+
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class TitleSequenceRequest : IReturn<string>
         {
@@ -33,6 +40,14 @@ namespace IntroSkip.Api
             JsonSerializer = json;
             LibraryManager = libraryManager;
             UserManager    = user;
+        }
+
+        public string Delete(RemoveTitleSequenceRequest request)
+        {
+            var config = Plugin.Instance.Configuration;
+            config.Intros = config.Intros.Where(item => item.InternalId != request.InternalId).ToList();
+            Plugin.Instance.UpdateConfiguration(config);
+            return "OK";
         }
 
         public string Get(SeriesTitleSequenceRequest request)

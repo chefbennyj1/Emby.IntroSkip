@@ -1,7 +1,9 @@
 ﻿using System;
 
-namespace IntroSkip.Api {
-    public class IntroDto {
+namespace IntroSkip {
+
+    public class IntroDto 
+    {
         public long SeriesInternalId { get; set; }
         public long InternalId       { get; set; }
         public bool HasIntro         { get; set; }
