@@ -73,7 +73,7 @@ namespace IntroSkip.Api
 
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
 
                 if (titleSequences.EpisodeTitleSequences.Any())
                 {
@@ -90,7 +90,7 @@ namespace IntroSkip.Api
                 titleSequences.EpisodeTitleSequences.Remove(episode);
                 
                 //We'll have to double check this!
-                IntroServerEntryPoint.Instance.SaveTitleSequenceJson(request.SeriesId, request.SeasonId, titleSequences);
+                IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
 
                 return "OK";
             }
@@ -110,7 +110,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
                 if (titleSequences.EpisodeTitleSequences is null) return "{}";
 
                 titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber);
@@ -132,7 +132,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
                 if (titleSequences.EpisodeTitleSequences is null) return "{}";
 
                 var episodeTitleSequences = titleSequences.EpisodeTitleSequences;

@@ -79,7 +79,7 @@ namespace IntroSkip
                     RemoveAllPreviousSeasonEncodings();
                     Log.Info("File clean up complete");
                     
-                    var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequences(series.InternalId, season.InternalId);
+                    var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
                     
                     var episodeTitleSequences = titleSequence.EpisodeTitleSequences ?? new List<EpisodeTitleSequence>();
                     
@@ -142,7 +142,7 @@ namespace IntroSkip
                                 }
                                 
                                 titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                IntroServerEntryPoint.Instance.SaveTitleSequenceJson(series.InternalId, season.InternalId, titleSequence);
+                                IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
 
                                 //Plugin.Instance.UpdateConfiguration(config);
                                 Log.Info("Episode Intro Data obtained successfully.");
@@ -165,7 +165,7 @@ namespace IntroSkip
                                     });
                                     
                                     titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                    IntroServerEntryPoint.Instance.SaveTitleSequenceJson(series.InternalId, season.InternalId, titleSequence);
+                                    IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
 
                                 }
                             }

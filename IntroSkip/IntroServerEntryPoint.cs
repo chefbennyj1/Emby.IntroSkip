@@ -28,7 +28,7 @@ namespace IntroSkip
             Instance = this;
         }
         
-        public TitleSequenceDto GetTitleSequences(long seriesId, long seasonId)
+        public TitleSequenceDto GetTitleSequenceFromFile(long seriesId, long seasonId)
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             var filePath = $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json";
@@ -42,7 +42,7 @@ namespace IntroSkip
 
         }
 
-        public void SaveTitleSequenceJson(long seriesId, long seasonId, TitleSequenceDto introDto)
+        public void SaveTitleSequenceJsonToFile(long seriesId, long seasonId, TitleSequenceDto introDto)
         {
             Log.Info($"Saving {seriesId}{seasonId}.json");
             
