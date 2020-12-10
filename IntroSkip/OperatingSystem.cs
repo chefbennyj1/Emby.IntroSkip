@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿//https://mariusschulz.com/blog/detecting-the-operating-system-in-net-core
+
+using System.Runtime.InteropServices;
 
 namespace IntroSkip
 {
