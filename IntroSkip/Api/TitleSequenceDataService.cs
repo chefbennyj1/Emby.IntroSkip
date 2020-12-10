@@ -151,16 +151,18 @@ namespace IntroSkip.Api
 
         private TimeSpan CalculateAverageTitleSequenceLength(TitleSequenceDto titleSequenceDto)
         {
-            var titleSequences = titleSequenceDto.EpisodeTitleSequences.Where(intro => intro.HasIntro).ToList();
-            var titlesLength = 0;
+            var titleSequences     = titleSequenceDto.EpisodeTitleSequences.Where(intro => intro.HasIntro).ToList();
+            var titlesLength       = 0;
+            var titleSequenceCount = 0;
             foreach (var item in titleSequences)
             {
                 var length = item.IntroEnd.Seconds - item.IntroStart.Seconds;
-                if (length < 0) length *= -1;
+                if (length <= 0) continue;
+                titleSequenceCount += 1;
                 titlesLength += length;
             }
             
-            var average = titlesLength / (titleSequences.Count());
+            var average = titlesLength / (titleSequenceCount);
             return TimeSpan.FromSeconds(average);
         }
 

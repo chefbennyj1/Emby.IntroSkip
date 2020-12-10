@@ -239,7 +239,7 @@ namespace IntroSkip
             
             var configPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar;
             
-            var fpcalc = configPath + "fpcalc.exe";
+            var fpcalc = configPath + "fpcalc" + (OperatingSystem.IsWindows() ? ".exe" : "");
             var procStartInfo =
                 new ProcessStartInfo(fpcalc, $"{inputFileName} -raw -length 600 -json")
                 {
