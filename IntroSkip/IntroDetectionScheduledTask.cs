@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using IntroSkip.Api;
-using IntroSkip.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
 // ReSharper disable once TooManyDependencies
@@ -25,29 +24,26 @@ namespace IntroSkip
         private IUserManager UserManager            { get; }
         private IFileSystem FileSystem              { get; }
         private IApplicationPaths ApplicationPaths  { get; set; }
+        private IJsonSerializer JsonSerializer      { get; }
         public long CurrentSeriesEncodingInternalId { get; set; }
         private static double Step                  { get; set; }
         
         //public static Dictionary<string, IntroAudioFingerprint> AudioFingerPrints { get; private set; }
         
-        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths)
+        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
         {
-            Log            = logManager.GetLogger(Plugin.Instance.Name);
-            LibraryManager = libMan;
-            UserManager    = user;
-            FileSystem     = file;
+            Log              = logManager.GetLogger(Plugin.Instance.Name);
+            LibraryManager   = libMan;
+            UserManager      = user;
+            JsonSerializer   = jsonSerializer;
+            FileSystem       = file;
             ApplicationPaths = paths;
         }
-      
+        
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             Log.Info("Beginning Intro Task");
-            var config = Plugin.Instance.Configuration;
-            
-            if (config.Intros is null)
-            {
-                config.Intros = new List<IntroDto>();
-            }
+            progress.Report(0.1);
 
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
@@ -56,16 +52,16 @@ namespace IntroSkip
                 User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             });
 
-            Step = CalculateStep(seriesQuery.TotalRecordCount, config);
+            Step = CalculateStep(seriesQuery.TotalRecordCount);
 
             foreach (var series in seriesQuery.Items)
             {
-                Step =+ 0.1;
-
+                
+                Step = Step >= 88.0 ? Step += 0 : Step =+ 0.01;
                 progress.Report(Step);
 
                 Log.Info(series.Name);
-
+               
                 var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                 {
                     Parent           = series,
@@ -77,9 +73,16 @@ namespace IntroSkip
 
                 foreach (var season in seasonQuery.Items)
                 {
+                    Step =+ 0.01;
+                    progress.Report(Step);
 
                     RemoveAllPreviousSeasonEncodings();
-
+                    Log.Info("File clean up complete");
+                    
+                    var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequences(series.InternalId, season.InternalId);
+                    
+                    var episodeTitleSequences = titleSequence.EpisodeTitleSequences ?? new List<EpisodeTitleSequence>();
+                    
                     //Only keep finger print data for an individual seasons
                     //AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
 
@@ -92,11 +95,10 @@ namespace IntroSkip
                         IsVirtualItem    = false
 
                     });
-                   
-                    var index = 0;
                     
                     //All the episodes which haven't been matched.
-                    var exceptIds = new HashSet<long>(config.Intros.Select(y => y.InternalId).Distinct());
+                    
+                    var exceptIds = new HashSet<long>(episodeTitleSequences.Select(y => y.InternalId).Distinct());
                     var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
                     if (!unmatched.Any())
@@ -104,37 +106,23 @@ namespace IntroSkip
                         Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
                     }
 
-                    for(index = 0; index <= unmatched.Count() -1; index++)
+                    for(var index = 0; index <= unmatched.Count() -1; index++)
                     {
-                        Log.Info($"No intro recorded for { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }");
+                        Log.Info($"Checking Title Sequence recorded for { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }");
                         
                         for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() -1; episodeComparableIndex ++)
                         {
-                            Log.Info($" Comparing: \n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber }" +
-                                     $"\n{ episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name } S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: { episodeQuery.Items[episodeComparableIndex].IndexNumber }");
-                           
+                            
                             //Don't compare the same episode with itself.
                             if (episodeQuery.Items[episodeComparableIndex].InternalId == unmatched[index].InternalId)
                             {
                                 Log.Info($" Can not compare { unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } with itself MoveNext()");
-                                
-                                //We have exhausted all our episode comparing
-                                if (episodeComparableIndex == episodeQuery.Items.Count() - 1)
-                                {
-                                    
-                                    Log.Info($"{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } has no intro.");
-                                    config.Intros.Add(new IntroDto()
-                                    {
-                                        HasIntro = false,
-                                        SeriesInternalId = series.InternalId,
-                                        InternalId = episodeQuery.Items[index].InternalId
-                                    });
-                                }
+
                                 continue;
                             }
 
-                            if (config.Intros.Exists(e => e.InternalId == unmatched[index].InternalId) &&
-                                config.Intros.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId))
+                            if (episodeTitleSequences.Exists(e => e.InternalId == unmatched[index].InternalId) &&
+                                episodeTitleSequences.Exists(e => e.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId))
                             {
                                 Log.Info($"\n{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } OK" +
                                          $"\n{ episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name } S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: { episodeQuery.Items[episodeComparableIndex].IndexNumber } OK");
@@ -147,13 +135,16 @@ namespace IntroSkip
 
                                 foreach (var dataPoint in data)
                                 {
-                                    if (!config.Intros.Exists(intro => intro.InternalId == dataPoint.InternalId))
+                                    if (!episodeTitleSequences.Exists(intro => intro.InternalId == dataPoint.InternalId))
                                     {
-                                        config.Intros.Add(dataPoint);
+                                        episodeTitleSequences.Add(dataPoint);
                                     }
                                 }
+                                
+                                titleSequence.EpisodeTitleSequences = episodeTitleSequences;
+                                IntroServerEntryPoint.Instance.SaveTitleSequenceJson(series.InternalId, season.InternalId, titleSequence);
 
-                                Plugin.Instance.UpdateConfiguration(config);
+                                //Plugin.Instance.UpdateConfiguration(config);
                                 Log.Info("Episode Intro Data obtained successfully.");
                                 episodeComparableIndex = episodeQuery.Items.Count() -1; //Exit out of this loop
 
@@ -166,23 +157,26 @@ namespace IntroSkip
                                 {
                                     //We have exhausted all our episode comparing
                                     Log.Info($"{ unmatched[index].Parent.Parent.Name } S: {unmatched[index].Parent.IndexNumber} E: { unmatched[index].IndexNumber } has no intro.");
-                                    config.Intros.Add(new IntroDto()
+                                    episodeTitleSequences.Add(new EpisodeTitleSequence()
                                     {
-                                        HasIntro = false,
-                                        SeriesInternalId = series.InternalId,
-                                        InternalId = episodeQuery.Items[index].InternalId
+                                        IndexNumber = episodeQuery.Items[index].IndexNumber,
+                                        HasIntro    = false,
+                                        InternalId  = episodeQuery.Items[index].InternalId
                                     });
-                                
+                                    
+                                    titleSequence.EpisodeTitleSequences = episodeTitleSequences;
+                                    IntroServerEntryPoint.Instance.SaveTitleSequenceJson(series.InternalId, season.InternalId, titleSequence);
+
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Info(ex.Message);
+                            //catch (Exception ex)
+                            //{
+                            //    Log.Info(ex.Message);
                             
-                                //We missed a positive scan here. We will try again at another time.
-                                //If this is first scan, there is no time to stop now! We're huge!
-                                //We'll catch these the next time.
-                            }
+                            //    //We missed a positive scan here. We will try again at another time.
+                            //    //If this is first scan, there is no time to stop now! We're huge!
+                            //    //We'll catch these the next time.
+                            //}
                         }
                     }
                 }
@@ -190,6 +184,7 @@ namespace IntroSkip
             progress.Report(100.0);
         }
 
+        
         private void RemoveAllPreviousSeasonEncodings()
         {
             var introEncodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
@@ -204,10 +199,10 @@ namespace IntroSkip
             }           
         }
 
-        private static double CalculateStep(int seriesTotalRecordCount, PluginConfiguration config)
+        private static double CalculateStep(int seriesTotalRecordCount)
         {
-            
-            var step =  100.0 / (seriesTotalRecordCount - config.Intros.GroupBy(savedIntros => savedIntros.SeriesInternalId).Count());
+
+            var step = 100.0 / seriesTotalRecordCount;
             Log.Info($"Scheduled Task step: {step}");
             return step;
         }

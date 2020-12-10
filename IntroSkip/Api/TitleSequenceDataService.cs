@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using MediaBrowser.Common.Extensions;
-using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
 
@@ -10,11 +9,24 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceDataService : IService
     {
+        [Route("/AverageTitleSequenceLength", "GET", Summary = "Episode Title Sequence Start and End Data")]
+        public class AverageTitleSequenceLengthRequest : IReturn<string>
+        {
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeriesId { get; set; }
+        }
+
         [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class RemoveTitleSequenceRequest : IReturn<string>
         {
-            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
-            public long InternalId { get; set; }
+            [ApiMember(Name = "EpisodeId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long EpisodeId { get; set; }
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long SeriesId { get; set; }
         }
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
@@ -22,44 +34,134 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long InternalId { get; set; }
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeriesId { get; set; }
         }
 
         [Route("/SeriesTitleSequences", "GET", Summary = "All Saved Series Title Sequence Start and End Data by Series Id")]
         public class SeriesTitleSequenceRequest : IReturn<string>
         {
-            [ApiMember(Name = "SeriesInternalId", Description = "The Internal Id of the series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
-            public long SeriesInternalId { get; set; }
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
+            public long SeriesId { get; set; }
         }
 
-        private ILibraryManager LibraryManager { get; }
-        private IJsonSerializer JsonSerializer { get; }
-        private IUserManager UserManager       { get; }
-
-        public TitleSequenceDataService(IJsonSerializer json, ILibraryManager libraryManager, IUserManager user)
+        private ILibraryManager LibraryManager      { get; }
+        private IJsonSerializer JsonSerializer      { get; }
+        private IUserManager UserManager            { get; }
+        private ILogger Log                         { get; }
+        
+        // ReSharper disable once TooManyDependencies
+        public TitleSequenceDataService(IJsonSerializer json, ILibraryManager libraryManager, IUserManager user, ILogManager logMan)
         {
             JsonSerializer = json;
             LibraryManager = libraryManager;
             UserManager    = user;
+            Log = logMan.GetLogger(Plugin.Instance.Name);
         }
+        
 
         public string Delete(RemoveTitleSequenceRequest request)
         {
-            var config = Plugin.Instance.Configuration;
-            config.Intros = config.Intros.Where(item => item.InternalId != request.InternalId).ToList();
-            Plugin.Instance.UpdateConfiguration(config);
-            return "OK";
+            Log.Info("Delete Title Sequence");
+            Log.Info(request.EpisodeId.ToString());
+            Log.Info(request.SeasonId.ToString());
+            Log.Info(request.SeriesId.ToString());
+
+            try
+            {
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+
+                if (titleSequences.EpisodeTitleSequences.Any())
+                {
+                    Log.Info("found title sequence file to remove episode.");
+                }
+                
+               
+                var episode = titleSequences.EpisodeTitleSequences.FirstOrDefault(i => i.InternalId == request.EpisodeId);
+                if (episode != null)
+                {
+                    Log.Info("Found Episode to remove");
+                }
+
+                titleSequences.EpisodeTitleSequences.Remove(episode);
+                
+                //We'll have to double check this!
+                IntroServerEntryPoint.Instance.SaveTitleSequenceJson(request.SeriesId, request.SeasonId, titleSequences);
+
+                return "OK";
+            }
+            catch
+            {
+                return "{}";
+            }
+        }
+
+        private class SeriesTitleSequenceResponse
+        {
+            public TimeSpan AverageEpisodeTitleSequenceLength { get; set; }
+            public TitleSequenceDto TitleSequences { get; set; }
         }
 
         public string Get(SeriesTitleSequenceRequest request)
         {
-            var config = Plugin.Instance.Configuration;
-            return JsonSerializer.SerializeToString(config.Intros.Where(intro => intro.SeriesInternalId == request.SeriesInternalId).OrderBy(item => LibraryManager.GetItemById(item.InternalId).IndexNumber));
+            try
+            {
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+                if (titleSequences.EpisodeTitleSequences is null) return "{}";
+
+                titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber);
+
+                return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
+                {
+                    AverageEpisodeTitleSequenceLength = CalculateAverageTitleSequenceLength(titleSequences),
+                    TitleSequences = titleSequences
+                });
+            }
+            catch
+            {
+                return "{}";
+            }
         }
+
         
         public string Get(TitleSequenceRequest request)
         {
-            var config = Plugin.Instance.Configuration;
-            return JsonSerializer.SerializeToString(config.Intros.FirstOrDefault(episode => episode.InternalId == request.InternalId));
+            try
+            {
+                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequences(request.SeriesId, request.SeasonId);
+                if (titleSequences.EpisodeTitleSequences is null) return "{}";
+
+                var episodeTitleSequences = titleSequences.EpisodeTitleSequences;
+                if (episodeTitleSequences.Exists(item => item.InternalId == request.InternalId))
+                {
+                    return JsonSerializer.SerializeToString(episodeTitleSequences?.FirstOrDefault(episode => episode.InternalId == request.InternalId));
+                }
+            }
+            catch
+            {
+                return "{}";
+            }
+
+            return "{}";
+        }
+
+        private TimeSpan CalculateAverageTitleSequenceLength(TitleSequenceDto titleSequenceDto)
+        {
+            var titleSequences = titleSequenceDto.EpisodeTitleSequences.Where(intro => intro.HasIntro).ToList();
+            var titlesLength = 0;
+            foreach (var item in titleSequences)
+            {
+                var length = item.IntroEnd.Seconds - item.IntroStart.Seconds;
+                if (length < 0) length *= -1;
+                titlesLength += length;
+            }
+            
+            var average = titlesLength / (titleSequences.Count());
+            return TimeSpan.FromSeconds(average);
         }
 
     }

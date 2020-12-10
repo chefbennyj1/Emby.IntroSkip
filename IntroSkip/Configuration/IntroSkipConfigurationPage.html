@@ -2,8 +2,8 @@
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-                
-                <div style="display: flex; align-items: center; padding-bottom: 6%">
+
+                <div style="display: flex; align-items: center;">
                     <!-- Emby Series List -->
                     <div style="flex-grow: 1;" class="selectContainer">
                         <label class="selectLabel" for="selectEmbySeries">Series:</label>
@@ -16,22 +16,41 @@
                         </div>
                     </div>
                 </div>
-                
-                <hr/>
 
+                <div style="display: flex; align-items: center; padding-bottom: 4%">
+                    <!-- Emby Season List -->
+                    <div style="flex-grow: 1;" class="selectContainer">
+                        <label class="selectLabel" for="selectEmbySeason">Seasons:</label>
+                        <select is="emby-select" name="selectEmbySeries" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                        <div class="selectArrowContainer">
+                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                        </div>
+                        <div class="fieldDescription">
+                            Show saved intro data for this season.
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="detailSectionHeader" style="padding-bottom: 2em">
+                    <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                       Average title sequence length for this season: <span class="averageTitleSequenceTime"></span>
+                    </h2>
+                </div>
                 <div class="introResults scrollY" style="max-height: 34em; margin:0 2em 2em 2em">
                     <table class="tblEpisodeIntroResults table detailTable" style="width: 100%;">
                         <thead>
-                        <tr style="text-align: left;">
-                            <th class="detailTableHeaderCell" data-priority="2">Series</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Season</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Episode</th>
-                            <th class="detailTableHeaderCell" data-priority="3">Has Intro</th>
-                            <th class="detailTableHeaderCell" data-priority="1">Intro Start</th>
-                            <th class="detailTableHeaderCell" data-priority="1">Intro End</th>
-                            <th class="detailTableHeaderCell" data-priority="1">Remove</th>
-                            <th class="detailTableHeaderCell" data-priority="1"></th>
-                        </tr>
+                            <tr style="text-align: left;">
+                                <th class="detailTableHeaderCell" data-priority="2">Series</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Season</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Episode</th>
+                                <th class="detailTableHeaderCell" data-priority="3">Has Intro</th>
+                                <th class="detailTableHeaderCell" data-priority="1">Intro Start</th>
+                                <th class="detailTableHeaderCell" data-priority="1">Intro End</th>
+                                <th class="detailTableHeaderCell" data-priority="1">Remove</th>
+                                <th class="detailTableHeaderCell" data-priority="1"></th>
+                            </tr>
                         </thead>
                         <tbody class="introResultBody"></tbody>
                     </table>
