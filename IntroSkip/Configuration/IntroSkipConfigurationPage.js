@@ -8,8 +8,8 @@
             var matches = iso8601Duration.match(iso8601DurationRegex);
 
             return {
-                minutes: matches[7] === undefined ? 0 : matches[7] < 10 ? "0" + matches[7] : matches[7],
-                seconds: matches[8] === undefined ? 0 : matches[8] < 10 ? "0" + matches[8] : matches[8]
+                minutes: matches[7] === undefined ? "00" : matches[7] < 10 ? "0" + matches[7] : matches[7],
+                seconds: matches[8] === undefined ? "00" : matches[8] < 10 ? "0" + matches[8] : matches[8]
             };
         };
 
@@ -69,9 +69,9 @@
                     html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">Episode: ' + episode.IndexNumber + '</td>';
-                    html += '<td data-title="HasIntro" class="detailTableBodyCell fileCell" style="color:' + (intro.HasIntro === true ? "#5EC157" : "orangered") + '">' + intro.HasIntro.toString() + '</td>';
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell">' + startTimespan.minutes + ":" + startTimespan.seconds + '</td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell">' + endTimespan.minutes + ":" + endTimespan.seconds + '</td>';
+                    html += '<td data-title="HasIntro" class="detailTableBodyCell fileCell" style="color:' + (intro.HasIntro === true ? "#5EC157" : "") + '">' + intro.HasIntro.toString() + '</td>';
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell">' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell">' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '</td>';
                     html += '<td data-title="Remove" class="detailTableBodyCell fileCell">';
                     html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
                     html += '</td>';
@@ -193,7 +193,7 @@
                                 if (result.TitleSequences.EpisodeTitleSequences) {
 
                                     var averageLength = parseISO8601Duration(result.AverageEpisodeTitleSequenceLength);
-                                    view.querySelector('.averageTitleSequenceTime').innerText = averageLength.minutes + ":" + averageLength.seconds;
+                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                     
                                     result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
                                         getTableRowHtml(intro, _seriesId, _seasonId).then(html => {

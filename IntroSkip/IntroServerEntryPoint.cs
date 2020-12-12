@@ -54,16 +54,21 @@ namespace IntroSkip
             }
         }
 
-        private void CopyFpCalc()
+        private void CopyFpCalc(string location)
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
-            var resources = Assembly.GetExecutingAssembly().GetManifestResourceNames();
+           
             if (OperatingSystem.IsLinux())
             {
-                if (!FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
+                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
+                {
+                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
+                }
+
+                if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("linux_fpcalc");
-                    var fileStream = new FileStream($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
+                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
                     for (int i = 0; i < stream.Length; i++)
                         fileStream.WriteByte((byte)stream.ReadByte());
                     fileStream.Close();
@@ -72,10 +77,15 @@ namespace IntroSkip
 
             if (OperatingSystem.IsMacOS())
             {
-                if (!FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
+                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
-                    var stream =GetEmbeddedResourceStream("mac_fpcalc");
-                    var fileStream = new FileStream($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
+                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
+                }
+
+                if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
+                {
+                    var stream = GetEmbeddedResourceStream("mac_fpcalc");
+                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
                     for (int i = 0; i < stream.Length; i++)
                         fileStream.WriteByte((byte)stream.ReadByte());
                     fileStream.Close();
@@ -84,10 +94,15 @@ namespace IntroSkip
 
             if (OperatingSystem.IsWindows())
             {
-                if (!FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
+                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
+                {
+                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe");
+                }
+
+                if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
                 {
                     var stream = GetEmbeddedResourceStream("fpcalc.exe");
-                    var fileStream = new FileStream($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe", FileMode.CreateNew);
+                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe", FileMode.CreateNew);
                     for (int i = 0; i < stream.Length; i++)
                         fileStream.WriteByte((byte)stream.ReadByte());
                     fileStream.Close();
@@ -116,7 +131,12 @@ namespace IntroSkip
                 FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences");
             }
 
-            CopyFpCalc();
+            if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding"))
+            {
+                FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding" );
+            }
+
+            CopyFpCalc($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding");
 
         }
     }

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
@@ -207,59 +208,142 @@ namespace IntroSkip
             return false;
         }
 
-        private void ExtractPCMAudio(string input, string audioOut)
+        //private void ExtractSeasonThemePCMAudio(string input, string output, TimeSpan length, TimeSpan start)
+        //{
+        //    var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
+            
+        //    var procStartInfo = new ProcessStartInfo(ffmpegPath, $"-ss {start:c} -t {length:c} -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{output}\"")
+        //    {
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError  = true,
+        //        UseShellExecute        = false,
+        //        CreateNoWindow         = true,
+        //    };
+
+        //    using (var process = new Process { StartInfo = procStartInfo })
+        //    {
+        //        process.Start();
+
+        //        string processOutput = null;
+            
+        //        while ((processOutput = process.StandardError.ReadLine()) != null)
+        //        {
+        //            //Logger.Info(processOutput);
+        //        }
+        //    }
+
+        //    Logger.Info("Isolated Season Theme Audio.");
+        //}
+
+        //private void CreateSilentAudioFill(string output, TimeSpan length)
+        //{
+        //    var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
+            
+        //    var procStartInfo = new ProcessStartInfo(ffmpegPath, $" -f lavfi -i anullsrc -t {length:c} -acodec pcm_s16le -ar 16000  \"{output}\"")
+        //    {
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError  = true,
+        //        UseShellExecute        = false,
+        //        CreateNoWindow         = true,
+        //    };
+
+        //    using (var process = new Process { StartInfo = procStartInfo })
+        //    {
+        //        process.Start();
+
+        //        string processOutput = null;
+            
+        //        while ((processOutput = process.StandardError.ReadLine()) != null)
+        //        {
+        //            //Logger.Info(processOutput);
+        //        }
+        //    }
+
+        //    Logger.Info("Creating silent fill Audio.");
+        //}
+
+        //private void ConcatPCMAudioClip(string output, string workingDir)
+        //{
+        //    var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
+            
+        //    var procStartInfo = new ProcessStartInfo(ffmpegPath,  $" -i {workingDir}theme.wav -i {workingDir}silent.wav -filter_complex \"[0:0][1:0]concat=n=2:v=0:a=1[out]\" -map \"[out]\" \"{output}\"")
+        //    {
+        //        RedirectStandardOutput = true,
+        //        RedirectStandardError  = true,
+        //        UseShellExecute        = false,
+        //        CreateNoWindow         = true,
+        //    };
+
+        //    using (var process = new Process { StartInfo = procStartInfo })
+        //    {
+        //        process.Start();
+
+        //        string processOutput = null;
+            
+        //        while ((processOutput = process.StandardError.ReadLine()) != null)
+        //        {
+        //            Logger.Info(processOutput);
+        //        }
+        //    }
+
+        //    Logger.Info("Creating Season Theme Audio.");
+        //}
+
+        private void ExtractPCMAudio(string input, string audioOut, TimeSpan duration)
         {
             var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
-            Logger.Info(ffmpegPath);
-            var procStartInfo =
-                new ProcessStartInfo(ffmpegPath,
-                    $"-t 00:10:00 -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true,
-                    UseShellExecute        = false,
-                    CreateNoWindow         = true,
-                };
-
-            var process = new Process {StartInfo = procStartInfo};
-
-            process.Start();
-
-            string processOutput = null;
             
-            while ((processOutput = process.StandardError.ReadLine()) != null)
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, $"-t {duration:c} -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
             {
-                //Logger.Info(processOutput);
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true,
+            };
+
+            using (var process = new Process { StartInfo = procStartInfo })
+            {
+                process.Start();
+
+                string processOutput = null;
+            
+                while ((processOutput = process.StandardError.ReadLine()) != null)
+                {
+                    //Logger.Info(processOutput);
+                }
             }
         }
 
         private string FingerPrintAudio(string inputFileName)
         {
-            // Using 300 second length to get a more accurate fingerprint, but it's not required
-            
-            var configPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar;
-            
-            var fpcalc = configPath + "fpcalc" + (OperatingSystem.IsWindows() ? ".exe" : "");
-            var procStartInfo =
-                new ProcessStartInfo(fpcalc, $"{inputFileName} -raw -length 600 -json")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true,
-                    UseShellExecute        = false,
-                    CreateNoWindow         = true,
-                };
+            // Using 600 second length to get a more accurate fingerprint, but it's not required
+            var configDir     = ApplicationPaths.PluginConfigurationsPath;
+            var encodingPath  = $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}";
+            var @params       = $"\"{inputFileName}\" -raw -length 600 -json";
+            var fpcalc        = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
 
-            var process = new Process {StartInfo = procStartInfo};
+            var procStartInfo = new ProcessStartInfo($"{encodingPath}{fpcalc}", @params)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true,
+            };
+
+            var process = new Process { StartInfo = procStartInfo };
+            
             process.Start();
+            
+
             string processOutput = null;
             var json = "";
 
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
             {
+                Logger.Info(processOutput);
                 json += (processOutput);
-                //Logger.Info(processOutput);
             }
-           
+
             return json;
         }
 
@@ -269,7 +353,7 @@ namespace IntroSkip
         private static string EpisodeComparable { get; set; }
         private static string EpisodeToCompare  { get; set; }
         
-        public List<EpisodeTitleSequence> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
+        public async Task<List<EpisodeTitleSequence>> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
             var encodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
             Logger.Info("Starting episode intro detection process.");
@@ -279,20 +363,27 @@ namespace IntroSkip
             //Create the the current episode input key. Season.InternalId + episode.InternalId
             var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
             var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
-            
 
-            if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
+
+            if (!FileSystem.FileExists($"{encodingPath}seasonTheme.wav"))
             {
-                EpisodeComparable = episode1InputKey;
-
-                audio1_save_path = $"{encodingPath}{EpisodeComparable}.wav";
-
-                //Check and see if we have encoded this episode before
-                if (!FileSystem.FileExists(audio1_save_path))
+                if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
                 {
-                    Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
-                    ExtractPCMAudio(episode1Input.Path, audio1_save_path);
+                    EpisodeComparable = episode1InputKey;
+
+                    audio1_save_path = $"{encodingPath}{EpisodeComparable}.wav";
+
+                    //Check and see if we have encoded this episode before
+                    if (!FileSystem.FileExists(audio1_save_path))
+                    {
+                        Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
+                        ExtractPCMAudio(episode1Input.Path, audio1_save_path, TimeSpan.FromMinutes(10));
+                    }
                 }
+            }
+            else
+            {
+                audio1_save_path = $"{encodingPath}seasonTheme.wav";
             }
 
 
@@ -305,7 +396,8 @@ namespace IntroSkip
                 if (!FileSystem.FileExists(audio2_save_path))
                 {
                     Logger.Info($"Beginning Audio Extraction for Comparing Episode: {episode2Input.Path}");
-                    ExtractPCMAudio(episode2Input.Path, audio2_save_path);
+                    ExtractPCMAudio(episode2Input.Path, audio2_save_path, TimeSpan.FromMinutes(10));
+
                 }
             }
 
@@ -314,11 +406,27 @@ namespace IntroSkip
 
             var introDto =  AnalyzeAudio();
 
-            introDto[0].InternalId       = episode1Input.InternalId;
-            introDto[0].IndexNumber      = episode1Input.IndexNumber;
-            introDto[1].InternalId       = episode2Input.InternalId;
-            introDto[1].IndexNumber      = episode2Input.IndexNumber;
-            
+            introDto[0].InternalId = episode1Input.InternalId;
+            introDto[0].IndexNumber = episode1Input.IndexNumber;
+
+            introDto[1].InternalId = episode2Input.InternalId;
+            introDto[1].IndexNumber = episode2Input.IndexNumber;
+
+            //if (!FileSystem.FileExists($"{encodingPath}seasonTheme.wav"))
+            //{
+            //    var introLength = introDto[0].IntroEnd - introDto[0].IntroStart;
+            //    ExtractSeasonThemePCMAudio(episode1Input.Path, $"{encodingPath}theme.wav", introLength, introDto[0].IntroStart);
+               
+            //    CreateSilentAudioFill($"{encodingPath}s.wav", TimeSpan.FromMinutes(10) - introLength);
+            //    ExtractPCMAudio($"{encodingPath}s.wav", $"{encodingPath}silent.wav", TimeSpan.FromMinutes(10) - introLength);
+            //    ConcatPCMAudioClip($"{encodingPath}seasonTheme.wav", encodingPath);
+
+            //}
+            //else
+            //{
+            //    introDto.RemoveAt(0);
+            //}
+
             Logger.Info($"\n{episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} \nStarts: {introDto[0].IntroStart} \nEnd: {introDto[0].IntroEnd}\n\n");
             Logger.Info($"\n{episode2Input.Parent.Parent.Name} - S: {episode2Input.Parent.IndexNumber} - E: {episode2Input.IndexNumber} \nStarts: {introDto[1].IntroStart} \nEnd: {introDto[1].IntroEnd}\n\n");
             
@@ -328,6 +436,7 @@ namespace IntroSkip
         private List<EpisodeTitleSequence> AnalyzeAudio()
         {
             Logger.Info("Analyzing Audio...");
+            
             Logger.Info(audio1_save_path);
             Logger.Info(audio2_save_path);
 
@@ -454,18 +563,10 @@ namespace IntroSkip
 
             
         }
-        
-        //public List<IntroDto> CompareAudioFingerPrint(List<uint> fingerPrint, BaseItem episodeToCompare)
-        //{
-        //    ExtractPCMAudio(episodeToCompare.Path, $"{episodeToCompare.InternalId.ToString()}.wav");
-        //    return null;
-        //} 
-
-        
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            
         }
 
         public void Run()
