@@ -63,10 +63,8 @@ namespace IntroSkip
         // Keep integer in specified range
         private static int Clip(int val, int min, int max)
         {
-            if (val < min)
-                return min;
-            if (val > max)
-                return max;
+            if (val < min) return min;
+            if (val > max) return max;
             return val;
         }
 
@@ -162,7 +160,7 @@ namespace IntroSkip
             }
             else
             {
-                offset = offset * -1; //ToDo: Possible overflow.
+                offset = offset * -1; //ToDo: possible overflow.
                 offsetCorrectedF1.AddRange(f1.GetRange(0, f1.Count - Math.Abs(offset)));
                 offsetCorrectedF2.AddRange(f2.GetRange(offset, f2.Count - Math.Abs(offset)));
             }
@@ -253,15 +251,12 @@ namespace IntroSkip
 
             process.Start();
 
-
-            string processOutput;
+            string processOutput = null;
             var json = "";
 
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
-            {
-                Logger.Info(processOutput);
+                //Logger.Info(processOutput);
                 json += processOutput;
-            }
 
             return json;
         }
@@ -271,35 +266,26 @@ namespace IntroSkip
             var encodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar +
                                "IntroEncoding" + FileSystem.DirectorySeparatorChar;
             Logger.Info("Starting episode intro detection process.");
-            Logger.Info(
-                $" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
-            Logger.Info(
-                $" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
+            //Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
+            //Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
 
             //Create the the current episode input key. Season.InternalId + episode.InternalId
             var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
             var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
 
 
-            if (!FileSystem.FileExists($"{encodingPath}seasonTheme.wav"))
+            if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
             {
-                if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
+                EpisodeComparable = episode1InputKey;
+
+                _audio1SavePath = $"{encodingPath}{EpisodeComparable}.wav";
+
+                //Check and see if we have encoded this episode before
+                if (!FileSystem.FileExists(_audio1SavePath))
                 {
-                    EpisodeComparable = episode1InputKey;
-
-                    _audio1SavePath = $"{encodingPath}{EpisodeComparable}.wav";
-
-                    //Check and see if we have encoded this episode before
-                    if (!FileSystem.FileExists(_audio1SavePath))
-                    {
-                        Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
-                        ExtractPCMAudio(episode1Input.Path, _audio1SavePath, TimeSpan.FromMinutes(10));
-                    }
+                    Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
+                    ExtractPCMAudio(episode1Input.Path, _audio1SavePath, TimeSpan.FromMinutes(10));
                 }
-            }
-            else
-            {
-                _audio1SavePath = $"{encodingPath}seasonTheme.wav";
             }
 
 
@@ -321,11 +307,15 @@ namespace IntroSkip
 
             var introDto = AnalyzeAudio();
 
-            introDto[0].InternalId = episode1Input.InternalId;
-            introDto[0].IndexNumber = episode1Input.IndexNumber;
+            introDto[0]
+                .InternalId = episode1Input.InternalId;
+            introDto[0]
+                .IndexNumber = episode1Input.IndexNumber;
 
-            introDto[1].InternalId = episode2Input.InternalId;
-            introDto[1].IndexNumber = episode2Input.IndexNumber;
+            introDto[1]
+                .InternalId = episode2Input.InternalId;
+            introDto[1]
+                .IndexNumber = episode2Input.IndexNumber;
 
             Logger.Info(
                 $"\n{episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} \nStarts: {introDto[0].IntroStart} \nEnd: {introDto[0].IntroEnd}\n\n");
@@ -388,7 +378,8 @@ namespace IntroSkip
 
             //Logger.Info("Calculating Hamming Distances.");
             var hammingDistances = Enumerable.Range(0, f1.Count < f2.Count ? f1.Count : f2.Count)
-                .Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
+                .Select(i => GetHammingDistance(f1[i], f2[i]))
+                .ToList();
             Logger.Info("Calculate Hamming Distances Done.");
 
             var _tup_2 = FindContiguousRegion(hammingDistances, 8);
@@ -401,10 +392,10 @@ namespace IntroSkip
             var commonRegionStart = start * secondsPerSample;
             var commonRegionEnd = end * secondsPerSample;
 
-            double firstFileRegionStart;
-            double firstFileRegionEnd;
-            double secondFileRegionStart;
-            double secondFileRegionEnd;
+            var firstFileRegionStart = 0.0;
+            var firstFileRegionEnd = 0.0;
+            var secondFileRegionStart = 0.0;
+            var secondFileRegionEnd = 0.0;
 
             if (offset >= 0)
             {
@@ -424,12 +415,21 @@ namespace IntroSkip
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
             {
+                firstFileRegionStart = 0.0;
+                firstFileRegionEnd = 0.0;
+                secondFileRegionStart = 0.0;
+                secondFileRegionEnd = 0.0;
                 throw new InvalidIntroDetectionException(
                     "Episode detection failed to find a reasonable intro start and end time.");
             }
 
             if (commonRegionEnd - commonRegionStart < 10)
             {
+                // -1 means intro does not exists
+                firstFileRegionStart = -1.0;
+                firstFileRegionEnd = -1.0;
+                secondFileRegionStart = -1.0;
+                secondFileRegionEnd = -1.0;
                 throw new InvalidIntroDetectionException(
                     "Episode common region is deemed too short to be considered an intro.");
             }

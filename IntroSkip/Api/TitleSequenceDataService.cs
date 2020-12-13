@@ -61,9 +61,8 @@ namespace IntroSkip.Api
                     IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
                 if (titleSequences.EpisodeTitleSequences is null) return "";
 
-                var episodeTitleSequences =
-                    titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber).ToList();
-
+                var episodeTitleSequences = titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber)
+                    .ToList();
                 titleSequences.EpisodeTitleSequences = episodeTitleSequences;
 
                 return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse
@@ -106,7 +105,8 @@ namespace IntroSkip.Api
             var groups = titleSequences.GroupBy(sequence => sequence.IntroEnd - sequence.IntroStart);
             var enumerableSequences = groups.ToList();
             var maxCount = enumerableSequences.Max(g => g.Count());
-            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            var mode = enumerableSequences.First(g => g.Count() == maxCount)
+                .Key;
             return mode;
         }
 

@@ -17,8 +17,7 @@ namespace IntroSkip
         {
         }
 
-        protected InvalidIntroDetectionException(SerializationInfo info,
-            StreamingContext context) : base(info, context)
+        protected InvalidIntroDetectionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }

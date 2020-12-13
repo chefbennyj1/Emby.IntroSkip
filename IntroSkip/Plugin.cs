@@ -39,12 +39,14 @@ namespace IntroSkip
                 new PluginPageInfo
                 {
                     Name = "IntroSkipConfigurationPage",
-                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.html"
+                    EmbeddedResourcePath = GetType()
+                        .Namespace + ".Configuration.IntroSkipConfigurationPage.html"
                 },
                 new PluginPageInfo
                 {
                     Name = "IntroSkipConfigurationPageJS",
-                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.js"
+                    EmbeddedResourcePath = GetType()
+                        .Namespace + ".Configuration.IntroSkipConfigurationPage.js"
                 }
             };
         }

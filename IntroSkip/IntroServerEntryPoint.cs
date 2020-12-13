@@ -38,14 +38,10 @@ namespace IntroSkip
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences"))
-            {
                 FileSystem.CreateDirectory($"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences");
-            }
 
             if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding"))
-            {
                 FileSystem.CreateDirectory($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding");
-            }
 
             CopyFpCalc($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding");
         }
@@ -86,17 +82,14 @@ namespace IntroSkip
             if (OperatingSystem.IsLinux())
             {
                 if (FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
-                {
                     FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
-                }
 
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("linux_fpcalc");
                     var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc",
                         FileMode.CreateNew);
-                    for (var i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte) stream.ReadByte());
+                    for (var i = 0; i < stream.Length; i++) fileStream.WriteByte((byte) stream.ReadByte());
                     fileStream.Close();
                 }
             }
@@ -104,17 +97,14 @@ namespace IntroSkip
             if (OperatingSystem.IsMacOs())
             {
                 if (FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
-                {
                     FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
-                }
 
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("mac_fpcalc");
                     var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc",
                         FileMode.CreateNew);
-                    for (var i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte) stream.ReadByte());
+                    for (var i = 0; i < stream.Length; i++) fileStream.WriteByte((byte) stream.ReadByte());
                     fileStream.Close();
                 }
             }
@@ -122,17 +112,14 @@ namespace IntroSkip
             if (OperatingSystem.IsWindows())
             {
                 if (FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
-                {
                     FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe");
-                }
 
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
                 {
                     var stream = GetEmbeddedResourceStream("fpcalc.exe");
                     var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe",
                         FileMode.CreateNew);
-                    for (var i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte) stream.ReadByte());
+                    for (var i = 0; i < stream.Length; i++) fileStream.WriteByte((byte) stream.ReadByte());
                     fileStream.Close();
                 }
             }
@@ -141,9 +128,11 @@ namespace IntroSkip
         private Stream GetEmbeddedResourceStream(string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
+            var name = assembly.GetManifestResourceNames()
+                .Single(s => s.EndsWith(resourceName));
 
-            return GetType().Assembly.GetManifestResourceStream(name);
+            return GetType()
+                .Assembly.GetManifestResourceStream(name);
         }
     }
 }
