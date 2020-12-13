@@ -8,7 +8,6 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
 // ReSharper disable once TooManyDependencies
@@ -23,27 +22,27 @@ namespace IntroSkip
         private ILibraryManager LibraryManager      { get; }
         private IUserManager UserManager            { get; }
         private IFileSystem FileSystem              { get; }
-        private IApplicationPaths ApplicationPaths  { get; set; }
-        private IJsonSerializer JsonSerializer      { get; }
+        private IApplicationPaths ApplicationPaths  { get; }
+        //private IJsonSerializer JsonSerializer      { get; }
         public long CurrentSeriesEncodingInternalId { get; set; }
         private static double Step                  { get; set; }
         
-        //public static Dictionary<string, IntroAudioFingerprint> AudioFingerPrints { get; private set; }
         
-        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
+        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths)//, IJsonSerializer jsonSerializer)
         {
             Log              = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager   = libMan;
             UserManager      = user;
-            JsonSerializer   = jsonSerializer;
+            //JsonSerializer   = jsonSerializer;
             FileSystem       = file;
             ApplicationPaths = paths;
         }
         
+#pragma warning disable 1998
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
+#pragma warning restore 1998
         {
             Log.Info("Beginning Intro Task");
-            progress.Report(0.1);
 
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
@@ -53,12 +52,12 @@ namespace IntroSkip
             });
 
             Step = CalculateStep(seriesQuery.TotalRecordCount);
-
+            progress.Report(Step);
             Parallel.ForEach(seriesQuery.Items, new ParallelOptions() {MaxDegreeOfParallelism = 2}, series => 
             {
                     //if (string.IsNullOrEmpty(series.InternalId.ToString())) continue;
 
-                    Step += 0.01;
+                    Step += Step;
                     progress.Report(Step);
 
                     Log.Info(series.Name);
@@ -96,9 +95,10 @@ namespace IntroSkip
                         });
 
                         //All the episodes which haven't been matched.
-
                         var exceptIds = new HashSet<long>(episodeTitleSequences.Select(y => y.InternalId).Distinct());
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
+
+                        //TODO: Add HasIntro "false" to unmatched - as a secondary check.
 
                         if (!unmatched.Any())
                         {
@@ -108,32 +108,28 @@ namespace IntroSkip
 
                         for (var index = 0; index <= unmatched.Count() - 1; index++)
                         {
-                            Log.Info(
-                                $"Checking Title Sequence recorded for {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber}");
+                            Log.Info($"Checking Title Sequence recorded for {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber}");
 
-                            for (var episodeComparableIndex = 0;
-                                episodeComparableIndex <= episodeQuery.Items.Count() - 1;
+                            for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1;
                                 episodeComparableIndex++)
                             {
                                 //Don't compare the same episode with itself.
-                                if (episodeQuery.Items[episodeComparableIndex].InternalId ==
-                                    unmatched[index].InternalId)
+                                if (episodeQuery.Items[episodeComparableIndex].InternalId == unmatched[index].InternalId)
                                 {
-                                    Log.Info(
-                                        $" Can not compare {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} with itself MoveNext()");
-
+                                    Log.Info($" Can not compare {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} with itself MoveNext()");
                                     continue;
                                 }
-
-                                var comparableIndex = episodeComparableIndex;
-                                if (episodeTitleSequences.Exists(e => e.InternalId == unmatched[index].InternalId) &&
-                                    episodeTitleSequences.Exists(e =>
-                                        e.InternalId == episodeQuery.Items[comparableIndex].InternalId))
+                                
+                                var comparableItem = episodeQuery.Items[episodeComparableIndex];
+                                var unmatchedItem  = unmatched[index];
+                                if (episodeTitleSequences.Exists(e => e.InternalId == unmatchedItem.InternalId))
                                 {
-                                    Log.Info(
-                                        $"\n{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} OK" +
-                                        $"\n{episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name} S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: {episodeQuery.Items[episodeComparableIndex].IndexNumber} OK");
-                                    continue;
+                                    if (episodeTitleSequences.Exists(e => e.InternalId == comparableItem.InternalId))
+                                    {
+                                        Log.Info($"\n{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} OK" +
+                                            $"\n{episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name} S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: {episodeQuery.Items[episodeComparableIndex].IndexNumber} OK");
+                                        continue;
+                                    }
                                 }
 
                                 try
@@ -148,7 +144,6 @@ namespace IntroSkip
                                             episodeTitleSequences.Add(dataPoint);
                                         }
                                     }
-
                                     
                                     Log.Info("Episode Intro Data obtained successfully.");
                                     episodeComparableIndex = episodeQuery.Items.Count() - 1; //Exit out of this loop
@@ -166,22 +161,16 @@ namespace IntroSkip
                                         episodeTitleSequences.Add(new EpisodeTitleSequence()
                                         {
                                             IndexNumber = episodeQuery.Items[index].IndexNumber,
-                                            HasIntro = false,
-                                            InternalId = episodeQuery.Items[index].InternalId
+                                            HasIntro    = false,
+                                            InternalId  = episodeQuery.Items[index].InternalId
                                         });
                                     }
                                 }
-                                //catch (Exception ex)
-                                //{
-                                //    Log.Info(ex.Message);
-
-                                //    //We missed a positive scan here. We will try again at another time.
-                                //    //If this is first scan, there is no time to stop now! We're huge!
-                                //    //We'll catch these the next time.
-                                //}
                             }
                         }
+
                         RemoveAllPreviousSeasonEncodings(season.InternalId);
+                        
                         titleSequence.EpisodeTitleSequences = episodeTitleSequences;
                         IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
 
@@ -190,7 +179,7 @@ namespace IntroSkip
             progress.Report(100.0);
         }
 
-
+        //We could validate intro lengths here.
         private EpisodeTitleSequence ValidateTitleSequenceLength(EpisodeTitleSequence episodeTitleSequence, TimeSpan mode)
         {
             if ((episodeTitleSequence.IntroEnd - episodeTitleSequence.IntroStart) >= mode) return episodeTitleSequence;
@@ -202,14 +191,15 @@ namespace IntroSkip
        
         private void RemoveAllPreviousSeasonEncodings(long internalId)
         {
-            var configPath        = ApplicationPaths.PluginConfigurationsPath;
-            var separator         = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath = $"{configPath}{separator}IntroEncoding{separator}";
+            var configPath         = ApplicationPaths.PluginConfigurationsPath;
+            var separator          = FileSystem.DirectorySeparatorChar;
+            var introEncodingPath  = $"{configPath}{separator}IntroEncoding{separator}";
+            var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
+            var fileSystemMetadata = files.ToList();
             
-            var files = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
-            if (!files.Any()) return;
+            if (!fileSystemMetadata.Any()) return;
             
-            foreach (var file in files)
+            foreach (var file in fileSystemMetadata)
             {
                 if (file.Name.Substring(0, internalId.ToString().Length) != internalId.ToString()) continue;
                 Log.Info($"Removing encoding file {file.FullName}");

@@ -252,13 +252,12 @@ namespace IntroSkip
             
             process.Start();
             
-
             string processOutput = null;
             var json = "";
 
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
             {
-                Logger.Info(processOutput);
+                //Logger.Info(processOutput);
                 json += (processOutput);
             }
 
@@ -275,36 +274,30 @@ namespace IntroSkip
         {
             var encodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
             Logger.Info("Starting episode intro detection process.");
-            Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
-            Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
+            //Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
+            //Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
 
             //Create the the current episode input key. Season.InternalId + episode.InternalId
             var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
             var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
 
 
-            if (!FileSystem.FileExists($"{encodingPath}seasonTheme.wav"))
+
+            if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
             {
-                if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
+                EpisodeComparable = episode1InputKey;
+
+                audio1_save_path = $"{encodingPath}{EpisodeComparable}.wav";
+
+                //Check and see if we have encoded this episode before
+                if (!FileSystem.FileExists(audio1_save_path))
                 {
-                    EpisodeComparable = episode1InputKey;
-
-                    audio1_save_path = $"{encodingPath}{EpisodeComparable}.wav";
-
-                    //Check and see if we have encoded this episode before
-                    if (!FileSystem.FileExists(audio1_save_path))
-                    {
-                        Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
-                        ExtractPCMAudio(episode1Input.Path, audio1_save_path, TimeSpan.FromMinutes(10));
-                    }
+                    Logger.Info($"Beginning Audio Extraction for Comparable Episode: {episode1Input.Path}");
+                    ExtractPCMAudio(episode1Input.Path, audio1_save_path, TimeSpan.FromMinutes(10));
                 }
             }
-            else
-            {
-                audio1_save_path = $"{encodingPath}seasonTheme.wav";
-            }
 
-
+            
             if (EpisodeToCompare is null || episode2InputKey != EpisodeToCompare)
             {
                 EpisodeToCompare = episode2InputKey;
