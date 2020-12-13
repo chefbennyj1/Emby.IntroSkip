@@ -4,7 +4,7 @@ namespace IntroSkip
 {
     public class IntroAudioFingerprint
     {
-        public double duration { get; set; } 
-        public List<uint> fingerprint { get; set; } 
+        public double Duration { get; set; }
+        public List<uint> Fingerprint { get; set; }
     }
 }

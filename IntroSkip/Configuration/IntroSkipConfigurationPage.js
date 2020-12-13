@@ -193,12 +193,12 @@
                                             }
                                         });
                                     }
-                                };
+                                }
                             });
 
 
 
-                        };
+                        }
                     });
 
                     seasonSelect.addEventListener('change', (e) => {

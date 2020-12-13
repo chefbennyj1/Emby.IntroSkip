@@ -6,13 +6,19 @@ namespace IntroSkip
 {
     public static class OperatingSystem
     {
-        public static bool IsWindows() =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        public static bool IsWindows()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
 
-        public static bool IsMacOS() =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        public static bool IsMacOs()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        }
 
-        public static bool IsLinux() =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        public static bool IsLinux()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        }
     }
 }

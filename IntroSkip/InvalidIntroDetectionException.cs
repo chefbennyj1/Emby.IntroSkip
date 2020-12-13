@@ -1,12 +1,25 @@
-﻿namespace IntroSkip
-{
-    public class InvalidIntroDetectionException : System.Exception
-    {
-        public InvalidIntroDetectionException() : base() { }
-        public InvalidIntroDetectionException(string message) : base(message) { }
-        public InvalidIntroDetectionException(string message, System.Exception inner) : base(message, inner) { }
+﻿using System;
+using System.Runtime.Serialization;
 
-        protected InvalidIntroDetectionException(System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+namespace IntroSkip
+{
+    public class InvalidIntroDetectionException : Exception
+    {
+        public InvalidIntroDetectionException()
+        {
+        }
+
+        public InvalidIntroDetectionException(string message) : base(message)
+        {
+        }
+
+        public InvalidIntroDetectionException(string message, Exception inner) : base(message, inner)
+        {
+        }
+
+        protected InvalidIntroDetectionException(SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
     }
 }
