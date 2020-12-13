@@ -30,7 +30,7 @@ namespace IntroSkip.Api
         }
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
-        public class TitleSequenceRequest : IReturn<string>
+        public class EpisodeTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long InternalId { get; set; }
@@ -96,13 +96,13 @@ namespace IntroSkip.Api
             }
             catch
             {
-                return "{}";
+                return "";
             }
         }
 
         private class SeriesTitleSequenceResponse
         {
-            public TimeSpan AverageEpisodeTitleSequenceLength { get; set; }
+            public TimeSpan CommonEpisodeTitleSequenceLength { get; set; }
             public TitleSequenceDto TitleSequences { get; set; }
         }
 
@@ -111,29 +111,29 @@ namespace IntroSkip.Api
             try
             {
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
-                if (titleSequences.EpisodeTitleSequences is null) return "{}";
+                if (titleSequences.EpisodeTitleSequences is null) return "";
 
                 titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber);
 
                 return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
                 {
-                    AverageEpisodeTitleSequenceLength = CalculateAverageTitleSequenceLength(titleSequences),
+                    CommonEpisodeTitleSequenceLength = CalculateCommonTitleSequenceLength(titleSequences),
                     TitleSequences = titleSequences
                 });
             }
             catch
             {
-                return "{}";
+                return "";
             }
         }
 
         
-        public string Get(TitleSequenceRequest request)
+        public string Get(EpisodeTitleSequenceRequest request)
         {
             try
             {
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
-                if (titleSequences.EpisodeTitleSequences is null) return "{}";
+                if (titleSequences.EpisodeTitleSequences is null) return "";
 
                 var episodeTitleSequences = titleSequences.EpisodeTitleSequences;
                 if (episodeTitleSequences.Exists(item => item.InternalId == request.InternalId))
@@ -143,27 +143,20 @@ namespace IntroSkip.Api
             }
             catch
             {
-                return "{}";
+                return "";
             }
 
-            return "{}";
+            return "";
         }
 
-        private TimeSpan CalculateAverageTitleSequenceLength(TitleSequenceDto titleSequenceDto)
+        private TimeSpan CalculateCommonTitleSequenceLength(TitleSequenceDto titleSequenceDto)
         {
-            var titleSequences     = titleSequenceDto.EpisodeTitleSequences.Where(intro => intro.HasIntro).ToList();
-            var titlesLength       = 0;
-            var titleSequenceCount = 0;
-            foreach (var item in titleSequences)
-            {
-                var length = item.IntroEnd.Seconds - item.IntroStart.Seconds;
-                if (length <= 0) continue;
-                titleSequenceCount += 1;
-                titlesLength += length;
-            }
-            
-            var average = titlesLength / (titleSequenceCount);
-            return TimeSpan.FromSeconds(average);
+            var titleSequences      = titleSequenceDto.EpisodeTitleSequences.Where(intro => intro.HasIntro);
+            var groups              = titleSequences.GroupBy(sequence => sequence.IntroEnd - sequence.IntroStart);
+            var enumerableSequences = groups.ToList();
+            int maxCount            = enumerableSequences.Max(g => g.Count());
+            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            return mode;
         }
 
     }

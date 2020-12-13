@@ -108,31 +108,51 @@
 
                                     if (i === 0 && j == 0) {
                                         getIntros(series.Items[i].Id, seasons.Items[j].Id).then((result) => {
-                                            if (result.EpisodeTitleSequences) {
-                                                var averageLength = parseISO8601Duration(result.AverageEpisodeTitleSequenceLength);
-                                                view.querySelector('.averageTitleSequenceTime').innerText = averageLength.minutes + ":" + averageLength.seconds;
+                                            if (result) {
+                                                if (result.EpisodeTitleSequences) {
+                                                    var averageLength =
+                                                        parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                                    view.querySelector('.averageTitleSequenceTime').innerText =
+                                                        averageLength.minutes + ":" + averageLength.seconds;
 
-                                                result.EpisodeTitleSequences.forEach(intro => {
-                                                    getTableRowHtml(intro, series.Items[i].Id, seasons.Items[j].Id).then(html => {
+                                                    result.EpisodeTitleSequences.forEach(intro => {
+                                                        getTableRowHtml(intro, series.Items[i].Id, seasons.Items[j].Id)
+                                                            .then(html => {
 
-                                                        view.querySelector('.introResultBody').innerHTML += html;
+                                                                view.querySelector('.introResultBody').innerHTML +=
+                                                                    html;
 
-                                                        view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                                            btn.addEventListener('click', (elem) => {
-                                                                elem.preventDefault();
-                                                                var episodeId = elem.target.closest('.fab').id;
-                                                                var seriesId = elem.target.closest('.fab').dataset["seriesid"];
-                                                                var seasonId = elem.target.closest('.fab').dataset["seasonid"];
-                                                                removeIntroItem(seriesId, seasonId, episodeId).then(() => {
-                                                                    var index = elem.target.closest('tr').rowIndex;
-                                                                    view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                                });
+                                                                view.querySelectorAll('.removeIntroData i').forEach(
+                                                                    btn => {
+                                                                        btn.addEventListener('click',
+                                                                            (elem) => {
+                                                                                elem.preventDefault();
+                                                                                var episodeId =
+                                                                                    elem.target.closest('.fab').id;
+                                                                                var seriesId =
+                                                                                    elem.target.closest('.fab')
+                                                                                        .dataset["seriesid"];
+                                                                                var seasonId =
+                                                                                    elem.target.closest('.fab')
+                                                                                        .dataset["seasonid"];
+                                                                                removeIntroItem(seriesId,
+                                                                                    seasonId,
+                                                                                    episodeId).then(() => {
+                                                                                    var index = elem.target
+                                                                                        .closest('tr').rowIndex;
+                                                                                    view.querySelector(
+                                                                                            '.introResultBody')
+                                                                                        .deleteRow(index - 1);
+                                                                                });
 
+                                                                            });
+                                                                    });
                                                             });
-                                                        });
-                                                    });
 
-                                                });
+                                                    });
+                                                }
+                                            } else {
+                                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                             }
                                         });
                                     }
@@ -150,31 +170,37 @@
                         var _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
                         var _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                         getIntros(_seriesId, _seasonId).then((result) => {
-                            if (result.TitleSequences.EpisodeTitleSequences) {
-                                var averageLength = parseISO8601Duration(result.AverageEpisodeTitleSequenceLength);
-                                view.querySelector('.averageTitleSequenceTime').innerText = averageLength.minutes + ":" + averageLength.seconds;
+                            if (result) {
+                                if (result.TitleSequences.EpisodeTitleSequences) {
+                                    var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                    view.querySelector('.averageTitleSequenceTime').innerText =
+                                        averageLength.minutes + ":" + averageLength.seconds;
 
-                                result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
-                                    getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
-                                        view.querySelector('.introResultBody').innerHTML += html;
+                                    result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
+                                        getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
+                                            view.querySelector('.introResultBody').innerHTML += html;
 
-                                        view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                            btn.addEventListener('click', (elem) => {
-                                                elem.preventDefault();
+                                            view.querySelectorAll('.removeIntroData i').forEach(btn => {
+                                                btn.addEventListener('click',
+                                                    (elem) => {
+                                                        elem.preventDefault();
 
-                                                var episodeId = elem.target.closest('.fab').id;
-                                                var seriesId = elem.target.closest('.fab').dataset["seriesid"];
-                                                var seasonId = elem.target.closest('.fab').dataset["seasonid"];
+                                                        var episodeId = elem.target.closest('.fab').id;
+                                                        var seriesId = elem.target.closest('.fab').dataset["seriesid"];
+                                                        var seasonId = elem.target.closest('.fab').dataset["seasonid"];
 
-                                                removeIntroItem(seriesId, seasonId, episodeId).then(r => {
-                                                    var index = elem.target.closest('tr').rowIndex;
-                                                    view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                });
+                                                        removeIntroItem(seriesId, seasonId, episodeId).then(r => {
+                                                            var index = elem.target.closest('tr').rowIndex;
+                                                            view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                        });
+                                                    });
                                             });
                                         });
-                                    });
 
-                                });
+                                    });
+                                }
+                            } else {
+                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                             }
                         });
                     });
@@ -190,32 +216,42 @@
                             view.querySelector('.introResultBody').innerHTML = '';
                             var _seasonId = seasonSelect[0].value;
                             getIntros(_seriesId, _seasonId).then((result) => {
-                                if (result.TitleSequences.EpisodeTitleSequences) {
+                                if (result) {
+                                    if (result.TitleSequences.EpisodeTitleSequences) {
 
-                                    var averageLength = parseISO8601Duration(result.AverageEpisodeTitleSequenceLength);
-                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
-                                    
-                                    result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
-                                        getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
+                                        var averageLength =
+                                            parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                        view.querySelector('.averageTitleSequenceTime').innerText =
+                                            "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
-                                            view.querySelector('.introResultBody').innerHTML += html;
+                                        result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
+                                            getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
 
-                                            view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                                btn.addEventListener('click', (elem) => {
-                                                    elem.preventDefault();
-                                                    var episodeId = elem.target.closest('.fab').id;
-                                                    var seriesId = elem.target.closest('.fab').dataset["seriesid"];
-                                                    var seasonId = elem.target.closest('.fab').dataset["seasonid"];
-                                                    removeIntroItem(seriesId, seasonId, episodeId).then(() => {
-                                                        var index = elem.target.closest('tr').rowIndex;
-                                                        view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                    });
+                                                view.querySelector('.introResultBody').innerHTML += html;
 
+                                                view.querySelectorAll('.removeIntroData i').forEach(btn => {
+                                                    btn.addEventListener('click',
+                                                        (elem) => {
+                                                            elem.preventDefault();
+                                                            var episodeId = elem.target.closest('.fab').id;
+                                                            var seriesId =
+                                                                elem.target.closest('.fab').dataset["seriesid"];
+                                                            var seasonId =
+                                                                elem.target.closest('.fab').dataset["seasonid"];
+                                                            removeIntroItem(seriesId, seasonId, episodeId).then(() => {
+                                                                var index = elem.target.closest('tr').rowIndex;
+                                                                view.querySelector('.introResultBody')
+                                                                    .deleteRow(index - 1);
+                                                            });
+
+                                                        });
                                                 });
                                             });
-                                        });
 
-                                    });
+                                        });
+                                    }
+                                } else {
+                                    view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                 }
                             });
 

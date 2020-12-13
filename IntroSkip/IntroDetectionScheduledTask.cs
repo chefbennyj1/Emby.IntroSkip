@@ -54,143 +54,155 @@ namespace IntroSkip
 
             Step = CalculateStep(seriesQuery.TotalRecordCount);
 
-            foreach (var series in seriesQuery.Items)
-            {
-                if (string.IsNullOrEmpty(series.InternalId.ToString())) continue;
-
-                Step =+ 0.01;
-                progress.Report(Step);
-
-                Log.Info(series.Name);
-               
-                var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() {MaxDegreeOfParallelism = 2},
+                series => //)//foreach (var series in seriesQuery.Items)
                 {
-                    Parent           = series,
-                    Recursive        = true,
-                    IncludeItemTypes = new[] { "Season" },
-                    User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    IsVirtualItem    = false
-                });
+                    //if (string.IsNullOrEmpty(series.InternalId.ToString())) continue;
 
-                foreach (var season in seasonQuery.Items)
-                {
-                    Step =+ 0.01;
+                    Step = +0.01;
                     progress.Report(Step);
 
-                    RemoveAllPreviousSeasonEncodings();
+                    Log.Info(series.Name);
 
-                    Log.Info("File clean up complete");
-                    
-                    var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
-                    
-                    var episodeTitleSequences = titleSequence.EpisodeTitleSequences ?? new List<EpisodeTitleSequence>();
-                    
-                    //Only keep finger print data for an individual seasons
-                    //AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
-
-                    var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+                    var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
-                        Parent           = season,
-                        Recursive        = true,
-                        IncludeItemTypes = new[] { "Episode" },
-                        User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                        IsVirtualItem    = false
-
+                        Parent = series,
+                        Recursive = true,
+                        IncludeItemTypes = new[] {"Season"},
+                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                        IsVirtualItem = false
                     });
-                    
-                    //All the episodes which haven't been matched.
-                    
-                    var exceptIds = new HashSet<long>(episodeTitleSequences.Select(y => y.InternalId).Distinct());
-                    var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
-                    if (!unmatched.Any())
+                    foreach (var season in seasonQuery.Items)
                     {
-                        Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
-                    }
+                        Step = +0.01;
+                        progress.Report(Step);
 
+                        
 
-                    for(var index = 0; index <= unmatched.Count() -1; index++)
-                    {
-                        Log.Info(
-                            $"Checking Title Sequence recorded for {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber}");
+                        Log.Info("File clean up complete");
 
-                        for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
+                        var titleSequence =
+                            IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId,
+                                season.InternalId);
+
+                        var episodeTitleSequences =
+                            titleSequence.EpisodeTitleSequences ?? new List<EpisodeTitleSequence>();
+
+                        //Only keep finger print data for an individual seasons
+                        //AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
+
+                        var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
+                            Parent = season,
+                            Recursive = true,
+                            IncludeItemTypes = new[] {"Episode"},
+                            User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                            IsVirtualItem = false
 
-                            //Don't compare the same episode with itself.
-                            if (episodeQuery.Items[episodeComparableIndex].InternalId == unmatched[index].InternalId)
+                        });
+
+                        //All the episodes which haven't been matched.
+
+                        var exceptIds = new HashSet<long>(episodeTitleSequences.Select(y => y.InternalId).Distinct());
+                        var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
+
+                        if (!unmatched.Any())
+                        {
+                            Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
+                        }
+
+
+                        for (var index = 0; index <= unmatched.Count() - 1; index++)
+                        {
+                            Log.Info(
+                                $"Checking Title Sequence recorded for {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber}");
+
+                            for (var episodeComparableIndex = 0;
+                                episodeComparableIndex <= episodeQuery.Items.Count() - 1;
+                                episodeComparableIndex++)
                             {
-                                Log.Info(
-                                    $" Can not compare {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} with itself MoveNext()");
-
-                                continue;
-                            }
-
-                            var comparableIndex = episodeComparableIndex;
-                            if (episodeTitleSequences.Exists(e => e.InternalId == unmatched[index].InternalId) &&
-                                episodeTitleSequences.Exists(e => e.InternalId == episodeQuery.Items[comparableIndex].InternalId))
-                            {
-                                Log.Info($"\n{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} OK" +
-                                    $"\n{episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name} S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: {episodeQuery.Items[episodeComparableIndex].IndexNumber} OK");
-                                continue;
-                            }
-
-                            try
-                            {
-                                var data = await (IntroDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
-
-                                foreach (var dataPoint in data)
+                                //Don't compare the same episode with itself.
+                                if (episodeQuery.Items[episodeComparableIndex].InternalId ==
+                                    unmatched[index].InternalId)
                                 {
-                                    if (!episodeTitleSequences.Exists(intro => intro.InternalId == dataPoint.InternalId))
+                                    Log.Info(
+                                        $" Can not compare {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} with itself MoveNext()");
+
+                                    continue;
+                                }
+
+                                var comparableIndex = episodeComparableIndex;
+                                if (episodeTitleSequences.Exists(e => e.InternalId == unmatched[index].InternalId) &&
+                                    episodeTitleSequences.Exists(e =>
+                                        e.InternalId == episodeQuery.Items[comparableIndex].InternalId))
+                                {
+                                    Log.Info(
+                                        $"\n{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} OK" +
+                                        $"\n{episodeQuery.Items[episodeComparableIndex].Parent.Parent.Name} S: {episodeQuery.Items[episodeComparableIndex].Parent.IndexNumber} E: {episodeQuery.Items[episodeComparableIndex].IndexNumber} OK");
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    var data = (IntroDetection.Instance.SearchAudioFingerPrint(
+                                        episodeQuery.Items[episodeComparableIndex], unmatched[index]));
+
+                                    foreach (var dataPoint in data)
                                     {
-                                        episodeTitleSequences.Add(dataPoint);
+                                        if (!episodeTitleSequences.Exists(intro =>
+                                            intro.InternalId == dataPoint.InternalId))
+                                        {
+                                            episodeTitleSequences.Add(dataPoint);
+                                        }
+                                    }
+
+                                    //titleSequence.EpisodeTitleSequences = episodeTitleSequences;
+
+                                    //IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId,
+                                    //    season.InternalId, titleSequence);
+                                    //Plugin.Instance.UpdateConfiguration(config);
+                                    Log.Info("Episode Intro Data obtained successfully.");
+                                    episodeComparableIndex = episodeQuery.Items.Count() - 1; //Exit out of this loop
+
+                                }
+                                catch (InvalidIntroDetectionException ex)
+                                {
+                                    Log.Info(ex.Message);
+
+                                    if (episodeComparableIndex + 1 > episodeQuery.Items.Count() - 1)
+                                    {
+                                        //We have exhausted all our episode comparing
+                                        Log.Info(
+                                            $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} has no intro.");
+                                        episodeTitleSequences.Add(new EpisodeTitleSequence()
+                                        {
+                                            IndexNumber = episodeQuery.Items[index].IndexNumber,
+                                            HasIntro = false,
+                                            InternalId = episodeQuery.Items[index].InternalId
+                                        });
+
+
+
                                     }
                                 }
+                                //catch (Exception ex)
+                                //{
+                                //    Log.Info(ex.Message);
 
-                                titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                    
-                                IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
-                                //Plugin.Instance.UpdateConfiguration(config);
-                                Log.Info("Episode Intro Data obtained successfully.");
-                                episodeComparableIndex = episodeQuery.Items.Count() - 1; //Exit out of this loop
-
+                                //    //We missed a positive scan here. We will try again at another time.
+                                //    //If this is first scan, there is no time to stop now! We're huge!
+                                //    //We'll catch these the next time.
+                                //}
                             }
-                            catch (InvalidIntroDetectionException ex)
-                            {
-                                Log.Info(ex.Message);
-
-                                if (episodeComparableIndex + 1 > episodeQuery.Items.Count() - 1)
-                                {
-                                    //We have exhausted all our episode comparing
-                                    Log.Info(
-                                        $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} has no intro.");
-                                    episodeTitleSequences.Add(new EpisodeTitleSequence()
-                                    {
-                                        IndexNumber = episodeQuery.Items[index].IndexNumber,
-                                        HasIntro = false,
-                                        InternalId = episodeQuery.Items[index].InternalId
-                                    });
-
-                                    titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                    IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId,
-                                        season.InternalId, titleSequence);
-
-                                }
-                            }
-                            //catch (Exception ex)
-                            //{
-                            //    Log.Info(ex.Message);
-
-                            //    //We missed a positive scan here. We will try again at another time.
-                            //    //If this is first scan, there is no time to stop now! We're huge!
-                            //    //We'll catch these the next time.
-                            //}
                         }
-                    }
+                        RemoveAllPreviousSeasonEncodings(season.InternalId);
+                        titleSequence.EpisodeTitleSequences = episodeTitleSequences;
+                        IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId,
+                            season.InternalId, titleSequence);
 
-                    
-                }
-            }
+                    }
+                });
             progress.Report(100.0);
         }
 
@@ -211,7 +223,7 @@ namespace IntroSkip
             return mode;
         }
 
-        private void RemoveAllPreviousSeasonEncodings()
+        private void RemoveAllPreviousSeasonEncodings(long internalId)
         {
             var introEncodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
             
@@ -220,8 +232,13 @@ namespace IntroSkip
             
             foreach (var file in files)
             {
+                if (file.Name.Substring(0, internalId.ToString().Length) != internalId.ToString()) continue;
                 Log.Info($"Removing encoding file {file.FullName}");
-                FileSystem.DeleteFile(file.FullName);
+                try
+                {
+                    FileSystem.DeleteFile(file.FullName);
+                }
+                catch { }
             }           
         }
 
