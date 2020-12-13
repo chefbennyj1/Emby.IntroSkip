@@ -518,13 +518,13 @@ namespace IntroSkip
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
             {
-                firstFileRegionStart = 0.0;
-                firstFileRegionEnd = 0.0;
+                firstFileRegionStart  = 0.0;
+                firstFileRegionEnd    = 0.0;
                 secondFileRegionStart = 0.0;
-                secondFileRegionEnd = 0.0;
+                secondFileRegionEnd   = 0.0;
                 throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-            if (commonRegionEnd - commonRegionStart < 5.0)
+            if (commonRegionEnd - commonRegionStart < 10)
             {
                 // -1 means intro does not exists
                 firstFileRegionStart  = -1.0;
