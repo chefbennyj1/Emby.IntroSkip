@@ -93,6 +93,44 @@
             });
         }  
 
+        function sortTable(view) {
+            var table, rows, switching, i, x, y, shouldSwitch;
+            table = view.querySelector(".tblEpisodeIntroResults");
+            switching = true;
+            /* Make a loop that will continue until
+            no switching has been done: */
+            while (switching) {
+                // Start by saying: no switching is done:
+                switching = false;
+                rows = table.rows;
+                /* Loop through all table rows (except the
+                first, which contains table headers): */
+                for (i = 1; i < (rows.length - 1); i++) {
+                    // Start by saying there should be no switching:
+                    shouldSwitch = false;
+                    /* Get the two elements you want to compare,
+                    one from current row and one from the next: */
+                    x = rows[i].getElementsByTagName("TD")[2];
+                    y = rows[i + 1].getElementsByTagName("TD")[2];
+                    // Check if the two rows should switch place:
+                    if (parseInt(x.innerHTML.toLowerCase().split('episode: ')[1], 10) > parseInt(y.innerHTML.toLowerCase().split('episode: ')[1], 10)) {
+                        // If so, mark as a switch and break the loop:
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    /* If a switch has been marked, make the switch
+                    and mark that a switch has been done: */
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                }
+            }
+        }
+
+
+
+
         return function(view) {
             view.addEventListener('viewshow',
                 () => {
@@ -108,20 +146,16 @@
 
                                     if (i === 0 && j == 0) {
                                         getIntros(series.Items[i].Id, seasons.Items[j].Id).then((result) => {
-                                            if (result) {
-                                                if (result.EpisodeTitleSequences) {
-                                                    var averageLength =
-                                                        parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
-                                                    view.querySelector('.averageTitleSequenceTime').innerText =
-                                                        averageLength.minutes + ":" + averageLength.seconds;
+                                            if (result.TitleSequences) {
+                                                if (result.TitleSequences.EpisodeTitleSequences) {
+                                                    var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
+                                                      
+                                                    result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
+                                                        getTableRowHtml(intro, series.Items[i].Id, seasons.Items[j].Id).then(html => {
 
-                                                    result.EpisodeTitleSequences.forEach(intro => {
-                                                        getTableRowHtml(intro, series.Items[i].Id, seasons.Items[j].Id)
-                                                            .then(html => {
-
-                                                                view.querySelector('.introResultBody').innerHTML +=
-                                                                    html;
-
+                                                                view.querySelector('.introResultBody').innerHTML +=  html;
+                                                                sortTable(view);
                                                                 view.querySelectorAll('.removeIntroData i').forEach(
                                                                     btn => {
                                                                         btn.addEventListener('click',
@@ -147,9 +181,12 @@
 
                                                                             });
                                                                     });
+                                                                
                                                             });
-
+                                                       
                                                     });
+                                                    
+
                                                 }
                                             } else {
                                                 view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
@@ -170,16 +207,15 @@
                         var _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
                         var _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                         getIntros(_seriesId, _seasonId).then((result) => {
-                            if (result) {
+                            if (result.TitleSequences) {
                                 if (result.TitleSequences.EpisodeTitleSequences) {
                                     var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
-                                    view.querySelector('.averageTitleSequenceTime').innerText =
-                                        averageLength.minutes + ":" + averageLength.seconds;
+                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;   
 
                                     result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
                                         getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
                                             view.querySelector('.introResultBody').innerHTML += html;
-
+                                            sortTable(view);
                                             view.querySelectorAll('.removeIntroData i').forEach(btn => {
                                                 btn.addEventListener('click',
                                                     (elem) => {
@@ -195,9 +231,11 @@
                                                         });
                                                     });
                                             });
+                                            
                                         });
-
+                                       
                                     });
+                                    
                                 }
                             } else {
                                 view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
@@ -208,26 +246,28 @@
                     seriesSelect.addEventListener('change', (e) => {
                         e.preventDefault();
                         seasonSelect.innerHTML = '';
+                        
                         var _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
                         getSeasons( _seriesId).then(seasons => {
                             seasons.Items.forEach(season => {
                                 seasonSelect.innerHTML += '<option value="' + season.Id + '">' + season.Name + '</option>';
                             });
+
                             view.querySelector('.introResultBody').innerHTML = '';
                             var _seasonId = seasonSelect[0].value;
                             getIntros(_seriesId, _seasonId).then((result) => {
                                 if (result) {
                                     if (result.TitleSequences.EpisodeTitleSequences) {
 
-                                        var averageLength =
-                                            parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
-                                        view.querySelector('.averageTitleSequenceTime').innerText =
-                                            "00:" + averageLength.minutes + ":" + averageLength.seconds;
+                                        var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                        view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
+                                      
                                         result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
                                             getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
 
                                                 view.querySelector('.introResultBody').innerHTML += html;
+                                                sortTable(view);
 
                                                 view.querySelectorAll('.removeIntroData i').forEach(btn => {
                                                     btn.addEventListener('click',
@@ -246,9 +286,11 @@
 
                                                         });
                                                 });
+                                                
                                             });
-
+                                            
                                         });
+                                        
                                     }
                                 } else {
                                     view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";

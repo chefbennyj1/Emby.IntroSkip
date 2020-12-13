@@ -54,32 +54,27 @@ namespace IntroSkip
 
             Step = CalculateStep(seriesQuery.TotalRecordCount);
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() {MaxDegreeOfParallelism = 2},
-                series => //)//foreach (var series in seriesQuery.Items)
-                {
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() {MaxDegreeOfParallelism = 2}, series => 
+            {
                     //if (string.IsNullOrEmpty(series.InternalId.ToString())) continue;
 
-                    Step = +0.01;
+                    Step += 0.01;
                     progress.Report(Step);
 
                     Log.Info(series.Name);
 
                     var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
-                        Parent = series,
-                        Recursive = true,
+                        Parent           = series,
+                        Recursive        = true,
                         IncludeItemTypes = new[] {"Season"},
-                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                        IsVirtualItem = false
+                        User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                        IsVirtualItem    = false
                     });
 
                     foreach (var season in seasonQuery.Items)
                     {
-                        Step = +0.01;
-                        progress.Report(Step);
-
                         
-
                         Log.Info("File clean up complete");
 
                         var titleSequence =
@@ -89,16 +84,14 @@ namespace IntroSkip
                         var episodeTitleSequences =
                             titleSequence.EpisodeTitleSequences ?? new List<EpisodeTitleSequence>();
 
-                        //Only keep finger print data for an individual seasons
-                        //AudioFingerPrints = new Dictionary<string, IntroAudioFingerprint>();
-
+                        
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
-                            Parent = season,
-                            Recursive = true,
+                            Parent           = season,
+                            Recursive        = true,
                             IncludeItemTypes = new[] {"Episode"},
-                            User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                            IsVirtualItem = false
+                            User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                            IsVirtualItem    = false
 
                         });
 
@@ -145,8 +138,7 @@ namespace IntroSkip
 
                                 try
                                 {
-                                    var data = (IntroDetection.Instance.SearchAudioFingerPrint(
-                                        episodeQuery.Items[episodeComparableIndex], unmatched[index]));
+                                    var data = (IntroDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
 
                                     foreach (var dataPoint in data)
                                     {
@@ -157,11 +149,7 @@ namespace IntroSkip
                                         }
                                     }
 
-                                    //titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-
-                                    //IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId,
-                                    //    season.InternalId, titleSequence);
-                                    //Plugin.Instance.UpdateConfiguration(config);
+                                    
                                     Log.Info("Episode Intro Data obtained successfully.");
                                     episodeComparableIndex = episodeQuery.Items.Count() - 1; //Exit out of this loop
 
@@ -173,17 +161,14 @@ namespace IntroSkip
                                     if (episodeComparableIndex + 1 > episodeQuery.Items.Count() - 1)
                                     {
                                         //We have exhausted all our episode comparing
-                                        Log.Info(
-                                            $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} has no intro.");
+                                        Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} has no intro.");
+
                                         episodeTitleSequences.Add(new EpisodeTitleSequence()
                                         {
                                             IndexNumber = episodeQuery.Items[index].IndexNumber,
                                             HasIntro = false,
                                             InternalId = episodeQuery.Items[index].InternalId
                                         });
-
-
-
                                     }
                                 }
                                 //catch (Exception ex)
@@ -198,11 +183,10 @@ namespace IntroSkip
                         }
                         RemoveAllPreviousSeasonEncodings(season.InternalId);
                         titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                        IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId,
-                            season.InternalId, titleSequence);
+                        IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
 
                     }
-                });
+            });
             progress.Report(100.0);
         }
 
@@ -215,17 +199,12 @@ namespace IntroSkip
 
         }
 
-        private TimeSpan CalculateTitleSequenceMode(List<EpisodeTitleSequence> sequences)
-        {
-            var groups   = sequences.GroupBy(sequence => sequence.IntroEnd - sequence.IntroStart);
-            int maxCount = groups.Max(g => g.Count());
-            var mode     = groups.First(g => g.Count() == maxCount).Key;
-            return mode;
-        }
-
+       
         private void RemoveAllPreviousSeasonEncodings(long internalId)
         {
-            var introEncodingPath = ApplicationPaths.PluginConfigurationsPath + FileSystem.DirectorySeparatorChar + "IntroEncoding" + FileSystem.DirectorySeparatorChar;
+            var configPath        = ApplicationPaths.PluginConfigurationsPath;
+            var separator         = FileSystem.DirectorySeparatorChar;
+            var introEncodingPath = $"{configPath}{separator}IntroEncoding{separator}";
             
             var files = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
             if (!files.Any()) return;
