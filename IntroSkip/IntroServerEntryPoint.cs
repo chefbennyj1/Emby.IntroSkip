@@ -18,6 +18,10 @@ namespace IntroSkip
         public static IntroServerEntryPoint Instance { get; private set; }
         private ILogger Log                          { get; set; }
 
+        public string EncodingDir      { get; set; }
+        public string TitleSequenceDir { get; set; }
+        public string FingerPrintDir   { get; set; }
+
         // ReSharper disable once TooManyDependencies
         public IntroServerEntryPoint(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
         {
@@ -33,7 +37,11 @@ namespace IntroSkip
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             var filePath = $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json";
 
-            if (!FileSystem.FileExists(filePath)) return new TitleSequenceDto();
+            if (!FileSystem.FileExists(filePath))
+            {
+                Log.Info("Creating new title sequence object.");
+                return new TitleSequenceDto();
+            }
             
             using (var sr = new StreamReader(filePath))
             {
@@ -126,9 +134,11 @@ namespace IntroSkip
         public void Run()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
+
             if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences"))
             {
                 FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences");
+                
             }
 
             if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding"))
@@ -136,7 +146,16 @@ namespace IntroSkip
                 FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding" );
             }
 
+            if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints"))
+            {
+                FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints");
+            }
+
             CopyFpCalc($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding");
+
+            TitleSequenceDir = $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences";
+            EncodingDir      = $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding";
+            FingerPrintDir   = $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints";
 
         }
     }

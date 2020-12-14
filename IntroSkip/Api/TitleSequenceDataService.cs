@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
@@ -53,13 +54,14 @@ namespace IntroSkip.Api
         private IJsonSerializer JsonSerializer      { get; }
         private IUserManager UserManager            { get; }
         private ILogger Log                         { get; }
-        
+        private IFileSystem FileSystem { get; }
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceDataService(IJsonSerializer json, ILibraryManager libraryManager, IUserManager user, ILogManager logMan)
+        public TitleSequenceDataService(IJsonSerializer json, ILibraryManager libraryManager, IUserManager user, ILogManager logMan, IFileSystem fileSystem)
         {
             JsonSerializer = json;
             LibraryManager = libraryManager;
             UserManager    = user;
+            FileSystem = fileSystem;
             Log = logMan.GetLogger(Plugin.Instance.Name);
         }
         
@@ -75,20 +77,28 @@ namespace IntroSkip.Api
             {
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
 
-                if (titleSequences.EpisodeTitleSequences.Any())
+                if (!titleSequences.EpisodeTitleSequences.Any())
                 {
-                    Log.Info("found title sequence file to remove episode.");
-                }
-                
-               
-                var episode = titleSequences.EpisodeTitleSequences.FirstOrDefault(i => i.InternalId == request.EpisodeId);
-                if (episode != null)
-                {
-                    Log.Info("Found Episode to remove");
+                    return "";
                 }
 
-                titleSequences.EpisodeTitleSequences.Remove(episode);
-                
+                if (titleSequences.EpisodeTitleSequences.Exists(item => item.InternalId == request.EpisodeId))
+                {
+                   titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
+                }
+
+                //Remove the finger print file
+                if (FileSystem.FileExists($"{IntroServerEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                {
+                    try
+                    {
+                        FileSystem.DeleteFile($"{IntroServerEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                    }
+                    catch { }
+                }
+
+                Log.Info("Title sequence finger print file and saved intro data removed.");
+
                 //We'll have to double check this!
                 IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
 
