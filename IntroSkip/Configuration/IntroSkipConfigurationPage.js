@@ -93,6 +93,9 @@
             });
         }  
 
+
+
+
         function sortTable(view) {
             var table, rows, switching, i, x, y, shouldSwitch;
             table = view.querySelector(".tblEpisodeIntroResults");
