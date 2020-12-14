@@ -113,7 +113,8 @@ namespace IntroSkip.Api
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
                 if (titleSequences.EpisodeTitleSequences is null) return "";
 
-                titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber);
+                var episodeTitleSequences = titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber).ToList();
+                titleSequences.EpisodeTitleSequences = episodeTitleSequences;
 
                 return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
                 {
