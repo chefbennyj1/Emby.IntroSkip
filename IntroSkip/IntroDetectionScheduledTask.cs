@@ -28,7 +28,7 @@ namespace IntroSkip
         private IJsonSerializer JsonSerializer        { get; }
         public long CurrentSeriesEncodingInternalId   { get; set; }
 
-        private static bool QuickScan => Plugin.Instance.Configuration.QuickScan;
+       
         
         public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
         {
@@ -58,11 +58,11 @@ namespace IntroSkip
                 User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             });
 
-            var step = 100.0 - (100.0 - 100.0 / seriesQuery.TotalRecordCount);
-           
+            var step = 100.0 / seriesQuery.TotalRecordCount;
+            var currentProgress = 0.0;
             Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, series =>
             {
-                  progress.Report(step += step);
+                  progress.Report(currentProgress += step);
                  
                   Log.Info(series.Name);
 
@@ -98,7 +98,7 @@ namespace IntroSkip
                     //otherwise QuickScan is false, and will scan all items with no intro data, and also try an rescan any items which have been marked with "HasIntro=false"
 
 
-                    var exceptIds = QuickScan
+                    var exceptIds = Plugin.Instance.Configuration.QuickScan
                         ? new HashSet<long>(episodeTitleSequences.Select(y => y.InternalId).Distinct())
                         : new HashSet<long>(episodeTitleSequences.Where(y => y.HasIntro).Select(y => y.InternalId).Distinct());
 

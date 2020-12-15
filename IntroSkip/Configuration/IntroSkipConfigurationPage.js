@@ -21,6 +21,96 @@
             });
         };
 
+        function openSettingsDialog() {
+            loading.show();
+
+            var dlg = dialogHelper.createDialog({
+                size: "medium-tall",
+                removeOnClose: !1,
+                scrollY: true
+            });
+
+            dlg.classList.add("formDialog");
+            dlg.classList.add("ui-body-a");
+            dlg.classList.add("background-theme-a");
+            dlg.style.maxWidth = "25%";
+            dlg.style.maxHeight = "50%";
+
+            var html = '';
+
+            html += '<div class="formDialogHeader" style="display:flex">';
+            html += '<button is="paper-icon-button-light" class="btnCloseDialog autoSize paper-icon-button-light" tabindex="-1"><i class="md-icon">arrow_back</i></button><h3 class="formDialogHeaderTitle">Advanced settings</h3>';
+            html += '</div>';
+
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="max-height: 42em;">';
+            html += '<div style="flex-grow:1;">';
+            
+
+            html += '<div class="inputContainer">';
+            html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
+            html += '<input is="emby-toggle" type="checkbox" id="quickScan" class="chkQuickScan noautofocus mdl-switch__input" data-embytoggle="true"/>';
+            html += '<span class="toggleButtonLabel mdl-switch__label">Quick Scan</span>';
+            html += '<div class="mdl-switch__trackContainer">';
+            html += '<div class="mdl-switch__track"></div> ';
+            html += '<div class="mdl-switch__thumb">';
+            html += '<span class="mdl-switch__focus-helper"></span>';
+            html += '</div>';
+            html += '</div> ';
+            html += '</label> ';
+            html += '<div class="fieldDescription">';
+            html += '<p>Quick Scan will search title sequences for new items added to the library.</p> ';
+            html += '<p>Turning Quick Scan off will scan for new or missing items, and rescan items which have been marked with no title sequences.</p>';
+            html += '</div> ';
+            html += '</div> ';
+
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceThreshold">Title sequence threshold (seconds):</label> ';
+            html += '<input is="emby-input" type="number" id="txtTitleSequenceThreshold" min="1.0" max="10.0" step="0.1" label="Title sequence threshold (seconds):" class="emby-input">';
+            html += '<div class="fieldDescription">';
+            html += 'Most episode title sequences will be longer then 8.5 seconds. Only change this setting if title sequences are less then 8.5 seconds in the next scan.';
+            html += '</div>';
+            html += '</div>';
+             
+
+            html += '</div>';
+            html += '</div>';
+
+            dlg.innerHTML = html;
+            dialogHelper.open(dlg);
+
+            var quickScanToggle             = dlg.querySelector('#quickScan');
+            var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
+            
+            ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                quickScanToggle.checked = config.QuickScan;
+                titleSequenceThresholdInput.value = config.TitleSequenceThreshold ? config.TitleSequenceThreshold : 8.5;
+            });
+
+            quickScanToggle.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.QuickScan = quickScanToggle.checked;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            });
+
+            titleSequenceThresholdInput.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.TitleSequenceThreshold = titleSequenceThresholdInput.value;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            }); 
+
+            dlg.querySelector('.btnCloseDialog').addEventListener('click',() => {
+                dialogHelper.close(dlg);
+            });
+
+            loading.hide();
+        }
+
+
         function getSeries() {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => { 
@@ -132,13 +222,9 @@
             view.addEventListener('viewshow',
                 () => {
 
-                    var seriesSelect    = view.querySelector('#selectEmbySeries');
-                    var seasonSelect    = view.querySelector('#selectEmbySeason');
-                    var quickScanToggle = view.querySelector('#quickScan');
-
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        quickScanToggle.checked = config.QuickScan;
-                    });
+                    var seriesSelect   = view.querySelector('#selectEmbySeries');
+                    var seasonSelect   = view.querySelector('#selectEmbySeason');
+                    var settingsButton = view.querySelector('#openSettingsDialog'); 
 
                     getSeries().then(series => {
                         for (let i = 0; i <= series.Items.length - 1; i++) {
@@ -315,12 +401,9 @@
                         });
                     });
                      
-                    quickScanToggle.addEventListener('change', (e) => {
+                    settingsButton.addEventListener('click', (e) => {
                         e.preventDefault();
-                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.QuickScan = quickScanToggle.checked;
-                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                        });
+                        openSettingsDialog();
                     });
                 });
         }

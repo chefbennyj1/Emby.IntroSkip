@@ -2,6 +2,15 @@
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+             
+                <div class="detailSectionHeader" style="margin-bottom:2em">
+                    <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Advanced Settings</h2>
+                    <button is="emby-button" id="openSettingsDialog" class="fab emby-input-iconbutton paper-icon-button-light emby-button" style="margin-left: 1em;"><i class="md-icon">settings</i></button>
+                </div>
+                
+                <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                    Title Sequences
+                </h2>
 
                 <div style="display: flex; align-items: center;">
                     <!-- Emby Series List -->
@@ -28,24 +37,6 @@
                         <div class="fieldDescription">
                             Show saved intro data for this season.
                         </div>
-                    </div>
-                </div>
-                
-
-                <div class="inputContainer">
-                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
-                        <input is="emby-toggle" type="checkbox" id="quickScan" class="chkQuickScan noautofocus mdl-switch__input" data-embytoggle="true"/>
-                        <span class="toggleButtonLabel mdl-switch__label">Quick Scan</span>
-                        <div class="mdl-switch__trackContainer">
-                            <div class="mdl-switch__track"></div>
-                            <div class="mdl-switch__thumb">
-                                <span class="mdl-switch__focus-helper"></span>
-                            </div>
-                        </div>
-                    </label>
-                    <div class="fieldDescription">
-                        <p>Quick Scan will search title sequences for new items added to the library.</p> 
-                        <p>Turning Quick Scan off will scan for new or missing items, and rescan items which have been marked with no title sequences.</p>
                     </div>
                 </div>
 

@@ -460,7 +460,7 @@ namespace IntroSkip
                 secondFileRegionEnd   = 0.0;
                 throw new InvalidTitleSequenceDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-            if (commonRegionEnd - commonRegionStart < 10)
+            if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceThreshold ?? 8.5))
             {
                 // -1 means intro does not exists
                 firstFileRegionStart  = -1.0;

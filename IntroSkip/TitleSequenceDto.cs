@@ -5,7 +5,7 @@ namespace IntroSkip
 {
     public class EpisodeTitleSequence
     {
-        public int? IndexNumber { get; set; }
+        public int? IndexNumber      { get; set; }
         public long InternalId       { get; set; }
         public bool HasIntro         { get; set; }
         public TimeSpan IntroStart   { get; set; }
