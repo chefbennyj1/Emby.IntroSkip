@@ -109,18 +109,9 @@ namespace IntroSkip.Api
 
         public string Get(SeriesTitleSequenceRequest request)
         {
-            Log.Info($"Series Request Series Id: {request.SeriesId}");
-            Log.Info($"Series Request Season Id: {request.SeasonId}");
-
-            var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
-
-            Log.Info($"Series Request title sequence count: {titleSequences.EpisodeTitleSequences.Count}");
             
-            //if (titleSequences.EpisodeTitleSequences is null) return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse());
-
-            //var episodeTitleSequences = titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber).ToList();
-            //titleSequences.EpisodeTitleSequences = episodeTitleSequences;
-
+            var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+            
             TimeSpan commonDuration;
             try
             {
@@ -131,13 +122,12 @@ namespace IntroSkip.Api
                 commonDuration = new TimeSpan(0,0,0);
             }
 
-            Log.Info($"SERIES TITLE REQUEST DURATION  {commonDuration:c}");
+            
             return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
                 TitleSequences = titleSequences
             });
-
 
         }
 

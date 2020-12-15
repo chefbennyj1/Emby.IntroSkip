@@ -27,8 +27,8 @@ namespace IntroSkip
         private IApplicationPaths ApplicationPaths    { get; }
         private IJsonSerializer JsonSerializer        { get; }
         public long CurrentSeriesEncodingInternalId   { get; set; }
-       
-        public static bool QuickScan                  { get; set; } = false;
+
+        private static bool QuickScan => Plugin.Instance.Configuration.QuickScan;
         
         public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
         {
@@ -80,17 +80,16 @@ namespace IntroSkip
 
                       var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
 
-
                       List<EpisodeTitleSequence> episodeTitleSequences = null;
                       episodeTitleSequences = titleSequence.EpisodeTitleSequences is null ? new List<EpisodeTitleSequence>() : titleSequence.EpisodeTitleSequences.Distinct().ToList();
 
                       var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                       {
-                          Parent = season,
-                          Recursive = true,
+                          Parent           = season,
+                          Recursive        = true,
                           IncludeItemTypes = new[] { "Episode" },
-                          User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                          IsVirtualItem = false
+                          User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                          IsVirtualItem    = false
 
                       });
 
@@ -108,12 +107,12 @@ namespace IntroSkip
 
 
                     if (!unmatched.Any())
-                      {
-                          Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
-                          continue;
-                      }
+                    {
+                        Log.Info($"{season.Parent.Name} S: {season.IndexNumber} OK.");
+                        continue;
+                    }
 
-                      Log.Info($"\n{season.Parent.Name} S: {season.IndexNumber} has {unmatched.Count()} episodes to scan...\n");
+                    Log.Info($"\n{season.Parent.Name} S: {season.IndexNumber} has {unmatched.Count()} episodes to scan...\n");
 
 
                       for (var index = 0; index <= unmatched.Count() - 1; index++)

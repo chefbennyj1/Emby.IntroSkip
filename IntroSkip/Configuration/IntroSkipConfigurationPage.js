@@ -1,4 +1,4 @@
-﻿define(["loading", "dialogHelper", "formDialogStyle"],
+﻿define(["loading", "dialogHelper", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
     function(loading, dialogHelper) {
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
@@ -92,10 +92,7 @@
                 resolve(true);
             });
         }  
-
-
-
-
+        
         function sortTable(view) {
             var table, rows, switching, i, x, y, shouldSwitch;
             table = view.querySelector(".tblEpisodeIntroResults");
@@ -129,16 +126,20 @@
                     switching = true;
                 }
             }
-        }
-
-
-
+        }   
 
         return function(view) {
             view.addEventListener('viewshow',
                 () => {
-                    var seriesSelect = view.querySelector('#selectEmbySeries');
-                    var seasonSelect = view.querySelector('#selectEmbySeason');
+
+                    var seriesSelect    = view.querySelector('#selectEmbySeries');
+                    var seasonSelect    = view.querySelector('#selectEmbySeason');
+                    var quickScanToggle = view.querySelector('#quickScan');
+
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        quickScanToggle.checked = config.QuickScan;
+                    });
+
                     getSeries().then(series => {
                         for (let i = 0; i <= series.Items.length - 1; i++) {
                             seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
@@ -313,7 +314,14 @@
 
                         });
                     });
-                        
+                     
+                    quickScanToggle.addEventListener('change', (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.QuickScan = quickScanToggle.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                        });
+                    });
                 });
         }
     });
