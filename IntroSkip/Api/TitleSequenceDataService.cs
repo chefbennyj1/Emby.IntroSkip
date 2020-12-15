@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -50,29 +50,22 @@ namespace IntroSkip.Api
             public long SeriesId { get; set; }
         }
 
-        private ILibraryManager LibraryManager      { get; }
+        
         private IJsonSerializer JsonSerializer      { get; }
-        private IUserManager UserManager            { get; }
         private ILogger Log                         { get; }
-        private IFileSystem FileSystem { get; }
-        // ReSharper disable once TooManyDependencies
-        public TitleSequenceDataService(IJsonSerializer json, ILibraryManager libraryManager, IUserManager user, ILogManager logMan, IFileSystem fileSystem)
+        private IFileSystem FileSystem              { get; }
+
+       
+        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem)
         {
             JsonSerializer = json;
-            LibraryManager = libraryManager;
-            UserManager    = user;
-            FileSystem = fileSystem;
-            Log = logMan.GetLogger(Plugin.Instance.Name);
+            FileSystem     = fileSystem;
+            Log            = logMan.GetLogger(Plugin.Instance.Name);
         }
         
 
         public string Delete(RemoveTitleSequenceRequest request)
         {
-            Log.Info("Delete Title Sequence");
-            Log.Info(request.EpisodeId.ToString());
-            Log.Info(request.SeasonId.ToString());
-            Log.Info(request.SeriesId.ToString());
-
             try
             {
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
@@ -96,11 +89,9 @@ namespace IntroSkip.Api
                     }
                     catch { }
                 }
-
-                Log.Info("Title sequence finger print file and saved intro data removed.");
-
-                //We'll have to double check this!
+                
                 IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
+                Log.Info("Title sequence finger print file and saved intro data removed.");
 
                 return "OK";
             }
@@ -113,29 +104,41 @@ namespace IntroSkip.Api
         private class SeriesTitleSequenceResponse
         {
             public TimeSpan CommonEpisodeTitleSequenceLength { get; set; }
-            public TitleSequenceDto TitleSequences { get; set; }
+            public TitleSequenceDto TitleSequences           { get; set; }
         }
 
         public string Get(SeriesTitleSequenceRequest request)
         {
+            Log.Info($"Series Request Series Id: {request.SeriesId}");
+            Log.Info($"Series Request Season Id: {request.SeasonId}");
+
+            var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+
+            Log.Info($"Series Request title sequence count: {titleSequences.EpisodeTitleSequences.Count}");
+            
+            //if (titleSequences.EpisodeTitleSequences is null) return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse());
+
+            //var episodeTitleSequences = titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber).ToList();
+            //titleSequences.EpisodeTitleSequences = episodeTitleSequences;
+
+            TimeSpan commonDuration;
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
-                if (titleSequences.EpisodeTitleSequences is null) return "";
-
-                var episodeTitleSequences = titleSequences.EpisodeTitleSequences.OrderBy(item => item.IndexNumber).ToList();
-                titleSequences.EpisodeTitleSequences = episodeTitleSequences;
-
-                return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
-                {
-                    CommonEpisodeTitleSequenceLength = CalculateCommonTitleSequenceLength(titleSequences),
-                    TitleSequences = titleSequences
-                });
+                commonDuration = CalculateCommonTitleSequenceLength(titleSequences);
             }
             catch
             {
-                return "";
+                commonDuration = new TimeSpan(0,0,0);
             }
+
+            Log.Info($"SERIES TITLE REQUEST DURATION  {commonDuration:c}");
+            return JsonSerializer.SerializeToString(new SeriesTitleSequenceResponse()
+            {
+                CommonEpisodeTitleSequenceLength = commonDuration,
+                TitleSequences = titleSequences
+            });
+
+
         }
 
         
@@ -144,7 +147,7 @@ namespace IntroSkip.Api
             try
             {
                 var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
-                if (titleSequences.EpisodeTitleSequences is null) return "";
+                if (titleSequences.EpisodeTitleSequences is null) return JsonSerializer.SerializeToString(new List<EpisodeTitleSequence>());
 
                 var episodeTitleSequences = titleSequences.EpisodeTitleSequences;
                 if (episodeTitleSequences.Exists(item => item.InternalId == request.InternalId))
@@ -154,10 +157,10 @@ namespace IntroSkip.Api
             }
             catch
             {
-                return "";
+                return JsonSerializer.SerializeToString(new List<EpisodeTitleSequence>());
             }
 
-            return "";
+            return JsonSerializer.SerializeToString(new List<EpisodeTitleSequence>());
         }
 
         private TimeSpan CalculateCommonTitleSequenceLength(TitleSequenceDto titleSequenceDto)

@@ -16,30 +16,28 @@ namespace IntroSkip
         public string FolderPathDelimiter            { get; set; }
         private IJsonSerializer JsonSerializer       { get; }
         public static IntroServerEntryPoint Instance { get; private set; }
-        private ILogger Log                          { get; set; }
-
-        public string EncodingDir      { get; set; }
-        public string TitleSequenceDir { get; set; }
-        public string FingerPrintDir   { get; set; }
+        private ILogger Log                          { get; }
+        public string EncodingDir                    { get; private set; }
+        private string TitleSequenceDir              { get; set; }
+        public string FingerPrintDir                 { get; private set; }
 
         // ReSharper disable once TooManyDependencies
         public IntroServerEntryPoint(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
         {
-            FileSystem = file;
+            FileSystem       = file;
             ApplicationPaths = applicationPaths;
-            JsonSerializer = json;
-            Log = logMan.GetLogger(Plugin.Instance.Name);
-            Instance = this;
+            JsonSerializer   = json;
+            Log              = logMan.GetLogger(Plugin.Instance.Name);
+            Instance         = this;
         }
         
         public TitleSequenceDto GetTitleSequenceFromFile(long seriesId, long seasonId)
         {
-            var configDir = ApplicationPaths.PluginConfigurationsPath;
-            var filePath = $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json";
+            var filePath = $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json";
 
             if (!FileSystem.FileExists(filePath))
             {
-                Log.Info("Creating new title sequence object.");
+                Log.Info("Title Sequence Data doesn't exist");
                 return new TitleSequenceDto();
             }
             
@@ -54,8 +52,7 @@ namespace IntroSkip
         {
             Log.Info($"Saving {seriesId}{seasonId}.json");
             
-            var configDir = ApplicationPaths.PluginConfigurationsPath;
-            using (var sw = new StreamWriter( $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json"))
+            using (var sw = new StreamWriter( $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json"))
             {
                 sw.Write(JsonSerializer.SerializeToString(introDto));
                 sw.Flush();
@@ -64,67 +61,49 @@ namespace IntroSkip
 
         private void CopyFpCalc(string location)
         {
-            var configDir = ApplicationPaths.PluginConfigurationsPath;
-           
             if (OperatingSystem.IsLinux())
             {
-                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
-                {
-                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
-                }
-
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("linux_fpcalc");
-                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
-                    for (int i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte)stream.ReadByte());
-                    fileStream.Close();
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc");
                 }
             }
 
             if (OperatingSystem.IsMacOS())
             {
-                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc"))
-                {
-                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc");
-                }
-
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("mac_fpcalc");
-                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc", FileMode.CreateNew);
-                    for (int i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte)stream.ReadByte());
-                    fileStream.Close();
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc");
                 }
             }
 
             if (OperatingSystem.IsWindows())
             {
-                if(FileSystem.FileExists($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
-                {
-                    FileSystem.DeleteFile($"{configDir}{FileSystem.DirectorySeparatorChar}fpcalc.exe");
-                }
-
                 if (!FileSystem.FileExists($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe"))
                 {
                     var stream = GetEmbeddedResourceStream("fpcalc.exe");
-                    var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}fpcalc.exe", FileMode.CreateNew);
-                    for (int i = 0; i < stream.Length; i++)
-                        fileStream.WriteByte((byte)stream.ReadByte());
-                    fileStream.Close();
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc.exe");
                 }
             }
+        }
+
+        private void CopyEmbeddedResourceStream(Stream stream, string location, string fileName)
+        {
+            var fileStream = new FileStream($"{location}{FileSystem.DirectorySeparatorChar}{fileName}", FileMode.CreateNew);
+            for (int i = 0; i < stream.Length; i++)
+                fileStream.WriteByte((byte)stream.ReadByte());
+            fileStream.Close();
         }
 
         private Stream GetEmbeddedResourceStream(string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var name     = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
-
             return GetType().Assembly.GetManifestResourceStream(name);
         }
+
         public void Dispose()
         {
             
@@ -135,27 +114,18 @@ namespace IntroSkip
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
 
-            if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences"))
-            {
-                FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences");
-                
-            }
-
-            if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding"))
-            {
-                FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding" );
-            }
-
-            if (!FileSystem.DirectoryExists($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints"))
-            {
-                FileSystem.CreateDirectory( $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints");
-            }
-
-            CopyFpCalc($"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding");
-
             TitleSequenceDir = $"{configDir}{FileSystem.DirectorySeparatorChar}TitleSequences";
             EncodingDir      = $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding";
             FingerPrintDir   = $"{configDir}{FileSystem.DirectorySeparatorChar}IntroEncoding{FileSystem.DirectorySeparatorChar}Fingerprints";
+
+            
+            if (!FileSystem.DirectoryExists($"{TitleSequenceDir}")) FileSystem.CreateDirectory($"{TitleSequenceDir}");
+
+            if (!FileSystem.DirectoryExists($"{EncodingDir}"))      FileSystem.CreateDirectory( $"{EncodingDir}");
+
+            if (!FileSystem.DirectoryExists($"{FingerPrintDir}"))   FileSystem.CreateDirectory( $"{FingerPrintDir}");
+
+            CopyFpCalc($"{EncodingDir}");
 
         }
     }

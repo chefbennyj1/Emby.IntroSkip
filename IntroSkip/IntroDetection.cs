@@ -131,7 +131,7 @@ namespace IntroSkip
                 catch (Exception ex)
                 {
                     Logger.Info("Get Best Offset Error: " + ex.Message);
-                    throw new InvalidIntroDetectionException(ex.Message);
+                    throw new InvalidTitleSequenceDetectionException(ex.Message);
                 }
             }
 
@@ -210,7 +210,8 @@ namespace IntroSkip
         
         private void ExtractPCMAudio(string input, string audioOut, TimeSpan duration)
         {
-            var ffmpegPath = FfmpegManager.FfmpegConfiguration.EncoderPath;
+            var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
+            var ffmpegPath          = ffmpegConfiguration.EncoderPath;
             
             var procStartInfo = new ProcessStartInfo(ffmpegPath, $"-t {duration:c} -i \"{input}\" -ac 1 -acodec pcm_s16le -ar 16000 \"{audioOut}\"")
             {
@@ -233,7 +234,7 @@ namespace IntroSkip
             }
         }
 
-        private IntroAudioFingerprint FingerPrintAudio(string inputFileName)
+        private AudioFingerprint FingerPrintAudio(string inputFileName)
         {
             // Using 600 second length to get a more accurate fingerprint, but it's not required
             var separator     = FileSystem.DirectorySeparatorChar;
@@ -263,7 +264,7 @@ namespace IntroSkip
                 json += (processOutput);
             }
             
-            return JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(json);
+            return JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
         }
 
        
@@ -277,24 +278,25 @@ namespace IntroSkip
             var encodingPath   = $"{IntroServerEntryPoint.Instance.EncodingDir}{separator}";
 
             Logger.Info("Starting episode intro detection process.");
-            Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode Comparable: {episode1Input.IndexNumber}");
-            Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode To Compare: {episode2Input.IndexNumber}");
+            Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
+            Logger.Info($" {episode2Input.Parent.Parent.Name} - Season: {episode2Input.Parent.IndexNumber} - Episode: {episode2Input.IndexNumber}");
 
             //Create the the current episode input key. Season.InternalId + episode.InternalId
             var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
             var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
 
 
-            IntroAudioFingerprint fingerPrintDataEpisode1 = null;
-            IntroAudioFingerprint fingerPrintDataEpisode2 = null;
+            AudioFingerprint fingerPrintDataEpisode1 = null;
+            AudioFingerprint fingerPrintDataEpisode2 = null;
 
-           
+
+            //Create the 10 minute audio encoding for the first episode, there is no fingerprint recorded
             if (!FileSystem.FileExists($"{fingerprintDir}{episode1InputKey}.json"))
             {
+                
                 if (EpisodeComparable is null || episode1InputKey != EpisodeComparable)
                 {
                     EpisodeComparable = episode1InputKey;
-                    
 
                     //Check and see if we have encoded this episode before
                     if (!FileSystem.FileExists($"{encodingPath}{episode1InputKey}.wav"))
@@ -305,20 +307,24 @@ namespace IntroSkip
                 }
 
                 fingerPrintDataEpisode1 = FingerPrintAudio($"{encodingPath}{episode1InputKey}.wav");
-                if (fingerPrintDataEpisode1.duration < 600.0)
+
+                //The finger print duration needs to match the .wav encoding length (600sec => 10min)
+                //Threading can have unexpected results in fingerprinting audio with shorter durations.
+                if (fingerPrintDataEpisode1.duration < 600.0) 
                 {
                     fingerPrintDataEpisode1 = FingerPrintAudio($"{encodingPath}{episode1InputKey}.wav"); //Try to finger print this again it has the wrong duration.
                 }
+
                 SaveFingerPrintToFile($"{fingerprintDir}{episode1InputKey}.json", fingerPrintDataEpisode1);
 
             }
             else
             {
-                fingerPrintDataEpisode1 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
+                fingerPrintDataEpisode1 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json"); //Got it already
             }
 
             
-            
+            //Create the 10 minute audio encoding for the second episode, there is no fingerprint recorded
             if (!FileSystem.FileExists($"{fingerprintDir}{episode2InputKey}.json"))
             {
                 if (EpisodeToCompare is null || episode2InputKey != EpisodeToCompare)
@@ -336,6 +342,7 @@ namespace IntroSkip
 
                 fingerPrintDataEpisode2 = FingerPrintAudio($"{encodingPath}{episode2InputKey}.wav");
 
+                //Check the second files finger print duration
                 if (fingerPrintDataEpisode2.duration < 600.0)
                 {
                     fingerPrintDataEpisode2 = FingerPrintAudio($"{encodingPath}{episode2InputKey}.wav"); //Try to finger print this again it has the wrong duration.
@@ -345,7 +352,7 @@ namespace IntroSkip
             }
             else
             {
-                fingerPrintDataEpisode2 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");
+                fingerPrintDataEpisode2 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json"); //Got it already
             }
 
             
@@ -357,21 +364,21 @@ namespace IntroSkip
             introDto[1].InternalId  = episode2Input.InternalId;
             introDto[1].IndexNumber = episode2Input.IndexNumber;
            
-            Logger.Info($"\n{episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} \nStarts: {introDto[0].IntroStart} \nEnd: {introDto[0].IntroEnd}\n\n");
+            Logger.Info($"\n\n{episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} \nStarts: {introDto[0].IntroStart} \nEnd: {introDto[0].IntroEnd}\n");
             Logger.Info($"\n{episode2Input.Parent.Parent.Name} - S: {episode2Input.Parent.IndexNumber} - E: {episode2Input.IndexNumber} \nStarts: {introDto[1].IntroStart} \nEnd: {introDto[1].IntroEnd}\n\n");
             
             return introDto;
         }
 
-        private IntroAudioFingerprint GetSavedFingerPrintFromFile(string filePath)
+        private AudioFingerprint GetSavedFingerPrintFromFile(string filePath)
         {
             using (var sr = new StreamReader(filePath))
             {
-                return JsonSerializer.DeserializeFromString<IntroAudioFingerprint>(sr.ReadToEnd());
+                return JsonSerializer.DeserializeFromString<AudioFingerprint>(sr.ReadToEnd());
             }
         }
 
-        private void SaveFingerPrintToFile(string filePath, IntroAudioFingerprint json)
+        private void SaveFingerPrintToFile(string filePath, AudioFingerprint json)
         {
             using (var sw = new StreamWriter(filePath))
             {
@@ -381,7 +388,7 @@ namespace IntroSkip
         }
 
         
-        private List<EpisodeTitleSequence> AnalyzeAudio(IntroAudioFingerprint fingerPrintDataEpisode1, IntroAudioFingerprint fingerPrintDataEpisode2)
+        private List<EpisodeTitleSequence> AnalyzeAudio(AudioFingerprint fingerPrintDataEpisode1, AudioFingerprint fingerPrintDataEpisode2)
         {
             
             Logger.Info("Analyzing Audio...");
@@ -451,7 +458,7 @@ namespace IntroSkip
                 firstFileRegionEnd    = 0.0;
                 secondFileRegionStart = 0.0;
                 secondFileRegionEnd   = 0.0;
-                throw new InvalidIntroDetectionException("Episode detection failed to find a reasonable intro start and end time.");
+                throw new InvalidTitleSequenceDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
             if (commonRegionEnd - commonRegionStart < 10)
             {
@@ -460,12 +467,12 @@ namespace IntroSkip
                 firstFileRegionEnd    = -1.0;
                 secondFileRegionStart = -1.0;
                 secondFileRegionEnd   = -1.0;
-                throw new InvalidIntroDetectionException("Episode common region is deemed too short to be considered an intro.");
+                throw new InvalidTitleSequenceDetectionException("Episode common region is deemed too short to be considered an intro.");
                 
             } 
             else if (start == 0 && end == 0)
             {
-                throw new InvalidIntroDetectionException("Episode common region are both 00:00:00.");
+                throw new InvalidTitleSequenceDetectionException("Episode common region are both 00:00:00.");
             }
             
             
@@ -475,13 +482,13 @@ namespace IntroSkip
             
             return new List<EpisodeTitleSequence>()
             {
-                new EpisodeTitleSequence()
+                new EpisodeTitleSequence() //[0]
                 {
                     HasIntro   = true,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
                 },
-                new EpisodeTitleSequence()
+                new EpisodeTitleSequence() //[1]
                 {
                     HasIntro   = true,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart)),
