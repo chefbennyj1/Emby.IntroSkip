@@ -68,7 +68,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+                var titleSequences = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
 
                 if (!titleSequences.EpisodeTitleSequences.Any())
                 {
@@ -81,16 +81,16 @@ namespace IntroSkip.Api
                 }
 
                 //Remove the finger print file
-                if (FileSystem.FileExists($"{IntroServerEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                if (FileSystem.FileExists($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
                 {
                     try
                     {
-                        FileSystem.DeleteFile($"{IntroServerEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                        FileSystem.DeleteFile($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
                     }
                     catch { }
                 }
                 
-                IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
+                TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
                 Log.Info("Title sequence finger print file and saved intro data removed.");
 
                 return "OK";
@@ -110,7 +110,7 @@ namespace IntroSkip.Api
         public string Get(SeriesTitleSequenceRequest request)
         {
             
-            var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+            var titleSequences = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
             
             TimeSpan commonDuration;
             try
@@ -136,7 +136,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+                var titleSequences = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
                 if (titleSequences.EpisodeTitleSequences is null) return JsonSerializer.SerializeToString(new List<EpisodeTitleSequence>());
 
                 var episodeTitleSequences = titleSequences.EpisodeTitleSequences;

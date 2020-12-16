@@ -19,7 +19,7 @@ using MediaBrowser.Model.Tasks;
 
 namespace IntroSkip
 {
-    public class IntroDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
+    public class TitleSequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private static ILogger Log                    { get; set; }
         private ILibraryManager LibraryManager        { get; }
@@ -31,7 +31,7 @@ namespace IntroSkip
 
        
         
-        public IntroDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
+        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
         {
             Log              = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager   = libMan;
@@ -79,7 +79,7 @@ namespace IntroSkip
                   foreach (var season in seasonQuery.Items)
                   {
 
-                      var titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
+                      var titleSequence = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
 
                       List<EpisodeTitleSequence> episodeTitleSequences = null;
                       episodeTitleSequences = titleSequence.EpisodeTitleSequences is null ? new List<EpisodeTitleSequence>() : titleSequence.EpisodeTitleSequences.ToList();
@@ -146,7 +146,7 @@ namespace IntroSkip
                                       });
 
                                       titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                      IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
+                                      TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
                                       break;
                                   }
 
@@ -182,10 +182,10 @@ namespace IntroSkip
                               try
                               {
                                   //The magic!
-                                  var data = (IntroDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
+                                  var data = (TitleSequenceDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
 
                                   //We have to grab this data again. It may have been altered since the beginning of the scan.
-                                  titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
+                                  titleSequence = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
                                   episodeTitleSequences = titleSequence.EpisodeTitleSequences;
 
                                   foreach (var dataPoint in data)
@@ -202,7 +202,7 @@ namespace IntroSkip
 
                                   Log.Info("Episode Title Sequence Data obtained successfully.");
                                   titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                  IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
+                                  TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
                                   
 
                               }
@@ -216,7 +216,7 @@ namespace IntroSkip
                                       Log.Info($"\n {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence.\n");
 
                                       //We have to grab this data again. It may have been altered since the beginning of the scan.
-                                      titleSequence = IntroServerEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
+                                      titleSequence = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
                                       episodeTitleSequences = titleSequence.EpisodeTitleSequences;
 
                                       var index1 = index;
@@ -233,7 +233,7 @@ namespace IntroSkip
                                       });
 
                                       titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                                      IntroServerEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
+                                      TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
                                       
 
                                   }
@@ -264,7 +264,7 @@ namespace IntroSkip
             // Remove these error files so they get rescanned.
 
             var separator        = FileSystem.DirectorySeparatorChar;
-            var fingerprintFiles = FileSystem.GetFiles($"{IntroServerEntryPoint.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
+            var fingerprintFiles = FileSystem.GetFiles($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
 
             if (!fingerprintFiles.Any()) return;
 
@@ -303,7 +303,7 @@ namespace IntroSkip
         private void RemoveAllPreviousEncodings()
         {
             var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{IntroServerEntryPoint.Instance.EncodingDir}{separator}";
+            var introEncodingPath  = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
             var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
             var fileSystemMetadata = files.ToList();
             
@@ -322,7 +322,7 @@ namespace IntroSkip
         private void RemoveAllPreviousSeasonEncodings(long internalId)
         {
             var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{IntroServerEntryPoint.Instance.EncodingDir}{separator}";
+            var introEncodingPath  = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
             var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
             var fileSystemMetadata = files.ToList();
             

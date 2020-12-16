@@ -9,20 +9,20 @@ using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip
 {
-    public class IntroServerEntryPoint : IServerEntryPoint
+    public class TitleSequenceEncodingDirectoryEntryPoint : IServerEntryPoint
     {
         private IFileSystem FileSystem               { get; }
         private IApplicationPaths ApplicationPaths   { get; }
         public string FolderPathDelimiter            { get; set; }
         private IJsonSerializer JsonSerializer       { get; }
-        public static IntroServerEntryPoint Instance { get; private set; }
+        public static TitleSequenceEncodingDirectoryEntryPoint Instance { get; private set; }
         private ILogger Log                          { get; }
         public string EncodingDir                    { get; private set; }
         private string TitleSequenceDir              { get; set; }
         public string FingerPrintDir                 { get; private set; }
 
         // ReSharper disable once TooManyDependencies
-        public IntroServerEntryPoint(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
+        public TitleSequenceEncodingDirectoryEntryPoint(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
         {
             FileSystem       = file;
             ApplicationPaths = applicationPaths;

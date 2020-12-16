@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Plugins;
@@ -22,20 +21,18 @@ using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip
 {
-    public class IntroDetection : TitleSequenceDto, IServerEntryPoint
+    public class TitleSequenceDetection : TitleSequenceDto, IServerEntryPoint
     {
-        private IJsonSerializer JsonSerializer     { get; }
-        private IFileSystem FileSystem             { get; }
-        private IFfmpegManager FfmpegManager       { get; }
-        private static ILogger Logger              { get; set; }
-        public static IntroDetection Instance      { get; private set; }
-        private IApplicationPaths ApplicationPaths { get; }
+        private IJsonSerializer JsonSerializer        { get; }
+        private IFileSystem FileSystem                { get; }
+        private IFfmpegManager FfmpegManager          { get; }
+        private static ILogger Logger                 { get; set; }
+        public static TitleSequenceDetection Instance { get; private set; }
         
-        public IntroDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan, IFfmpegManager f, IApplicationPaths applicationPaths)
+        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan, IFfmpegManager f)
         {
             JsonSerializer   = json;
             FileSystem       = file;
-            ApplicationPaths = applicationPaths;
             FfmpegManager    = f;
             Logger           = logMan.GetLogger(Plugin.Instance.Name);
             Instance         = this;
@@ -238,7 +235,7 @@ namespace IntroSkip
         {
             // Using 600 second length to get a more accurate fingerprint, but it's not required
             var separator     = FileSystem.DirectorySeparatorChar;
-            var encodingPath  = $"{IntroServerEntryPoint.Instance.EncodingDir}{separator}";
+            var encodingPath  = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
             var @params       = $"\"{inputFileName}\" -raw -length {duration.Seconds} -json";
             var fpcalc        = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
 
@@ -274,8 +271,8 @@ namespace IntroSkip
         public List<EpisodeTitleSequence> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
             var separator      = FileSystem.DirectorySeparatorChar;
-            var fingerprintDir = $"{IntroServerEntryPoint.Instance.FingerPrintDir}{separator}";
-            var encodingPath   = $"{IntroServerEntryPoint.Instance.EncodingDir}{separator}";
+            var fingerprintDir = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}";
+            var encodingPath   = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
 
             Logger.Info("Starting episode intro detection process.");
             Logger.Info($" {episode1Input.Parent.Parent.Name} - Season: {episode1Input.Parent.IndexNumber} - Episode: {episode1Input.IndexNumber}");
