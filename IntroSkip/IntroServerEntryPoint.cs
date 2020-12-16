@@ -37,7 +37,6 @@ namespace IntroSkip
 
             if (!FileSystem.FileExists(filePath))
             {
-                Log.Info("Title Sequence Data doesn't exist");
                 return new TitleSequenceDto();
             }
             

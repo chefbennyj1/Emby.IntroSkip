@@ -10,6 +10,7 @@ namespace IntroSkip
         public bool HasIntro         { get; set; }
         public TimeSpan IntroStart   { get; set; }
         public TimeSpan IntroEnd     { get; set; }
+        public bool Confirmed        { get; set; } = true;
     }
     
     public class TitleSequenceDto
