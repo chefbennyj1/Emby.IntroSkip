@@ -82,7 +82,6 @@
             var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                quickScanToggle.checked = config.QuickScan;
                 titleSequenceThresholdInput.value = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
                 titleSequenceEncodingLength.value = config.EncodingLength ? config.EncodingLength : 10;
             });
@@ -167,7 +166,7 @@
                     html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
                     html += '</td>'; 
                     html += '<td data-title="RemoveFingerprint" class="detailTableBodyCell fileCell">';
-                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button"><i class="md-icon">clear</i></button>';
+                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button" style="background-color:orangered;color:white"><i class="md-icon">error_outline</i></button>';
                     html += '</td>';
                     html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
                     html += '</tr>';
@@ -236,8 +235,8 @@
         return function(view) {
             view.addEventListener('viewshow', () => {
 
-                var seriesSelect = view.querySelector('#selectEmbySeries');
-                var seasonSelect = view.querySelector('#selectEmbySeason');
+                var seriesSelect   = view.querySelector('#selectEmbySeries');
+                var seasonSelect   = view.querySelector('#selectEmbySeason');
                 var settingsButton = view.querySelector('#openSettingsDialog');
                 var _seriesId, _seasonId;
 
