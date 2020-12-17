@@ -222,10 +222,11 @@ namespace IntroSkip
         {
             // High multi-threading of the fingerprinting process may have some side effects.
             // If it is rushed on slower machines, durations will be shortened.
-            // Durations 'must' equals 600secs for perfect results.
+            // Durations 'must' equals the ffmpeg encoding length for perfect results.
             // The finger print file may also be empty.
             // Remove these error files so they get rescanned.
-
+            var config           = Plugin.Instance.Configuration;
+            var encodingDuration = config.EncodingLength;
             var separator        = FileSystem.DirectorySeparatorChar;
             var fingerprintFiles = FileSystem.GetFiles($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
 
@@ -244,7 +245,7 @@ namespace IntroSkip
                     else
                     {
                         var printData = JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
-                        if (printData.duration < 600.0)
+                        if (printData.duration < (encodingDuration * 60))
                         {
                             remove = true;
                         }
