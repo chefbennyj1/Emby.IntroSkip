@@ -80,17 +80,18 @@ namespace IntroSkip.Api
                    titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
                 }
 
-                //Remove the finger print file
-                if (FileSystem.FileExists($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
-                {
-                    try
-                    {
-                        FileSystem.DeleteFile($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
-                    }
-                    catch { }
-                }
+                ////Remove the finger print file
+                //if (FileSystem.FileExists($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                //{
+                //    try
+                //    {
+                //        FileSystem.DeleteFile($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                //    }
+                //    catch { }
+                //}
                 
                 TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
+
                 Log.Info("Title sequence finger print file and saved intro data removed.");
 
                 return "OK";

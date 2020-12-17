@@ -46,27 +46,10 @@
             html += '<div class="dialogContentInner" style="max-height: 42em;">';
             html += '<div style="flex-grow:1;">';
             
-
-            html += '<div class="inputContainer">';
-            html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
-            html += '<input is="emby-toggle" type="checkbox" id="quickScan" class="chkQuickScan noautofocus mdl-switch__input" data-embytoggle="true"/>';
-            html += '<span class="toggleButtonLabel mdl-switch__label">Quick Scan</span>';
-            html += '<div class="mdl-switch__trackContainer">';
-            html += '<div class="mdl-switch__track"></div> ';
-            html += '<div class="mdl-switch__thumb">';
-            html += '<span class="mdl-switch__focus-helper"></span>';
-            html += '</div>';
-            html += '</div> ';
-            html += '</label> ';
-            html += '<div class="fieldDescription">';
-            html += '<p>Quick Scan will search title sequences for new items added to the library. (recommended)</p> ';
-            html += '<p>Turning Quick Scan off will also rescan items which have been marked with no title sequences.</p>';
-            html += '</div> ';
-            html += '</div> ';
-
+              
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceThreshold">Title sequence duration threshold (seconds):</label> ';
-            html += '<input is="emby-input" type="number" id="txtTitleSequenceThreshold" min="4.5" max="15.0" step="0.1" label="Title sequence duration threshold (seconds):" class="emby-input">';
+            html += '<input is="emby-input" type="number" id="txtTitleSequenceThreshold" min="5" max="15" step="1" label="Title sequence duration threshold (seconds):" class="emby-input">';
             html += '<div class="fieldDescription">';
             html += 'The duration threshold for accepted title sequence lengths. Any match with a duration less then this number will be ignored.';
             html += '</div>';
@@ -74,7 +57,7 @@
              
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceEncodingLength">Title sequence audio encoding length (minutes):</label> ';
-            html += '<input is="emby-input" type="number" id="txtTitleSequenceEncodingLength" min="10.0" max="15.0" step="1.0" label="Title sequence encoding duration (minutes):" class="emby-input">';
+            html += '<input is="emby-input" type="number" id="txtTitleSequenceEncodingLength" min="10" max="15" step="1" label="Title sequence encoding duration (minutes):" class="emby-input">';
             html += '<div class="fieldDescription">';
             html += 'The duration of episode audio encoding used to find title sequences. Default is 10 minutes. A longer encoding may match episodes with title sequences which appear later in the stream, but will cause longer scans.';
             html += '</div>';
@@ -86,7 +69,7 @@
             dlg.innerHTML = html;
             dialogHelper.open(dlg);
 
-            var quickScanToggle             = dlg.querySelector('#quickScan');
+            
             var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
             var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
 
@@ -95,14 +78,7 @@
                 titleSequenceThresholdInput.value = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
                 titleSequenceEncodingLength.value = config.EncodingLength ? config.EncodingLength : 10;
             });
-
-            quickScanToggle.addEventListener('change', (e) => {
-                e.preventDefault();
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    config.QuickScan = quickScanToggle.checked;
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                });
-            });
+              
 
             titleSequenceThresholdInput.addEventListener('change', (e) => {
                 e.preventDefault();
@@ -155,7 +131,6 @@
 
         function getIntros(seriesId, seasonId) {
             return new Promise((resolve, reject) => {
-
                 ApiClient.getJSON(ApiClient.getUrl('SeriesTitleSequences?SeriesId=' + seriesId + "&SeasonId=" + seasonId)).then(result => {
                     resolve(result);
                 });
@@ -247,8 +222,10 @@
                    
                     getSeries().then(series => {
                         for (let i = 0; i <= series.Items.length - 1; i++) {
+
                             seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
-                        };
+                        } 
+
                         _seriesId = seriesSelect[0].value;
 
                         getSeasons(_seriesId).then(seasons => {
@@ -312,11 +289,6 @@
                         });
 
                     });
-
-                   
-
-                  
-
                      
                    
 

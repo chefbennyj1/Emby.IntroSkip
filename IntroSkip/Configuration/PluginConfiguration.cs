@@ -6,7 +6,7 @@ namespace IntroSkip.Configuration
     public class PluginConfiguration : BasePluginConfiguration
     {
         public bool QuickScan { get; set; } = true;
-      public double TitleSequenceLengthThreshold { get; set; } = 10.5;
-      public double EncodingLength { get; set; } = 10.0;
+        public int TitleSequenceLengthThreshold { get; set; } = 10;
+        public int EncodingLength { get; set; } = 10;
     }
 }
