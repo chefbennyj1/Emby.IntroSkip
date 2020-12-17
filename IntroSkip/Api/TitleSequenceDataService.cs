@@ -30,6 +30,17 @@ namespace IntroSkip.Api
             public long SeriesId { get; set; }
         }
 
+        [Route("/RemoveFingerprint", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        public class RemoveFingerprintRequest : IReturn<string>
+        {
+            [ApiMember(Name = "EpisodeId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long EpisodeId { get; set; }
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long SeriesId { get; set; }
+        }
+
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
         {
@@ -62,8 +73,44 @@ namespace IntroSkip.Api
             FileSystem     = fileSystem;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
         }
-        
 
+        public string Delete(RemoveFingerprintRequest request)
+        {
+            try
+            {
+                var titleSequences = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(request.SeriesId, request.SeasonId);
+
+                if (!titleSequences.EpisodeTitleSequences.Any())
+                {
+                    return "";
+                }
+
+                if (titleSequences.EpisodeTitleSequences.Exists(item => item.InternalId == request.EpisodeId))
+                {
+                    titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
+                }
+
+                ////Remove the finger print file
+                if (FileSystem.FileExists($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                {
+                    try
+                    {
+                        FileSystem.DeleteFile($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                    }
+                    catch { }
+                }
+
+                TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
+
+                Log.Info("Title sequence finger print file removed.");
+
+                return "OK";
+            }
+            catch
+            {
+                return "";
+            }
+        }
         public string Delete(RemoveTitleSequenceRequest request)
         {
             try
@@ -79,20 +126,10 @@ namespace IntroSkip.Api
                 {
                    titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
                 }
-
-                ////Remove the finger print file
-                //if (FileSystem.FileExists($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
-                //{
-                //    try
-                //    {
-                //        FileSystem.DeleteFile($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
-                //    }
-                //    catch { }
-                //}
                 
                 TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(request.SeriesId, request.SeasonId, titleSequences);
 
-                Log.Info("Title sequence finger print file and saved intro data removed.");
+                Log.Info("Title sequence saved intro data removed.");
 
                 return "OK";
             }
