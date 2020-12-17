@@ -1,39 +1,80 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Cryptography;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip
 {
-    public class TitleSequenceEncodingDirectoryEntryPoint : IServerEntryPoint
+    public class TitleSequenceEncoding : IServerEntryPoint
     {
         private IFileSystem FileSystem               { get; }
         private IApplicationPaths ApplicationPaths   { get; }
         public string FolderPathDelimiter            { get; set; }
         private IJsonSerializer JsonSerializer       { get; }
-        public static TitleSequenceEncodingDirectoryEntryPoint Instance { get; private set; }
+        public static TitleSequenceEncoding Instance { get; private set; }
         private ILogger Log                          { get; }
         public string EncodingDir                    { get; private set; }
+        private ICryptoProvider CryptoProvider       { get; }
         private string TitleSequenceDir              { get; set; }
+
         public string FingerPrintDir                 { get; private set; }
 
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceEncodingDirectoryEntryPoint(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
+        public TitleSequenceEncoding(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan, ICryptoProvider cryptoProvider)
         {
             FileSystem       = file;
             ApplicationPaths = applicationPaths;
             JsonSerializer   = json;
             Log              = logMan.GetLogger(Plugin.Instance.Name);
+            CryptoProvider = cryptoProvider;
             Instance         = this;
         }
         
-        public TitleSequenceDto GetTitleSequenceFromFile(long seriesId, long seasonId)
+        public  string CreateMD5(string input)
         {
-            var filePath = $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json";
+            // Use input string to calculate MD5 hash
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
+        }
+
+        public void MigrateCurrentFingerPrints(string fingerprintFile, BaseItem episode)
+        {
+            if (FileSystem.FileExists(fingerprintFile))
+            {
+                var hash = CreateMD5(episode.Path);
+                FileSystem.CopyFile(fingerprintFile, $"{FingerPrintDir}{FileSystem.DirectorySeparatorChar}{hash}.json", true);
+                try
+                {
+                    FileSystem.DeleteFile(fingerprintFile);
+
+                } catch{}
+            }
+        }
+
+        public TitleSequenceDto GetTitleSequenceFromFile(string fileName)
+        {
+            
+            var filePath = $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{fileName}.json";
 
             if (!FileSystem.FileExists(filePath))
             {
@@ -47,11 +88,11 @@ namespace IntroSkip
 
         }
 
-        public void SaveTitleSequenceJsonToFile(long seriesId, long seasonId, TitleSequenceDto introDto)
+        public void SaveTitleSequenceJsonToFile(string fileName, TitleSequenceDto introDto)
         {
-            Log.Info($"Saving {seriesId}{seasonId}.json");
+            Log.Info($"Saving {fileName}.json");
             
-            using (var sw = new StreamWriter( $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{seriesId}{seasonId}.json"))
+            using (var sw = new StreamWriter( $"{TitleSequenceDir}{FileSystem.DirectorySeparatorChar}{fileName}.json"))
             {
                 sw.Write(JsonSerializer.SerializeToString(introDto));
                 sw.Flush();

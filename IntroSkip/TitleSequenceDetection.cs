@@ -209,12 +209,12 @@ namespace IntroSkip
         public List<EpisodeTitleSequence> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
             var separator      = FileSystem.DirectorySeparatorChar;
-            var fingerprintDir = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}";
+            var fingerprintDir = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}";
             
 
             //Create the the current episode input key. Season.InternalId + episode.InternalId
-            var episode1InputKey = $"{episode1Input.Parent.InternalId}{episode1Input.InternalId}";
-            var episode2InputKey = $"{episode2Input.Parent.InternalId}{episode2Input.InternalId}";
+            var episode1InputKey = $"{TitleSequenceEncoding.Instance.CreateMD5(episode1Input.Path)}";
+            var episode2InputKey = $"{TitleSequenceEncoding.Instance.CreateMD5(episode2Input.Path)}";
             
 
             if (!FileSystem.FileExists($"{fingerprintDir}{episode1InputKey}.json"))

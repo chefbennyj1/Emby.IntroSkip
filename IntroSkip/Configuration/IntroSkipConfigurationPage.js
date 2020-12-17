@@ -54,6 +54,14 @@
             html += '<div class="dialogContentInner" style="max-height: 42em;">';
             html += '<div style="flex-grow:1;">';
             
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParralelism">Maximum parralel series to process at once:</label> ';
+            html += '<input is="emby-input" type="number" id="txtMaxDegreeOfParralelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
+            html += '<div class="fieldDescription">';
+            html += 'The number of series to attempt to proccess at once. Lower powered machines should keep the default of 2.';
+            html += '</div>';
+            html += '</div>';
+
               
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceThreshold">Title sequence duration threshold (seconds):</label> ';
@@ -80,12 +88,22 @@
             
             var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
             var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
+            var maxDegreeOfParralelism      = dlg.querySelector('#txtMaxDegreeOfParralelism');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
                 titleSequenceThresholdInput.value = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
                 titleSequenceEncodingLength.value = config.EncodingLength ? config.EncodingLength : 10;
+                maxDegreeOfParralelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
             });
-              
+             
+            maxDegreeOfParralelism.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.MaxDegreeOfParallelism = maxDegreeOfParralelism.value;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            }); 
+
 
             titleSequenceThresholdInput.addEventListener('change', (e) => {
                 e.preventDefault();
@@ -166,7 +184,7 @@
                     html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
                     html += '</td>'; 
                     html += '<td data-title="RemoveFingerprint" class="detailTableBodyCell fileCell">';
-                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button" style="background-color:orangered;color:white"><i class="md-icon">error_outline</i></button>';
+                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button" style="color:orangered"><i class="md-icon">error_outline</i></button>';
                     html += '</td>';
                     html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
                     html += '</tr>';

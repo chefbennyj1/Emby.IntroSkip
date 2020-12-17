@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Cryptography;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -23,7 +24,7 @@ namespace IntroSkip
         private IUserManager UserManager       { get; }
         private ILibraryManager LibraryManager { get; }
         private ILogger Log                    { get; }
-
+      
         // ReSharper disable once TooManyDependencies
         public AudioFingerprintScheduledTask(IFfmpegManager ffmpegManager, IFileSystem fileSystem, IJsonSerializer jsonSerializer, ILogManager logMan, IUserManager userManager, ILibraryManager libraryManager)
         {
@@ -55,7 +56,7 @@ namespace IntroSkip
             var step = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, series =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, series =>
             {
                 progress.Report((currentProgress += step) - 1);
                 
@@ -83,21 +84,33 @@ namespace IntroSkip
                     
                     for (var index = 0; index <= episodeQuery.Items.Count() - 1; index++)
                     {
-                        var fileName    = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
-                        var fingerPrint = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}{fileName}.json";
-                        var waveFile    = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}{fileName}.wav";
+                        var fileName        = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
+                        var fingerPrint     = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}{fileName}.json";
+                        var fingerPrintHash = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}{TitleSequenceEncoding.Instance.CreateMD5(episodeQuery.Items[index].Path)}.json";
+                        var waveFile        = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}{fileName}.wav";
 
                         if (FileSystem.FileExists(fingerPrint))
                         {
+                            TitleSequenceEncoding.Instance.MigrateCurrentFingerPrints(fingerPrint, episodeQuery.Items[index]);
                             continue;
                         }
-                        
-                        ExtractPCMAudio($"{episodeQuery.Items[index].Path}", waveFile, duration);
-                        
-                        var printData = FingerPrintAudio(waveFile);
 
-                        SaveFingerPrintToFile(fingerPrint, printData);
-                        
+                        if (FileSystem.FileExists(fingerPrintHash))
+                        {
+                            continue;
+                        }
+
+                        ExtractPCMAudio($"{episodeQuery.Items[index].Path}", waveFile, duration);
+
+                        try
+                        {
+                            var printData = FingerPrintAudio(waveFile);
+                            SaveFingerPrintToFile(episodeQuery.Items[index], printData);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Info(ex.Message);
+                        }
                     }
                 }
             });
@@ -111,7 +124,7 @@ namespace IntroSkip
         private void RemoveAllPreviousEncodings()
         {
             var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
+            var introEncodingPath  = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
             var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
             var fileSystemMetadata = files.ToList();
 
@@ -130,7 +143,7 @@ namespace IntroSkip
         private void RemoveAllPreviousSeasonEncodings(long internalId)
         {
             var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
+            var introEncodingPath  = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
             var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
             var fileSystemMetadata = files.ToList();
 
@@ -148,8 +161,17 @@ namespace IntroSkip
             }
         }
 
-        private void SaveFingerPrintToFile(string filePath, AudioFingerprint audioFingerprint)
+        private void SaveFingerPrintToFile(BaseItem episode, AudioFingerprint audioFingerprint)
         {
+            var fingerprintFileName = TitleSequenceEncoding.Instance.CreateMD5(episode.Path);
+            var filePath = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{fingerprintFileName}.json";
+
+            if (audioFingerprint is null)
+            {
+                Log.Info("Fingerprint was null");
+                return;
+            }
+
             using (var sw = new StreamWriter(filePath))
             {
                 sw.Write(JsonSerializer.SerializeToString(audioFingerprint));
@@ -162,7 +184,7 @@ namespace IntroSkip
             var config       = Plugin.Instance.Configuration;
             var duration     = config.EncodingLength * 60;
             var separator    = FileSystem.DirectorySeparatorChar;
-            var encodingPath = $"{TitleSequenceEncodingDirectoryEntryPoint.Instance.EncodingDir}{separator}";
+            var encodingPath = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
             var @params      = $"\"{inputFileName}\" -raw -length {duration} -json";
             var fpcalc       = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
 
@@ -187,6 +209,8 @@ namespace IntroSkip
                 //Logger.Info(processOutput);
                 json += (processOutput);
             }
+
+            if (string.IsNullOrEmpty(json)) throw new Exception("Json Data Null");
 
             return JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
         }
@@ -228,7 +252,7 @@ namespace IntroSkip
             var config           = Plugin.Instance.Configuration;
             var encodingDuration = config.EncodingLength;
             var separator        = FileSystem.DirectorySeparatorChar;
-            var fingerprintFiles = FileSystem.GetFiles($"{TitleSequenceEncodingDirectoryEntryPoint.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
+            var fingerprintFiles = FileSystem.GetFiles($"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
 
             if (!fingerprintFiles.Any()) return;
 
@@ -275,7 +299,7 @@ namespace IntroSkip
             };
         }
 
-        public string Name        => "Audio Fingerprinting";
+        public string Name        => "Episode Audio Fingerprinting";
         public string Key         => "Audio Fingerprint Options";
         public string Description => "Chroma-print audio files for title sequence detection";
         public string Category    => "Intro Skip";

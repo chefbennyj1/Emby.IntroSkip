@@ -8,5 +8,6 @@ namespace IntroSkip.Configuration
         public bool QuickScan { get; set; } = true;
         public int TitleSequenceLengthThreshold { get; set; } = 10;
         public int EncodingLength { get; set; } = 10;
+        public int MaxDegreeOfParallelism { get; set; } = 2;
     }
 }

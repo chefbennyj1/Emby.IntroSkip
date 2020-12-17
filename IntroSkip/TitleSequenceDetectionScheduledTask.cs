@@ -45,7 +45,8 @@ namespace IntroSkip
 #pragma warning restore 1998
         {
             Log.Info("Beginning Intro Task");
-
+            var config = Plugin.Instance.Configuration;
+            
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
                 Recursive        = true,
@@ -55,7 +56,7 @@ namespace IntroSkip
 
             var step = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, series =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, series =>
             {
                 progress.Report((currentProgress += step) - 1);
 
@@ -73,7 +74,7 @@ namespace IntroSkip
                 foreach (var season in seasonQuery.Items)
                 {
 
-                    var titleSequence = TitleSequenceEncodingDirectoryEntryPoint.Instance.GetTitleSequenceFromFile(series.InternalId, season.InternalId);
+                    var titleSequence = TitleSequenceEncoding.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
 
                     List<EpisodeTitleSequence> episodeTitleSequences = null;
                     episodeTitleSequences = titleSequence.EpisodeTitleSequences is null ? new List<EpisodeTitleSequence>() : titleSequence.EpisodeTitleSequences.ToList();
@@ -196,7 +197,7 @@ namespace IntroSkip
 
 
                     titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                    TitleSequenceEncodingDirectoryEntryPoint.Instance.SaveTitleSequenceJsonToFile(series.InternalId, season.InternalId, titleSequence);
+                    TitleSequenceEncoding.Instance.SaveTitleSequenceJsonToFile($"{series.InternalId}{season.InternalId}", titleSequence);
 
                 }
 
