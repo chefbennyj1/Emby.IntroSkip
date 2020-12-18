@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Model.Cryptography;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -38,7 +37,9 @@ namespace IntroSkip
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            RemoveAllPreviousEncodings();
+            Log.Info("Starting episode fingerprint task.");
+
+            FileManager.Instance.RemoveAllAudioEncodings();
 
             ValidateSavedFingerprints();
 
@@ -84,107 +85,46 @@ namespace IntroSkip
                     
                     for (var index = 0; index <= episodeQuery.Items.Count() - 1; index++)
                     {
-                        var fileName        = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
-                        var fingerPrint     = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}{fileName}.json";
-                        var fingerPrintHash = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}{TitleSequenceEncoding.Instance.CreateMD5(episodeQuery.Items[index].Path)}.json";
-                        var waveFile        = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}{fileName}.wav";
-
-                        if (FileSystem.FileExists(fingerPrint))
-                        {
-                            TitleSequenceEncoding.Instance.MigrateCurrentFingerPrints(fingerPrint, episodeQuery.Items[index]);
-                            continue;
-                        }
-
-                        if (FileSystem.FileExists(fingerPrintHash))
+                        var audioFileName       = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
+                        var audioFilePath       = $"{FileManager.Instance.GetEncodingDirectory()}{separator}{audioFileName}.wav";
+                        var fingerprintFileName = FileManager.Instance.GetFingerprintFileName(episodeQuery.Items[index]);
+                        var fingerprintFilePath = $"{FileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFileName}.json";
+                        
+                        
+                        if (FileSystem.FileExists(fingerprintFilePath))
                         {
                             continue;
                         }
 
-                        ExtractPCMAudio($"{episodeQuery.Items[index].Path}", waveFile, duration);
+                        ExtractPCMAudio($"{episodeQuery.Items[index].Path}", audioFilePath, duration);
 
                         try
                         {
-                            var printData = FingerPrintAudio(waveFile);
-                            SaveFingerPrintToFile(episodeQuery.Items[index], printData);
+                            var printData = FingerPrintAudio(audioFilePath);
+                            FileManager.Instance.SaveFingerPrintToFile(episodeQuery.Items[index], printData);
                         }
                         catch (Exception ex)
                         {
                             Log.Info(ex.Message);
                         }
                     }
+
+                    FileManager.Instance.RemoveAllSeasonAudioEncodings(season.InternalId);
                 }
             });
 
             progress.Report(100.0);
-            RemoveAllPreviousEncodings();
+            FileManager.Instance.RemoveAllAudioEncodings();
 
         }
-
-
-        private void RemoveAllPreviousEncodings()
-        {
-            var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
-            var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
-            var fileSystemMetadata = files.ToList();
-
-            if (!fileSystemMetadata.Any()) return;
-            Log.Info("Removing all encoding files");
-            foreach (var file in fileSystemMetadata)
-            {
-                try
-                {
-                    FileSystem.DeleteFile(file.FullName);
-                }
-                catch { }
-            }
-        }
-
-        private void RemoveAllPreviousSeasonEncodings(long internalId)
-        {
-            var separator          = FileSystem.DirectorySeparatorChar;
-            var introEncodingPath  = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
-            var files              = FileSystem.GetFiles(introEncodingPath, true).Where(file => file.Extension == ".wav");
-            var fileSystemMetadata = files.ToList();
-
-            if (!fileSystemMetadata.Any()) return;
-
-            foreach (var file in fileSystemMetadata)
-            {
-                if (file.Name.Substring(0, internalId.ToString().Length) != internalId.ToString()) continue;
-                Log.Info($"Removing encoding file {file.FullName}");
-                try
-                {
-                    FileSystem.DeleteFile(file.FullName);
-                }
-                catch { }
-            }
-        }
-
-        private void SaveFingerPrintToFile(BaseItem episode, AudioFingerprint audioFingerprint)
-        {
-            var fingerprintFileName = TitleSequenceEncoding.Instance.CreateMD5(episode.Path);
-            var filePath = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{FileSystem.DirectorySeparatorChar}{fingerprintFileName}.json";
-
-            if (audioFingerprint is null)
-            {
-                Log.Info("Fingerprint was null");
-                return;
-            }
-
-            using (var sw = new StreamWriter(filePath))
-            {
-                sw.Write(JsonSerializer.SerializeToString(audioFingerprint));
-                sw.Flush();
-            }
-        }
+        
 
         private AudioFingerprint FingerPrintAudio(string inputFileName)
         {
             var config       = Plugin.Instance.Configuration;
             var duration     = config.EncodingLength * 60;
             var separator    = FileSystem.DirectorySeparatorChar;
-            var encodingPath = $"{TitleSequenceEncoding.Instance.EncodingDir}{separator}";
+            var encodingPath = $"{FileManager.Instance.GetEncodingDirectory()}{separator}";
             var @params      = $"\"{inputFileName}\" -raw -length {duration} -json";
             var fpcalc       = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
 
@@ -210,7 +150,7 @@ namespace IntroSkip
                 json += (processOutput);
             }
 
-            if (string.IsNullOrEmpty(json)) throw new Exception("Json Data Null");
+            if (string.IsNullOrEmpty(json)) throw new Exception("Fingerprint Data Null");
 
             return JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
         }
@@ -252,7 +192,7 @@ namespace IntroSkip
             var config           = Plugin.Instance.Configuration;
             var encodingDuration = config.EncodingLength;
             var separator        = FileSystem.DirectorySeparatorChar;
-            var fingerprintFiles = FileSystem.GetFiles($"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}", true).Where(file => file.Extension == ".json").ToList();
+            var fingerprintFiles = FileSystem.GetFiles($"{FileManager.Instance.GetFingerprintDirectory()}{separator}", true).Where(file => file.Extension == ".json").ToList();
 
             if (!fingerprintFiles.Any()) return;
 
@@ -268,13 +208,14 @@ namespace IntroSkip
                     }
                     else
                     {
-                        var printData = JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
-                        if (printData.duration < (encodingDuration * 60))
+                        var printData       = JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
+                        var encodingSeconds = encodingDuration * 60;
+
+                        if (printData.duration < encodingSeconds - 2) //Leave room for an encoding error of 2 seconds.
                         {
                             remove = true;
                         }
                     }
-                   
                 }
 
                 if (!remove) continue;
@@ -284,7 +225,6 @@ namespace IntroSkip
                 }
                 catch { }
             }
-            Log.Info("Fingerprint validation complete.");
         }
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()

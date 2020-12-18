@@ -6,11 +6,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
@@ -25,15 +23,14 @@ namespace IntroSkip
     {
         private IJsonSerializer JsonSerializer        { get; }
         private IFileSystem FileSystem                { get; }
-        private IFfmpegManager FfmpegManager          { get; }
+        
         private static ILogger Logger                 { get; set; }
         public static TitleSequenceDetection Instance { get; private set; }
         
-        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan, IFfmpegManager f)
+        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
         {
             JsonSerializer   = json;
             FileSystem       = file;
-            FfmpegManager    = f;
             Logger           = logMan.GetLogger(Plugin.Instance.Name);
             Instance         = this;
         }
@@ -209,12 +206,12 @@ namespace IntroSkip
         public List<EpisodeTitleSequence> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
         {
             var separator      = FileSystem.DirectorySeparatorChar;
-            var fingerprintDir = $"{TitleSequenceEncoding.Instance.FingerPrintDir}{separator}";
+            var fingerprintDir = $"{FileManager.Instance.GetFingerprintDirectory()}{separator}";
             
 
-            //Create the the current episode input key. Season.InternalId + episode.InternalId
-            var episode1InputKey = $"{TitleSequenceEncoding.Instance.CreateMD5(episode1Input.Path)}";
-            var episode2InputKey = $"{TitleSequenceEncoding.Instance.CreateMD5(episode2Input.Path)}";
+            //Create the the current episode input key. 
+            var episode1InputKey = $"{FileManager.Instance.GetFingerprintFileName(episode1Input)}";
+            var episode2InputKey = $"{FileManager.Instance.GetFingerprintFileName(episode2Input)}";
             
 
             if (!FileSystem.FileExists($"{fingerprintDir}{episode1InputKey}.json"))
@@ -226,7 +223,6 @@ namespace IntroSkip
             {
                 throw new AudioFingerprintMissingException("Fingerprint data doesn't currently exist");
             }
-
 
             var fingerPrintDataEpisode1 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
             var fingerPrintDataEpisode2 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");

@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
 // ReSharper disable once TooManyDependencies
@@ -23,28 +20,21 @@ namespace IntroSkip
         private static ILogger Log                  { get; set; }
         private ILibraryManager LibraryManager      { get; }
         private IUserManager UserManager            { get; }
-        private IFileSystem FileSystem              { get; }
-        private IApplicationPaths ApplicationPaths  { get; }
-        private IJsonSerializer JsonSerializer      { get; }
         public long CurrentSeriesEncodingInternalId { get; set; }
 
 
-
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user, IFileSystem file, IApplicationPaths paths, IJsonSerializer jsonSerializer)
+        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ILibraryManager libMan, IUserManager user)
         {
             Log              = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager   = libMan;
             UserManager      = user;
-            JsonSerializer   = jsonSerializer;
-            FileSystem       = file;
-            ApplicationPaths = paths;
         }
 
 #pragma warning disable 1998
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
 #pragma warning restore 1998
         {
-            Log.Info("Beginning Intro Task");
+            Log.Info("Beginning Title Sequence Task");
             var config = Plugin.Instance.Configuration;
             
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
@@ -54,8 +44,9 @@ namespace IntroSkip
                 User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             });
 
-            var step = 100.0 / seriesQuery.TotalRecordCount;
+            var step            = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
+
             Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, series =>
             {
                 progress.Report((currentProgress += step) - 1);
@@ -64,28 +55,28 @@ namespace IntroSkip
 
                 var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                 {
-                    Parent = series,
-                    Recursive = true,
+                    Parent           = series,
+                    Recursive        = true,
                     IncludeItemTypes = new[] { "Season" },
-                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    IsVirtualItem = false
+                    User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                    IsVirtualItem    = false
                 });
 
                 foreach (var season in seasonQuery.Items)
                 {
 
-                    var titleSequence = TitleSequenceEncoding.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
+                    var titleSequence = FileManager.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
 
                     List<EpisodeTitleSequence> episodeTitleSequences = null;
                     episodeTitleSequences = titleSequence.EpisodeTitleSequences is null ? new List<EpisodeTitleSequence>() : titleSequence.EpisodeTitleSequences.ToList();
 
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
-                        Parent = season,
-                        Recursive = true,
+                        Parent           = season,
+                        Recursive        = true,
                         IncludeItemTypes = new[] { "Episode" },
-                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                        IsVirtualItem = false
+                        User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                        IsVirtualItem    = false
 
                     });
 
@@ -101,26 +92,22 @@ namespace IntroSkip
                     }
 
                     Log.Info($"{season.Parent.Name} S: {season.IndexNumber} has {unmatched.Count()} episodes to scan...\n");
-                    Log.Info($"Title Sequence Threshold is set to {Plugin.Instance.Configuration.TitleSequenceLengthThreshold} seconds");
+                    
 
                     for (var index = 0; index <= unmatched.Count() - 1; index++)
                     {
-
-                        //Log.Info($"Searching for: {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber}");
-
+                       
                         //Compare the unmatched baseItem with every other item ion the season.
                         for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
                         {
-                            var unmatchedItem = unmatched[index];
+                            var unmatchedItem  = unmatched[index];
                             var comparableItem = episodeQuery.Items[episodeComparableIndex];
 
                             //Don't compare the same episode with itself.
                             if (comparableItem.InternalId == unmatchedItem.InternalId)
                             {
-                                //Log.Info($"\n Can not compare {unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} with itself MoveNext()\n");
-
-
-                                ////We can't compare an episode with itself, however it is the final episode in the list, and it doesn't already exist save the false intro
+                               
+                                ////We can't compare an episode with itself, however it is the final episode in the list, and it doesn't already exist, save the false intro
                                 if (episodeComparableIndex == episodeQuery.Items.Count() - 1)
                                 {
                                     if (!episodeTitleSequences.Exists(item => item.InternalId == unmatchedItem.InternalId))
@@ -128,8 +115,8 @@ namespace IntroSkip
                                         episodeTitleSequences.Add(new EpisodeTitleSequence()
                                         {
                                             IndexNumber = episodeQuery.Items[episodeComparableIndex].IndexNumber,
-                                            HasIntro = false,
-                                            InternalId = episodeQuery.Items[episodeComparableIndex].InternalId
+                                            HasIntro    = false,
+                                            InternalId  = episodeQuery.Items[episodeComparableIndex].InternalId
                                         });
 
                                         break;
@@ -147,13 +134,11 @@ namespace IntroSkip
                                 }
                             }
 
-
+                            
                             try
                             {
                                 //The magic!
-                                var data = (TitleSequenceDetection.Instance.SearchAudioFingerPrint(
-                                    episodeQuery.Items[episodeComparableIndex], unmatched[index]));
-
+                                var data = (TitleSequenceDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
 
                                 foreach (var dataPoint in data)
                                 {
@@ -168,21 +153,21 @@ namespace IntroSkip
                                 }
 
                             }
-                            catch (TitleSequenceInvalidDetectionException ex)
+                            catch (TitleSequenceInvalidDetectionException)
                             {
                                 if (episodeComparableIndex != episodeQuery.Items.Count() - 1) continue;
 
                                 //We have exhausted all our episode comparing
-                                var index1 = index;
-                                if (episodeTitleSequences.Exists(item => item.InternalId == unmatched[index1].InternalId)) continue;
+                                
+                                if (episodeTitleSequences.Exists(item => item.InternalId == unmatchedItem.InternalId)) continue;
 
                                 Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence.");
 
                                 episodeTitleSequences.Add(new EpisodeTitleSequence()
                                 {
-                                    IndexNumber = episodeQuery.Items[index1].IndexNumber,
-                                    HasIntro = false,
-                                    InternalId = episodeQuery.Items[index1].InternalId
+                                    IndexNumber = unmatchedItem.IndexNumber,
+                                    HasIntro    = false,
+                                    InternalId  = unmatchedItem.InternalId
                                 });
                             }
                             catch (AudioFingerprintMissingException ex)
@@ -191,13 +176,10 @@ namespace IntroSkip
                             }
                         }
 
-
-
                     }
 
-
                     titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                    TitleSequenceEncoding.Instance.SaveTitleSequenceJsonToFile($"{series.InternalId}{season.InternalId}", titleSequence);
+                    FileManager.Instance.SaveTitleSequenceJsonToFile($"{series.InternalId}{season.InternalId}", titleSequence);
 
                 }
 
@@ -220,13 +202,13 @@ namespace IntroSkip
             };
         }
 
-        public string Name => "Detect Episode Title Sequence";
-        public string Key => "Intro Skip Options";
+        public string Name        => "Detect Episode Title Sequence";
+        public string Key         => "Intro Skip Options";
         public string Description => "Detect start and finish times of episode title sequences to allow for a 'skip' option";
-        public string Category => "Intro Skip";
-        public bool IsHidden => false;
-        public bool IsEnabled => true;
-        public bool IsLogged => true;
+        public string Category    => "Intro Skip";
+        public bool IsHidden      => false;
+        public bool IsEnabled     => true;
+        public bool IsLogged      => true;
 
     }
 }
