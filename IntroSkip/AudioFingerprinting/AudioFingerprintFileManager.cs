@@ -3,8 +3,6 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using IntroSkip.AudioFingerprinting;
-using IntroSkip.TitleSequenceDetection;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
@@ -12,51 +10,25 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
-namespace IntroSkip
+namespace IntroSkip.AudioFingerprinting
 {
-    public class FileManager : IServerEntryPoint
+    public class AudioFingerprintFileManager : IServerEntryPoint
     {
-        private IFileSystem FileSystem                  { get; }
-        private IApplicationPaths ApplicationPaths      { get; }
-        private IJsonSerializer JsonSerializer          { get; }
-        public static FileManager Instance              { get; private set; }
-        private ILogger Log                             { get; }
-        
-        private char Separator                          { get; set; }
+        private IFileSystem FileSystem                     { get; }
+        private IApplicationPaths ApplicationPaths         { get; }
+        private char Separator                             { get; }
+        private ILogger Log                                { get; }
+        public static AudioFingerprintFileManager Instance { get; private set; }
+        private IJsonSerializer JsonSerializer             { get; }
 
-        // ReSharper disable once TooManyDependencies
-        public FileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
+        public AudioFingerprintFileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer jsonSerializer,  ILogManager logMan)
         {
+            Instance         = this;
             FileSystem       = file;
             ApplicationPaths = applicationPaths;
-            JsonSerializer   = json;
             Log              = logMan.GetLogger(Plugin.Instance.Name);
+            JsonSerializer   = jsonSerializer;
             Separator        = FileSystem.DirectorySeparatorChar;
-            Instance         = this;
-        }
-        
-
-        public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprint audioFingerprint)
-        {
-            var fileName = GetFingerprintFileName(episode);
-            var filePath = $"{GetFingerprintDirectory()}{Separator}{fileName}.json";
-
-            if (audioFingerprint is null)
-            {
-                Log.Info("Fingerprint was null");
-                return;
-            }
-
-            using (var sw = new StreamWriter(filePath))
-            {
-                sw.Write(JsonSerializer.SerializeToString(audioFingerprint));
-                sw.Flush();
-            }
-        }
-
-        public string GetFingerprintFileName(BaseItem episode)
-        {
-            return $"{CreateMD5(episode.Path)}";
         }
 
         public void RemoveAllSeasonAudioEncodings(long internalId)
@@ -97,10 +69,9 @@ namespace IntroSkip
             }
         }
 
-        public string GetEncodingDirectory()
+        public string GetFingerprintFileNameHash(BaseItem episode)
         {
-            var configDir = ApplicationPaths.PluginConfigurationsPath;
-            return $"{configDir}{Separator}introEncoding";
+            return $"{CreateMD5(episode.Path)}";
         }
 
         public string GetFingerprintDirectory()
@@ -109,52 +80,14 @@ namespace IntroSkip
             return $"{configDir}{Separator}introEncoding{Separator}fingerprints";
         }
 
-        public string GetTitleSequenceDirectory()
+        public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprint fingerprint)
         {
-            var configDir = ApplicationPaths.PluginConfigurationsPath;
-            return $"{configDir}{Separator}titleSequences";
-        }
-
-        private string CreateMD5(string input)
-        {
-            // Use input string to calculate MD5 hash
-            using (var md5 = MD5.Create())
-            {
-                var inputBytes = Encoding.ASCII.GetBytes(input);
-                var hashBytes  = md5.ComputeHash(inputBytes);
-                var sb         = new StringBuilder();
-
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    sb.Append(hashBytes[i].ToString("X2"));
-                }
-                return sb.ToString();
-            }
-        }
-
-        public TitleSequenceDto GetTitleSequenceFromFile(string fileName)
-        {
-            var filePath = $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json";
-
-            if (!FileSystem.FileExists(filePath))
-            {
-                return new TitleSequenceDto();
-            }
+            var fileName = GetFingerprintFileNameHash(episode);
+            var filePath = $"{GetFingerprintDirectory()}{Separator}{fileName}.json";
             
-            using (var sr = new StreamReader(filePath))
+            using (var sw = new StreamWriter(filePath))
             {
-                return JsonSerializer.DeserializeFromString<TitleSequenceDto>(sr.ReadToEnd());
-            }
-
-        }
-
-        public void SaveTitleSequenceJsonToFile(string fileName, TitleSequenceDto introDto)
-        {
-            Log.Info($"Saving {fileName}.json");
-            
-            using (var sw = new StreamWriter( $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json"))
-            {
-                sw.Write(JsonSerializer.SerializeToString(introDto));
+                sw.Write(JsonSerializer.SerializeToString(fingerprint));
                 sw.Flush();
             }
         }
@@ -204,6 +137,29 @@ namespace IntroSkip
             return GetType().Assembly.GetManifestResourceStream(name);
         }
 
+        private string CreateMD5(string input)
+        {
+            // Use input string to calculate MD5 hash
+            using (var md5 = MD5.Create())
+            {
+                var inputBytes = Encoding.ASCII.GetBytes(input);
+                var hashBytes  = md5.ComputeHash(inputBytes);
+                var sb         = new StringBuilder();
+
+                for (int i = 0; i < hashBytes.Length; i++)
+                {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
+        }
+
+        public string GetEncodingDirectory()
+        {
+            var configDir = ApplicationPaths.PluginConfigurationsPath;
+            return $"{configDir}{Separator}introEncoding";
+        }
+
         public void Dispose()
         {
             
@@ -212,19 +168,13 @@ namespace IntroSkip
         // ReSharper disable once MethodNameNotMeaningful
         public void Run()
         {
-            
-            var titleSequenceDir = GetTitleSequenceDirectory();
-            var encodingDir      = GetEncodingDirectory();
             var fingerPrintDir   = GetFingerprintDirectory();
-            
-            if (!FileSystem.DirectoryExists($"{titleSequenceDir}")) FileSystem.CreateDirectory($"{titleSequenceDir}");
+            var encodingDir      = GetEncodingDirectory();
 
             if (!FileSystem.DirectoryExists($"{encodingDir}"))      FileSystem.CreateDirectory( $"{encodingDir}");
 
-            if (!FileSystem.DirectoryExists($"{fingerPrintDir}"))   FileSystem.CreateDirectory( $"{fingerPrintDir}");
-
-            CopyFpCalc($"{encodingDir}");
-
+            if (!FileSystem.DirectoryExists($"{fingerPrintDir}")) FileSystem.CreateDirectory($"{fingerPrintDir}");
+            CopyFpCalc($"{encodingDir}"); 
         }
     }
 }

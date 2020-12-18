@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using IntroSkip.AudioFingerprinting;
 using IntroSkip.TitleSequenceDetection;
-using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -12,15 +12,6 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceDataService : IService
     {
-        [Route("/AverageTitleSequenceLength", "GET", Summary = "Episode Title Sequence Start and End Data")]
-        public class AverageTitleSequenceLengthRequest : IReturn<string>
-        {
-            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
-            public long SeasonId { get; set; }
-            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
-            public long SeriesId { get; set; }
-        }
-
         [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class RemoveTitleSequenceRequest : IReturn<string>
         {
@@ -67,13 +58,11 @@ namespace IntroSkip.Api
         private IJsonSerializer JsonSerializer      { get; }
         private ILogger Log                         { get; }
         private IFileSystem FileSystem              { get; }
-        private ILibraryManager LibraryManager      { get; }
        
-        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
+        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem)
         {
             JsonSerializer = json;
             FileSystem     = fileSystem;
-            LibraryManager = libraryManager;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
         }
 
@@ -81,7 +70,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = FileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
+                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
 
                 if (!titleSequences.EpisodeTitleSequences.Any())
                 {
@@ -94,16 +83,16 @@ namespace IntroSkip.Api
                 }
 
                 ////Remove the finger print file
-                if (FileSystem.FileExists($"{FileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
                 {
                     try
                     {
-                        FileSystem.DeleteFile($"{FileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
                     }
                     catch { }
                 }
 
-                FileManager.Instance.SaveTitleSequenceJsonToFile($"{request.SeriesId}{request.SeasonId}", titleSequences);
+                TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile($"{request.SeriesId}{request.SeasonId}", titleSequences);
 
                 Log.Info("Title sequence finger print file removed.");
 
@@ -118,7 +107,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = FileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
+                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
 
                 if (!titleSequences.EpisodeTitleSequences.Any())
                 {
@@ -130,7 +119,7 @@ namespace IntroSkip.Api
                    titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
                 }
                 
-                FileManager.Instance.SaveTitleSequenceJsonToFile($"{request.SeriesId}{request.SeasonId}", titleSequences);
+                TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile($"{request.SeriesId}{request.SeasonId}", titleSequences);
 
                 Log.Info("Title sequence saved intro data removed.");
 
@@ -151,7 +140,7 @@ namespace IntroSkip.Api
         public string Get(SeriesTitleSequenceRequest request)
         {
             
-            var titleSequences = FileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
+            var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
             
             TimeSpan commonDuration;
             try
@@ -177,7 +166,7 @@ namespace IntroSkip.Api
         {
             try
             {
-                var titleSequences = FileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
+                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{request.SeriesId}{request.SeasonId}");
                 if (titleSequences.EpisodeTitleSequences is null) return JsonSerializer.SerializeToString(new List<EpisodeTitleSequence>());
 
                 var episodeTitleSequences = titleSequences.EpisodeTitleSequences;

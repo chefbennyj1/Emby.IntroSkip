@@ -66,7 +66,7 @@ namespace IntroSkip.TitleSequenceDetection
                 foreach (var season in seasonQuery.Items)
                 {
 
-                    var titleSequence = FileManager.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
+                    var titleSequence = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
 
                     List<EpisodeTitleSequence> episodeTitleSequences = null;
                     episodeTitleSequences = titleSequence.EpisodeTitleSequences is null ? new List<EpisodeTitleSequence>() : titleSequence.EpisodeTitleSequences.ToList();
@@ -180,7 +180,7 @@ namespace IntroSkip.TitleSequenceDetection
                     }
 
                     titleSequence.EpisodeTitleSequences = episodeTitleSequences;
-                    FileManager.Instance.SaveTitleSequenceJsonToFile($"{series.InternalId}{season.InternalId}", titleSequence);
+                    TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile($"{series.InternalId}{season.InternalId}", titleSequence);
 
                 }
 
