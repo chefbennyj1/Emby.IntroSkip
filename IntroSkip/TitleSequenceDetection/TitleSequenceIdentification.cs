@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
@@ -17,17 +18,16 @@ using MediaBrowser.Model.Serialization;
 // ReSharper disable ComplexConditionExpression
 // ReSharper disable once TooManyDependencies
 
-namespace IntroSkip
+namespace IntroSkip.TitleSequenceDetection
 {
-    public class TitleSequenceDetection : TitleSequenceDto, IServerEntryPoint
+    public class TitleSequenceIdentification : TitleSequenceDto, IServerEntryPoint
     {
-        private IJsonSerializer JsonSerializer        { get; }
-        private IFileSystem FileSystem                { get; }
+        private IJsonSerializer JsonSerializer              { get; }
+        private IFileSystem FileSystem                      { get; }
+        private static ILogger Logger                       { get; set; }
+        public static TitleSequenceIdentification Instance  { get; private set; }
         
-        private static ILogger Logger                 { get; set; }
-        public static TitleSequenceDetection Instance { get; private set; }
-        
-        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
+        public TitleSequenceIdentification(IJsonSerializer json, IFileSystem file, ILogManager logMan)
         {
             JsonSerializer   = json;
             FileSystem       = file;

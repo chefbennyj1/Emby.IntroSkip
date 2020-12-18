@@ -3,6 +3,8 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using IntroSkip.AudioFingerprinting;
+using IntroSkip.TitileSequenceDetection;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;

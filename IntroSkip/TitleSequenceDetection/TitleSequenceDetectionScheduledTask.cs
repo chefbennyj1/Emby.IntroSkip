@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Logging;
@@ -13,7 +14,7 @@ using MediaBrowser.Model.Tasks;
 // ReSharper disable once ExcessiveIndentation
 // ReSharper disable twice ComplexConditionExpression
 
-namespace IntroSkip
+namespace IntroSkip.TitleSequenceDetection
 {
     public class TitleSequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
@@ -138,7 +139,7 @@ namespace IntroSkip
                             try
                             {
                                 //The magic!
-                                var data = (TitleSequenceDetection.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
+                                var data = (TitleSequenceIdentification.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
 
                                 foreach (var dataPoint in data)
                                 {

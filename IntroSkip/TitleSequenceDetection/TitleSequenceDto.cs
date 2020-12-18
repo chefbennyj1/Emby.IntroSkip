@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace IntroSkip 
+namespace IntroSkip.TitleSequenceDetection 
 {
     public class EpisodeTitleSequence
     {

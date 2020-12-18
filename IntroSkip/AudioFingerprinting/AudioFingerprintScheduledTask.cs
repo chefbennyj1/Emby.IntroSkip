@@ -13,7 +13,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
-namespace IntroSkip
+namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {

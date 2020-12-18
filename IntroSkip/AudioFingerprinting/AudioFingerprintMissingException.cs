@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IntroSkip
+namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintMissingException : Exception
     {

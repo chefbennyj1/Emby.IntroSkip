@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IntroSkip
+namespace IntroSkip.TitleSequenceDetection
 {
     public class TitleSequenceInvalidDetectionException : Exception
     {
