@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.TitleSequenceDetection;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
@@ -58,11 +59,12 @@ namespace IntroSkip.Api
         private IJsonSerializer JsonSerializer      { get; }
         private ILogger Log                         { get; }
         private IFileSystem FileSystem              { get; }
-       
-        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem)
+        private ILibraryManager LibraryManager { get; }
+        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
         {
             JsonSerializer = json;
             FileSystem     = fileSystem;
+            LibraryManager = libraryManager;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
         }
 
@@ -82,12 +84,14 @@ namespace IntroSkip.Api
                     titleSequences.EpisodeTitleSequences.RemoveAll(item => item.InternalId == request.EpisodeId);
                 }
 
+                var episode = LibraryManager.GetItemById(request.EpisodeId);
+                var fingerPrintHash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
                 ////Remove the finger print file
-                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json"))
+                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json"))
                 {
                     try
                     {
-                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{request.SeasonId}{request.EpisodeId}.json");
+                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json");
                     }
                     catch { }
                 }
