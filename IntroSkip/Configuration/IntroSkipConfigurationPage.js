@@ -55,6 +55,22 @@
             html += '<div style="flex-grow:1;">';
             
             html += '<div class="inputContainer">';
+            html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
+            html += '<input is="emby-toggle" type="checkbox" id="enableItemAddedEvent"  class="chkitemAddedEvent noautofocus mdl-switch__input" data-embytoggle="true">';
+            html += '<span class="toggleButtonLabel mdl-switch__label">Enable episode added auto scan</span>';
+            html += '<div class="mdl-switch__trackContainer">';
+            html += '<div class="mdl-switch__track"></div>';
+            html += '<div class="mdl-switch__thumb">';
+            html += '<span class="mdl-switch__focus-helper"></span>';
+            html += '</div>';
+            html += '</div>';
+            html += '</label>';
+            html += '<div class="fieldDescription">';
+            html += 'Auto scan episodes after they are added to the library automatically.';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParralelism">Maximum parralel series to process at once:</label> ';
             html += '<input is="emby-input" type="number" id="txtMaxDegreeOfParralelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
             html += '<div class="fieldDescription">';
@@ -89,13 +105,23 @@
             var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
             var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
             var maxDegreeOfParralelism      = dlg.querySelector('#txtMaxDegreeOfParralelism');
+            var enableItemAddedEventToggle  = dlg.querySelector('#enableItemAddedEvent');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                titleSequenceThresholdInput.value = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
-                titleSequenceEncodingLength.value = config.EncodingLength ? config.EncodingLength : 10;
-                maxDegreeOfParralelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
+                titleSequenceThresholdInput.value  = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
+                titleSequenceEncodingLength.value  = config.EncodingLength               ? config.EncodingLength               : 10;
+                maxDegreeOfParralelism.value       = config.MaxDegreeOfParallelism       ? config.MaxDegreeOfParallelism       : 2;
+                enableItemAddedEventToggle.checked = config.EnableItemAddedTaskAutoRun;
             });
              
+            enableItemAddedEventToggle.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.EnableItemAddedTaskAutoRun = enableItemAddedEventToggle.checked;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            }); 
+
             maxDegreeOfParralelism.addEventListener('change', (e) => {
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {

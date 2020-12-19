@@ -16,23 +16,11 @@ namespace IntroSkip.Events
             TaskManager    = taskManager;
             LibraryManager = libraryManager;
         }
-
-        private void LibraryManager_ItemUpdated(object sender, ItemChangeEventArgs e)
-        {
-            if (e.Item.GetType().Name != "Episode") return;
-            foreach (var task in TaskManager.ScheduledTasks)
-            {
-                if (task.Name != "Episode Audio Fingerprinting") continue;
-                if (task.State == TaskState.Running) return;
-
-                task.TaskProgress += FingerprintingTask_TaskProgress;
-                TaskManager.Execute(task, new TaskOptions());
-            }
-        }
+        
 
         private void FingerprintingTask_TaskProgress(object sender, MediaBrowser.Model.Events.GenericEventArgs<double> e)
         {
-            if (e.Argument < 100.0) return;
+            if (e.Argument < 99.0) return;
             foreach (var task in TaskManager.ScheduledTasks)
             {
                 if (task.Name != "Detect Episode Title Sequence") continue;
@@ -44,6 +32,10 @@ namespace IntroSkip.Events
 
         private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
         {
+            var config = Plugin.Instance.Configuration;
+
+            if (!config.EnableItemAddedTaskAutoRun) return;
+
             if (e.Item.GetType().Name != "Episode") return;
             foreach (var task in TaskManager.ScheduledTasks)
             {
@@ -58,13 +50,12 @@ namespace IntroSkip.Events
         public void Dispose()
         {
             LibraryManager.ItemAdded   -= LibraryManager_ItemAdded;
-            LibraryManager.ItemUpdated -= LibraryManager_ItemUpdated;
         }
 
         public void Run()
         {
+           
             LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
-            LibraryManager.ItemUpdated += LibraryManager_ItemUpdated;
         }
     }
 }
