@@ -13,6 +13,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
+
 namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintScheduledTask : IScheduledTask, IConfigurableScheduledTask
@@ -57,7 +58,7 @@ namespace IntroSkip.AudioFingerprinting
             var step = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, series =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, async series =>
             {
                 progress.Report((currentProgress += step) - 1);
                 
@@ -118,6 +119,7 @@ namespace IntroSkip.AudioFingerprinting
 
         }
         
+      
 
         private AudioFingerprint FingerPrintAudio(string inputFileName)
         {
@@ -125,15 +127,16 @@ namespace IntroSkip.AudioFingerprinting
             var duration     = config.EncodingLength * 60;
             var separator    = FileSystem.DirectorySeparatorChar;
             var encodingPath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}";
-            var @params      = $"\"{inputFileName}\" -raw -length {duration} -json";
-            var fpcalc       = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
+            
+            var @params = $"\"{inputFileName}\" -raw -length {duration} -json";
+            var fpcalc = (OperatingSystem.IsWindows() ? "fpcalc.exe" : "fpcalc");
 
             var procStartInfo = new ProcessStartInfo($"{encodingPath}{fpcalc}", @params)
             {
                 RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
 
             };
 
@@ -209,9 +212,9 @@ namespace IntroSkip.AudioFingerprinting
                     else
                     {
                         var printData       = JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
-                        var encodingSeconds = encodingDuration * 60;
-
-                        if (printData.duration < encodingSeconds - 2) //Leave room for an encoding error of 2 seconds.
+                       
+                        //Our minimum encoding is 10 minutes. If there are any fingerprint encodings under 10 minutes, try and re-fingerprint the audio.
+                        if (printData.duration < 600 - 2) //Leave room for an encoding error of 2 seconds.
                         {
                             remove = true;
                         }
