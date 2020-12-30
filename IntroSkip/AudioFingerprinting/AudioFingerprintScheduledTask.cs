@@ -58,8 +58,14 @@ namespace IntroSkip.AudioFingerprinting
             var step = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, async series =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    state.Break();
+                    progress.Report(100.0);
+                }
+
                 progress.Report((currentProgress += step) - 1);
                 
                 var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
@@ -73,6 +79,11 @@ namespace IntroSkip.AudioFingerprinting
 
                 foreach (var season in seasonQuery.Items)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent           = season,
@@ -86,6 +97,12 @@ namespace IntroSkip.AudioFingerprinting
                     
                     for (var index = 0; index <= episodeQuery.Items.Count() - 1; index++)
                     {
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var audioFileName       = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
                         var audioFilePath       = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{audioFileName}.wav";
                         var fingerprintFileName = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episodeQuery.Items[index]);
@@ -121,7 +138,7 @@ namespace IntroSkip.AudioFingerprinting
         
       
 
-        private AudioFingerprint FingerPrintAudio(string inputFileName)
+        private AudioFingerprintDto FingerPrintAudio(string inputFileName)
         {
             var config       = Plugin.Instance.Configuration;
             var duration     = config.EncodingLength * 60;
@@ -155,7 +172,7 @@ namespace IntroSkip.AudioFingerprinting
 
             if (string.IsNullOrEmpty(json)) throw new Exception("Fingerprint Data Null");
 
-            return JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
+            return JsonSerializer.DeserializeFromString<AudioFingerprintDto>(json);
         }
 
         private void ExtractPCMAudio(string input, string audioOut, int duration)
@@ -211,7 +228,7 @@ namespace IntroSkip.AudioFingerprinting
                     }
                     else
                     {
-                        var printData       = JsonSerializer.DeserializeFromString<AudioFingerprint>(json);
+                        var printData       = JsonSerializer.DeserializeFromString<AudioFingerprintDto>(json);
                        
                         //Our minimum encoding is 10 minutes. If there are any fingerprint encodings under 10 minutes, try and re-fingerprint the audio.
                         if (printData.duration < 600 - 2) //Leave room for an encoding error of 2 seconds.

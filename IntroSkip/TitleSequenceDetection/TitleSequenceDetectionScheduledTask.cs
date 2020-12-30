@@ -46,10 +46,15 @@ namespace IntroSkip.TitleSequenceDetection
             });
 
             var step            = 100.0 / seriesQuery.TotalRecordCount;
-            var currentProgress = 0.0;
+            var currentProgress = 0.2;
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, series =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                   state.Break();
+                   progress.Report(100.0);
+                }
                 progress.Report((currentProgress += step) - 1);
 
                 Log.Info(series.Name);
@@ -65,6 +70,10 @@ namespace IntroSkip.TitleSequenceDetection
 
                 foreach (var season in seasonQuery.Items)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
                     var titleSequence = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile($"{series.InternalId}{season.InternalId}");
 
@@ -97,10 +106,19 @@ namespace IntroSkip.TitleSequenceDetection
 
                     for (var index = 0; index <= unmatched.Count() - 1; index++)
                     {
-                       
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         //Compare the unmatched baseItem with every other item ion the season.
                         for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
                         {
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                break;
+                            }
+                            
                             var unmatchedItem  = unmatched[index];
                             var comparableItem = episodeQuery.Items[episodeComparableIndex];
 
@@ -108,16 +126,16 @@ namespace IntroSkip.TitleSequenceDetection
                             if (comparableItem.InternalId == unmatchedItem.InternalId)
                             {
                                
-                                ////We can't compare an episode with itself, however it is the final episode in the list, and it doesn't already exist, save the false intro
+                                ////We can't compare an episode with itself, however it is the final episode in the comparing list, and it doesn't already exist, save the false intro
                                 if (episodeComparableIndex == episodeQuery.Items.Count() - 1)
                                 {
                                     if (!episodeTitleSequences.Exists(item => item.InternalId == unmatchedItem.InternalId))
                                     {
                                         episodeTitleSequences.Add(new EpisodeTitleSequence()
                                         {
-                                            IndexNumber = episodeQuery.Items[episodeComparableIndex].IndexNumber,
+                                            IndexNumber = unmatchedItem.IndexNumber,
                                             HasIntro    = false,
-                                            InternalId  = episodeQuery.Items[episodeComparableIndex].InternalId
+                                            InternalId  = unmatchedItem.InternalId
                                         });
 
                                         break;
@@ -139,7 +157,7 @@ namespace IntroSkip.TitleSequenceDetection
                             try
                             {
                                 //The magic!
-                                var data = (TitleSequenceIdentification.Instance.SearchAudioFingerPrint(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
+                                var data = (TitleSequenceIdentification.Instance.Analyze(episodeQuery.Items[episodeComparableIndex], unmatched[index]));
 
                                 foreach (var dataPoint in data)
                                 {

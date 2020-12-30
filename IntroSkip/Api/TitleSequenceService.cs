@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.TitleSequenceDetection;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
@@ -11,7 +12,7 @@ using MediaBrowser.Model.Services;
 
 namespace IntroSkip.Api
 {
-    public class TitleSequenceDataService : IService
+    public class TitleSequenceService : IService
     {
         [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class RemoveTitleSequenceRequest : IReturn<string>
@@ -22,6 +23,19 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
             [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeriesId { get; set; }
+        }
+
+        [Route("/RemoveAll", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        public class RemoveAllRequest : IReturn<string>
+        {
+           
+        }
+
+        [Route("/RemoveSeasonFingerprints", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        public class RemoveSeasonFingerprintsRequest : IReturn<string>
+        {
+            [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long SeasonId { get; set; }
         }
 
         [Route("/RemoveFingerprint", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
@@ -59,13 +73,69 @@ namespace IntroSkip.Api
         private IJsonSerializer JsonSerializer      { get; }
         private ILogger Log                         { get; }
         private IFileSystem FileSystem              { get; }
-        private ILibraryManager LibraryManager { get; }
-        public TitleSequenceDataService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
+        private ILibraryManager LibraryManager      { get; }
+
+        public TitleSequenceService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
         {
             JsonSerializer = json;
             FileSystem     = fileSystem;
             LibraryManager = libraryManager;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
+        }
+
+        public string Delete(RemoveAllRequest request)
+        {
+            try
+            {
+                var fingerprintFiles = FileSystem
+                    .GetFiles(
+                        $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}",
+                        true).Where(file => file.Extension == ".json");
+                foreach (var file in fingerprintFiles)
+                {
+                    FileSystem.DeleteFile(file.FullName);
+                }
+            }catch {}
+
+            try
+            {
+                var titleSequenceFiles = FileSystem
+                    .GetFiles(
+                        $"{TitleSequenceFileManager.Instance.GetTitleSequenceDirectory()}{FileSystem.DirectorySeparatorChar}",
+                        true).Where(file => file.Extension == ".json");
+                foreach (var file in titleSequenceFiles)
+                {
+                    FileSystem.DeleteFile(file.FullName);
+                }
+            }catch {}
+
+            return "OK";
+        }
+
+        public string Delete(RemoveSeasonFingerprintsRequest request)
+        {
+            var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            {
+                ParentIds = new []{ request.SeasonId },
+                Recursive = true,
+                IncludeItemTypes = new[] { "Episode" }
+            });
+
+            foreach (var episode in episodeQuery.Items)
+            {
+                var fingerPrintHash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
+                //Remove the finger print file
+                if (!FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json")) continue;
+                
+                try
+                {
+                    FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json");
+                }
+                catch { }
+            }
+
+            return "OK";
+
         }
 
         public string Delete(RemoveFingerprintRequest request)
@@ -86,7 +156,7 @@ namespace IntroSkip.Api
 
                 var episode = LibraryManager.GetItemById(request.EpisodeId);
                 var fingerPrintHash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
-                ////Remove the finger print file
+                //Remove the finger print file
                 if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json"))
                 {
                     try

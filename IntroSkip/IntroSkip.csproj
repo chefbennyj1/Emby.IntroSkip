@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>1.0.1.4</AssemblyVersion> <FileVersion>1.0.1.4</FileVersion> <Version>1.0.1.4</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>1.0.1.7</AssemblyVersion> <FileVersion>1.0.1.7</FileVersion> <Version>1.0.1.7</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -16,6 +16,7 @@
   <None Remove="Configuration\IntroSkipConfigurationPage.js" />
   <None Remove="Configuration\linux_fpcalc" />
   <None Remove="Configuration\mac_fpcalc" />
+  <None Remove="thumb.jpg" />
 </ItemGroup>
 
 <ItemGroup>
@@ -24,6 +25,7 @@
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\linux_fpcalc" />
   <EmbeddedResource Include="Configuration\mac_fpcalc" />
+  <EmbeddedResource Include="thumb.jpg" />
 </ItemGroup>
 
 

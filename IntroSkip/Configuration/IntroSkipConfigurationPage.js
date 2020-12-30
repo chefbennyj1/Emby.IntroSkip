@@ -13,6 +13,14 @@
             };
         };
 
+        ApiClient.deleteAll = function() {
+            var url = this.getUrl('RemoveAll');
+            return this.ajax({
+                type: "DELETE",
+                url: url
+            });
+        };
+
         ApiClient.deleteIntroItem = function(seriesId,seasonId, episodeId) {
             var url = this.getUrl('RemoveIntro?EpisodeId=' + episodeId + '&SeasonId=' + seasonId + '&SeriesId=' + seriesId);
             return this.ajax({
@@ -28,6 +36,80 @@
                 url: url
             });
         };
+
+        ApiClient.deleteSeasonFingerprintData = function(seasonId) {
+            var url = this.getUrl('RemoveSeasonFingerprints?SeasonId=' + seasonId);
+            return this.ajax({
+                type: "DELETE",
+                url: url
+            });
+        };
+
+        function openConfirmationDialog() {
+            var confirmDlg = dialogHelper.createDialog({
+                size: "medium-tall",
+                removeOnClose: !1,
+                scrollY: true
+            });
+
+            confirmDlg.classList.add("formDialog");
+            confirmDlg.classList.add("ui-body-a");
+            confirmDlg.classList.add("background-theme-a");
+            confirmDlg.style.maxWidth = "27%";
+            confirmDlg.style.maxHeight = "32%";
+
+            var html = "";
+            html += '<div class="formDialogHeader" style="display:flex">';
+            html += '<button is="paper-icon-button-light" class="btnCloseDialog autoSize paper-icon-button-light" tabindex="-1"><i class="md-icon">arrow_back</i></button><h3 class="formDialogHeaderTitle"></h3>';
+            html += '</div>';
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="padding:0">';
+            html += '<div style="text-align:center"';
+
+            html += '<h1>You are about to remove all title sequence data.</h1>';
+            html += '<h1>Are you sure?</h1>';
+
+            html += '<div style="display:flex">';
+
+            html += '<button is="emby-button" type="submit" class="btnOk raised button-submit block emby-button" style="max-width:40%; margin-right:20%">';
+            html += '<span>OK</span>';
+            html += '</button>';
+
+            html += '<button is="emby-button" type="submit" class="btnCancel raised button-submit block emby-button" style="max-width:40%">';
+            html += '<span>Cancel</span>';
+            html += '</button>';
+
+            html += '</div>';
+
+            html += '</div>';
+            html += '</div>';
+
+            confirmDlg.innerHTML = html;
+            dialogHelper.open(confirmDlg);
+
+            confirmDlg.querySelector('.btnCloseDialog').addEventListener('click',
+                (e) => {
+                    e.preventDefault();
+                    dialogHelper.close(confirmDlg);
+                });
+
+            confirmDlg.querySelector('.btnCancel').addEventListener('click',
+                (e) => {
+                    e.preventDefault();
+                    dialogHelper.close(confirmDlg);
+                });
+
+            confirmDlg.querySelector('.btnOk').addEventListener('click',
+                (e) => {
+                    loading.show();
+                    ApiClient.deleteAll().then(result => {
+                        loading.hide();
+                        Dashboard.alert("All data removed.");
+                        dialogHelper.close(confirmDlg); 
+                    })
+                });
+
+        }
 
         function openSettingsDialog() {
             loading.show();
@@ -57,7 +139,7 @@
             html += '<div class="inputContainer">';
             html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
             html += '<input is="emby-toggle" type="checkbox" id="enableItemAddedEvent"  class="chkitemAddedEvent noautofocus mdl-switch__input" data-embytoggle="true">';
-            html += '<span class="toggleButtonLabel mdl-switch__label">Enable episode added auto scan</span>';
+            html += '<span class="toggleButtonLabel mdl-switch__label">Enable new episode auto scan</span>';
             html += '<div class="mdl-switch__trackContainer">';
             html += '<div class="mdl-switch__track"></div>';
             html += '<div class="mdl-switch__thumb">';
@@ -72,7 +154,7 @@
 
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParralelism">Maximum parralel series to process at once:</label> ';
-            html += '<input is="emby-input" type="number" id="txtMaxDegreeOfParralelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
+            html += '<input type="number" id="txtMaxDegreeOfParralelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
             html += '<div class="fieldDescription">';
             html += 'The number of series to attempt to proccess at once. Lower powered machines should keep the default of 2.';
             html += '</div>';
@@ -81,7 +163,7 @@
               
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceThreshold">Title sequence duration threshold (seconds):</label> ';
-            html += '<input is="emby-input" type="number" id="txtTitleSequenceThreshold" min="5" max="15" step="1" label="Title sequence duration threshold (seconds):" class="emby-input">';
+            html += '<input type="number" id="txtTitleSequenceThreshold" min="5" max="15" step="1" label="Title sequence duration threshold (seconds):" class="emby-input">';
             html += '<div class="fieldDescription">';
             html += 'The duration threshold for accepted title sequence lengths. Any match with a duration less then this number will be ignored.';
             html += '</div>';
@@ -89,11 +171,22 @@
              
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceEncodingLength">Title sequence audio encoding length (minutes):</label> ';
-            html += '<input is="emby-input" type="number" id="txtTitleSequenceEncodingLength" min="10" max="15" step="1" label="Title sequence encoding duration (minutes):" class="emby-input">';
+            html += '<input type="number" id="txtTitleSequenceEncodingLength" min="10" max="15" step="1" label="Title sequence encoding duration (minutes):" class="emby-input">';
             html += '<div class="fieldDescription">';
             html += 'The duration of episode audio encoding used to find title sequences. Default is 10 minutes. A longer encoding may match episodes with title sequences which appear later in the stream, but will cause longer scans.';
             html += '</div>';
             html += '</div>';
+
+
+            html += '<div class="inputContainer">';
+            html += '<button is="emby-button" type="submit" class="removeAllData raised button-submit block emby-button">';
+            html += '<span>Reset title sequence data</span>';
+            html += '</button>';
+            html += '<div class="fieldDescription">';
+            html += 'Remove all title sequence related data and start from scratch.';
+            html += '</div>';
+            html += '</div>';
+               
 
             html += '</div>';
             html += '</div>';
@@ -106,14 +199,21 @@
             var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
             var maxDegreeOfParralelism      = dlg.querySelector('#txtMaxDegreeOfParralelism');
             var enableItemAddedEventToggle  = dlg.querySelector('#enableItemAddedEvent');
+            var removeAllButton             = dlg.querySelector('.removeAllData');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
                 titleSequenceThresholdInput.value  = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
-                titleSequenceEncodingLength.value  = config.EncodingLength               ? config.EncodingLength               : 10;
+                titleSequenceEncodingLength.value  = config.EncodingLength               ? config.EncodingLength               : 15;
                 maxDegreeOfParralelism.value       = config.MaxDegreeOfParallelism       ? config.MaxDegreeOfParallelism       : 2;
                 enableItemAddedEventToggle.checked = config.EnableItemAddedTaskAutoRun;
             });
-             
+
+            removeAllButton.addEventListener('click',
+                (e) => {
+                    e.preventDefault();
+                    openConfirmationDialog();
+                });
+
             enableItemAddedEventToggle.addEventListener('change', (e) => {
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
@@ -207,10 +307,12 @@
                     html += '<td data-title="Start" class="detailTableBodyCell fileCell">' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</td>';
                     html += '<td data-title="End" class="detailTableBodyCell fileCell">' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '</td>';
                     html += '<td data-title="Remove" class="detailTableBodyCell fileCell">';
-                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
+                    html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove Title Sequence</p>';
+                    html += '<button style="margin-left: 1em;" id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
                     html += '</td>'; 
                     html += '<td data-title="RemoveFingerprint" class="detailTableBodyCell fileCell">';
-                    html += '<button id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button" style="color:orangered"><i class="md-icon">error_outline</i></button>';
+                    html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove Title Sequence and Fingerprint</p>';
+                    html += '<button style="margin-left: 1em;" id="' + episode.Id + '" data-seriesId="' + seriesId + '" data-seasonId="' + seasonId + '" class="fab removeFingerprint emby-button" style="color:orangered"><i class="md-icon">error_outline</i></button>';
                     html += '</td>';
                     html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
                     html += '</tr>';
@@ -234,7 +336,7 @@
             return new Promise((resolve, reject) => {
                 ApiClient.deleteIntroItemAndFingerprint(seriesId, seasonId, episodeId).then(success => {
                     if (success.statusText === "OK") { 
-                        Dashboard.alert("intro removed.");
+                        Dashboard.alert("Title sequence removed.");
                     }
                 });
                 resolve(true);
@@ -279,11 +381,13 @@
         return function(view) {
             view.addEventListener('viewshow', () => {
 
-                var seriesSelect   = view.querySelector('#selectEmbySeries');
-                var seasonSelect   = view.querySelector('#selectEmbySeason');
-                var settingsButton = view.querySelector('#openSettingsDialog');
                 var _seriesId, _seasonId;
 
+                var seriesSelect                    = view.querySelector('#selectEmbySeries');
+                var seasonSelect                    = view.querySelector('#selectEmbySeason');
+                var settingsButton                  = view.querySelector('#openSettingsDialog');
+                var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
+                
                 getSeries().then(series => {
 
                     for (let i = 0; i <= series.Items.length - 1; i++) {
@@ -291,7 +395,7 @@
                         seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
                     }
 
-                    _seriesId = seriesSelect[0].value;
+                    _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
                     getSeasons(_seriesId).then(seasons => {
 
@@ -299,7 +403,7 @@
                             seasonSelect.innerHTML += '<option value="' + seasons.Items[j].Id + '">' + seasons.Items[j].Name + '</option>';
                         }
 
-                        _seasonId = seasonSelect[0].value;
+                        _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
 
                         getIntros(_seriesId, _seasonId).then((result) => {
 
@@ -308,6 +412,13 @@
                                     if (result.TitleSequences.EpisodeTitleSequences) {
 
                                         var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+
+                                        if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                            removeSeasonalFingerprintButton.classList.remove('hide');
+                                        }
+
+                                        removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                            "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                         view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
@@ -354,9 +465,12 @@
 
                                         });
                                     }
-                                }
-                            } else {
-                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
+                                } else {
+                                    view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
+                                    if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                        removeSeasonalFingerprintButton.classList.add('hide');
+                                    }
+                                } 
                             }
                         });
                     });
@@ -374,10 +488,15 @@
                         if (result) {
                             if (result.TitleSequences) {
                                 if (result.TitleSequences.EpisodeTitleSequences) {
-                                    var averageLength =
-                                        parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
-                                    view.querySelector('.averageTitleSequenceTime').innerText =
-                                        "00:" + averageLength.minutes + ":" + averageLength.seconds;
+                                    var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                         
+                                    if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                        removeSeasonalFingerprintButton.classList.remove('hide');
+                                    }
+                                    removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+
+                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
                                     result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
                                         getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
@@ -418,10 +537,13 @@
 
                                     });
                                 }
+                            } else {
+                                if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                    removeSeasonalFingerprintButton.classList.add('hide');
+                                }
+                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                             }
-                        } else {
-                            view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
-                        }
+                        } 
                     });
                 });
 
@@ -442,6 +564,13 @@
                                 if (result.TitleSequences) {
                                     if (result.TitleSequences.EpisodeTitleSequences) {
                                         var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+
+                                        if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                            removeSeasonalFingerprintButton.classList.remove('hide'); 
+                                        }
+                                        removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                            "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+
                                         view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                         result.TitleSequences.EpisodeTitleSequences.forEach(intro => {
                                             getTableRowHtml(intro, _seriesId, _seasonId).then(html => {
@@ -459,8 +588,7 @@
 
                                                         removeIntroItem(seriesId, seasonId, episodeId).then(() => {
                                                             var index = elem.target.closest('tr').rowIndex;
-                                                            view.querySelector('.introResultBody')
-                                                                .deleteRow(index - 1);
+                                                            view.querySelector('.introResultBody').deleteRow(index - 1);
                                                         });
 
                                                     });
@@ -483,14 +611,23 @@
                                             });
 
                                         });
+                                    } else {
+                                        if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                            removeSeasonalFingerprintButton.classList.add('hide'); 
+                                        }
+                                        view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                     }
                                 }
-                            } else {
-                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
-                            }
+                            } 
                         });
 
                     });
+                }); 
+
+                removeSeasonalFingerprintButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    ApiClient.deleteSeasonFingerprintData(seasonSelect[seasonSelect.selectedIndex].value);
+                    view.querySelector('.introResultBody').innerHTML = "";
                 });
 
                 settingsButton.addEventListener('click', (e) => {

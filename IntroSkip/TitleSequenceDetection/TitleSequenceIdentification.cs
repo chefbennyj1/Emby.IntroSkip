@@ -203,7 +203,7 @@ namespace IntroSkip.TitleSequenceDetection
         }
         
         
-        public List<EpisodeTitleSequence> SearchAudioFingerPrint(BaseItem episode1Input, BaseItem episode2Input)
+        public List<EpisodeTitleSequence> Analyze(BaseItem episode1Input, BaseItem episode2Input)
         {
             var separator      = FileSystem.DirectorySeparatorChar;
             var fingerprintDir = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}";
@@ -227,7 +227,7 @@ namespace IntroSkip.TitleSequenceDetection
             var fingerPrintDataEpisode1 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
             var fingerPrintDataEpisode2 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");
 
-            var introDto =  AnalyzeFingerprint(fingerPrintDataEpisode1, fingerPrintDataEpisode2);
+            var introDto =  compareFingerprint(fingerPrintDataEpisode1, fingerPrintDataEpisode2);
 
             introDto[0].InternalId  = episode1Input.InternalId;
             introDto[0].IndexNumber = episode1Input.IndexNumber;
@@ -243,16 +243,16 @@ namespace IntroSkip.TitleSequenceDetection
            
         }
 
-        private AudioFingerprint GetSavedFingerPrintFromFile(string filePath)
+        private AudioFingerprintDto GetSavedFingerPrintFromFile(string filePath)
         {
             using (var sr = new StreamReader(filePath))
             {
-                return JsonSerializer.DeserializeFromString<AudioFingerprint>(sr.ReadToEnd());
+                return JsonSerializer.DeserializeFromString<AudioFingerprintDto>(sr.ReadToEnd());
             }
         }
 
        
-        private List<EpisodeTitleSequence> AnalyzeFingerprint(AudioFingerprint fingerPrintDataEpisode1, AudioFingerprint fingerPrintDataEpisode2)
+        private List<EpisodeTitleSequence> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
         {
             
             ////Logger.Info("Analyzing Fingerprint...");

@@ -55,7 +55,7 @@ namespace IntroSkip.Events
         public void Run()
         {
            
-            LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
+            //LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
         }
     }
 }

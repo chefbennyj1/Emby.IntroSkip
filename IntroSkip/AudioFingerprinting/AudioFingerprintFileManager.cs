@@ -80,14 +80,14 @@ namespace IntroSkip.AudioFingerprinting
             return $"{configDir}{Separator}introEncoding{Separator}fingerprints";
         }
 
-        public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprint fingerprint)
+        public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprintDto fingerprintDto)
         {
             var fileName = GetFingerprintFileNameHash(episode);
             var filePath = $"{GetFingerprintDirectory()}{Separator}{fileName}.json";
             
             using (var sw = new StreamWriter(filePath))
             {
-                sw.Write(JsonSerializer.SerializeToString(fingerprint));
+                sw.Write(JsonSerializer.SerializeToString(fingerprintDto));
                 sw.Flush();
             }
         }
