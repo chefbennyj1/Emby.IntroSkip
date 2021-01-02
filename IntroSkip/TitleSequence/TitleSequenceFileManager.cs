@@ -75,12 +75,9 @@ namespace IntroSkip.TitleSequence
 
         private string GetValidFileName(BaseItem series)
         {
-            //var series         = season.Parent;
-            //var validSeason    = season.IndexNumber < 10 ? "0" + season.IndexNumber : season.IndexNumber.ToString();
             var productionYear = series.ProductionYear is null ? string.Empty : $" ({series.ProductionYear})"; 
             var pattern        = "[\\~#%&*{}/:<>?|\"]";
             var regEx          = new Regex(pattern);
-
             var fileName       = $"{series.Name}{productionYear}";
             
             return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");

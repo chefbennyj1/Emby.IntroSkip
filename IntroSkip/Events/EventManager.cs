@@ -6,17 +6,17 @@
 //{
 //    public class EventManager : IServerEntryPoint
 //    {
-//        private IScheduledTask ScheduledTask   { get; }
-//        private ITaskManager TaskManager       { get; }
+//        private IScheduledTask ScheduledTask { get; }
+//        private ITaskManager TaskManager { get; }
 //        private ILibraryManager LibraryManager { get; }
 
 //        public EventManager(ILibraryManager libraryManager, IScheduledTask task, ITaskManager taskManager)
 //        {
-//            ScheduledTask  = task;
-//            TaskManager    = taskManager;
+//            ScheduledTask = task;
+//            TaskManager = taskManager;
 //            LibraryManager = libraryManager;
 //        }
-        
+
 
 //        private void FingerprintingTask_TaskProgress(object sender, MediaBrowser.Model.Events.GenericEventArgs<double> e)
 //        {
@@ -49,12 +49,12 @@
 
 //        public void Dispose()
 //        {
-//            LibraryManager.ItemAdded   -= LibraryManager_ItemAdded;
+//            LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
 //        }
 
 //        public void Run()
 //        {
-           
+
 //            //LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
 //        }
 //    }

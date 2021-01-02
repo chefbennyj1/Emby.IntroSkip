@@ -275,9 +275,9 @@
             });
         }
         
-        function getIntros(seriesId, seasonId) {
+        function getIntros(seasonId) {
             return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('SeasonTitleSequences?SeriesId=' + seriesId + "&SeasonId=" + seasonId)).then(result => {
+                ApiClient.getJSON(ApiClient.getUrl('SeasonTitleSequences?SeasonId=' + seasonId)).then(result => {
                     resolve(result);
                 });
 
@@ -402,7 +402,7 @@
                         _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
 
-                        getIntros(_seriesId, _seasonId).then((result) => {
+                        getIntros(_seasonId).then((result) => {
                             if (result) {
                                 if (result.TitleSequences) {
                                     if (result.TitleSequences.Seasons) {
@@ -483,7 +483,7 @@
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
                     _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                     _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
-                    getIntros(_seriesId, _seasonId).then((result) => {
+                    getIntros(_seasonId).then((result) => {
                         if (result) {
                             if (result.TitleSequences) {
                                 if (result.TitleSequences.Seasons) {
@@ -573,7 +573,7 @@
                         _seasonId = seasonSelect[0].value;
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
 
-                        getIntros(_seriesId, _seasonId).then((result) => { 
+                        getIntros(_seasonId).then((result) => { 
                              if (result) {
                                 if (result.TitleSequences) {
                                     if (result.TitleSequences.Seasons) {

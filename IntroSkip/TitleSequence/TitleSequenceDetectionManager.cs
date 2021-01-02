@@ -71,7 +71,7 @@ namespace IntroSkip.TitleSequence
                     progress.Report(100.0);
                 }
 
-                progress.Report((currentProgress += step) - 1);
+                progress?.Report((currentProgress += step) - 1);
 
                 Log.Info(series.Name);
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Entities;
@@ -16,6 +17,14 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceService : IService
     {
+
+        [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
+        public class ScanSeriesRequest : IReturnVoid
+        {
+            [ApiMember(Name = "InternalIds", Description = "Comma delimited list Internal Ids of the series to scan", IsRequired = true, DataType = "long[]", ParameterType = "query", Verb = "POST")]
+            public long[] InternalIds { get; set; }
+        }
+
         [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class RemoveTitleSequenceRequest : IReturn<string>
         {
@@ -23,20 +32,20 @@ namespace IntroSkip.Api
             public long InternalId { get; set; }
         }
 
-        [Route("/RemoveAll", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        [Route("/RemoveAll", "DELETE", Summary = "Remove All Episode Title Sequence Data")]
         public class RemoveAllRequest : IReturn<string>
         {
            
         }
 
-        [Route("/RemoveSeasonFingerprints", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        [Route("/RemoveSeasonFingerprints", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
         public class RemoveSeasonFingerprintsRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
         }
 
-        [Route("/RemoveFingerprint", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        [Route("/RemoveFingerprint", "DELETE", Summary = "Remove Episode Title Sequence fingerprint data")]
         public class RemoveFingerprintRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
@@ -50,13 +59,12 @@ namespace IntroSkip.Api
             public long InternalId { get; set; }
         }
 
-        [Route("/SeasonTitleSequences", "GET", Summary = "All Saved Series Title Sequence Start and End Data by Series Id")]
+        [Route("/SeasonTitleSequences", "GET", Summary = "All Title Sequence Start and End Data by Season Id")]
         public class SeasonTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long SeasonId { get; set; }
-            [ApiMember(Name = "SeriesId", Description = "The Internal Id of the Series", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
-            public long SeriesId { get; set; }
+            
         }
 
         
@@ -72,6 +80,11 @@ namespace IntroSkip.Api
             FileSystem     = fileSystem;
             LibraryManager = libraryManager;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
+        }
+
+        public void Post(ScanSeriesRequest request)
+        {
+            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds);
         }
 
         public string Delete(RemoveAllRequest request)
@@ -217,7 +230,6 @@ namespace IntroSkip.Api
             public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
             public TitleSequenceDto TitleSequences { get; set; }
         }
-
         
         public string Get(SeasonTitleSequenceRequest request)
         {
@@ -225,7 +237,6 @@ namespace IntroSkip.Api
             var series = season.Parent;
             var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
             
-
             TimeSpan commonDuration;
             try
             {
@@ -235,16 +246,14 @@ namespace IntroSkip.Api
             {
                 commonDuration = new TimeSpan(0,0,0);
             }
-
             
             return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
-                TitleSequences = titleSequences
+                TitleSequences                   = titleSequences
             });
 
         }
-
         
         public string Get(EpisodeTitleSequenceRequest request)
         {
