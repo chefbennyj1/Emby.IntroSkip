@@ -403,70 +403,73 @@
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
 
                         getIntros(_seriesId, _seasonId).then((result) => {
-
                             if (result) {
                                 if (result.TitleSequences) {
                                     if (result.TitleSequences.Seasons) {
-                                        if (result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes) {
+                                        result.TitleSequences.Seasons.forEach(season => {
+                                            if (season.IndexNumber == _seasonIndexNumber) {
+                                                if (season.Episodes) {
 
-                                            var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                                    var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
-                                            if (removeSeasonalFingerprintButton.classList.contains('hide')) {
-                                                removeSeasonalFingerprintButton.classList.remove('hide');
+                                                    if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                                        removeSeasonalFingerprintButton.classList.remove('hide');
+                                                    }
+
+                                                    removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+
+                                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
+
+                                                    season.Episodes.forEach(intro => {
+                                                        getTableRowHtml(intro).then(html => {
+
+                                                            view.querySelector('.introResultBody').innerHTML += html;
+
+                                                            sortTable(view);
+
+                                                            view.querySelectorAll('.removeIntroData i').forEach(btn => {
+                                                                btn.addEventListener('click', (elem) => {
+                                                                    elem.preventDefault();
+
+                                                                    var episodeId = elem.target.closest('.fab').id;
+
+                                                                    removeIntroItem(episodeId).then(() => {
+                                                                        var index = elem.target.closest('tr').rowIndex;
+                                                                        view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                    });
+
+                                                                });
+                                                            });
+
+                                                            view.querySelectorAll('.removeFingerprint i').forEach(btn => {
+                                                                btn.addEventListener('click', (elem) => {
+                                                                    elem.preventDefault();
+
+                                                                    var episodeId = elem.target.closest('.fab').id;
+
+                                                                    removeIntroItemAndFingerprint(episodeId).then(() => {
+                                                                        var index = elem.target.closest('tr').rowIndex;
+                                                                        view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                    });
+
+                                                                });
+                                                            });
+
+                                                        });
+                                                    });
+                                                }
                                             }
+                                        });
 
-                                            removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                                "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
-
-                                            view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
-
-                                            result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes.forEach(intro => {
-                                                getTableRowHtml(intro).then(html => {
-
-                                                    view.querySelector('.introResultBody').innerHTML += html;
-
-                                                    sortTable(view);
-
-                                                    view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
-
-                                                            var episodeId = elem.target.closest('.fab').id;
-
-                                                            removeIntroItem(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                            });
-
-                                                        });
-                                                    });
-
-                                                    view.querySelectorAll('.removeFingerprint i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
-
-                                                            var episodeId = elem.target.closest('.fab').id;
-
-                                                            removeIntroItemAndFingerprint(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                            });
-
-                                                        });
-                                                    });
-
-                                                });
-
-                                            });
-                                        }
                                     }
                                 } else {
                                     view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                     if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
                                         removeSeasonalFingerprintButton.classList.add('hide');
                                     }
-                                } 
-                            }
+                                }
+                            }  
                         });
                     });
 
@@ -481,69 +484,73 @@
                     _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                     _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
                     getIntros(_seriesId, _seasonId).then((result) => {
-                       if (result) {
-                                if (result.TitleSequences) {
-                                    if (result.TitleSequences.Seasons) {
-                                        if (result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes) {
+                        if (result) {
+                            if (result.TitleSequences) {
+                                if (result.TitleSequences.Seasons) {
+                                    result.TitleSequences.Seasons.forEach(season => {
+                                        if (season.IndexNumber == _seasonIndexNumber) {
+                                            if (season.Episodes) {
 
-                                            var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                                var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
-                                            if (removeSeasonalFingerprintButton.classList.contains('hide')) {
-                                                removeSeasonalFingerprintButton.classList.remove('hide');
-                                            }
+                                                if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                                    removeSeasonalFingerprintButton.classList.remove('hide');
+                                                }
 
-                                            removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                                "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                                removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                                    "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
-                                            view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
+                                                view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
-                                            result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes.forEach(intro => {
-                                                getTableRowHtml(intro).then(html => {
+                                                season.Episodes.forEach(intro => {
+                                                    getTableRowHtml(intro).then(html => {
 
-                                                    view.querySelector('.introResultBody').innerHTML += html;
+                                                        view.querySelector('.introResultBody').innerHTML += html;
 
-                                                    sortTable(view);
+                                                        sortTable(view);
 
-                                                    view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
+                                                        view.querySelectorAll('.removeIntroData i').forEach(btn => {
+                                                            btn.addEventListener('click', (elem) => {
+                                                                elem.preventDefault();
 
-                                                            var episodeId = elem.target.closest('.fab').id;
+                                                                var episodeId = elem.target.closest('.fab').id;
 
-                                                            removeIntroItem(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                removeIntroItem(episodeId).then(() => {
+                                                                    var index = elem.target.closest('tr').rowIndex;
+                                                                    view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                });
+
                                                             });
-
                                                         });
-                                                    });
 
-                                                    view.querySelectorAll('.removeFingerprint i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
+                                                        view.querySelectorAll('.removeFingerprint i').forEach(btn => {
+                                                            btn.addEventListener('click', (elem) => {
+                                                                elem.preventDefault();
 
-                                                            var episodeId = elem.target.closest('.fab').id;
+                                                                var episodeId = elem.target.closest('.fab').id;
 
-                                                            removeIntroItemAndFingerprint(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                removeIntroItemAndFingerprint(episodeId).then(() => {
+                                                                    var index = elem.target.closest('tr').rowIndex;
+                                                                    view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                });
+
                                                             });
-
                                                         });
-                                                    });
 
+                                                    });
                                                 });
-
-                                            });
+                                            }
                                         }
-                                    }
-                                } else {
-                                    view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
-                                    if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
-                                        removeSeasonalFingerprintButton.classList.add('hide');
-                                    }
-                                } 
+                                    });
+
+                                }
+                            } else {
+                                view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
+                                if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                    removeSeasonalFingerprintButton.classList.add('hide');
+                                }
                             }
+                        }
                     });
                 });
 
@@ -566,72 +573,74 @@
                         _seasonId = seasonSelect[0].value;
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
 
-                        getIntros(_seriesId, _seasonId).then((result) => {
-                           
+                        getIntros(_seriesId, _seasonId).then((result) => { 
                              if (result) {
                                 if (result.TitleSequences) {
                                     if (result.TitleSequences.Seasons) {
-                                        if (result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes) {
+                                        result.TitleSequences.Seasons.forEach(season => {
+                                            if (season.IndexNumber == _seasonIndexNumber) {
+                                                if (season.Episodes) {
 
-                                            var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                                                    var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
-                                            if (removeSeasonalFingerprintButton.classList.contains('hide')) {
-                                                removeSeasonalFingerprintButton.classList.remove('hide');
+                                                    if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                                                        removeSeasonalFingerprintButton.classList.remove('hide');
+                                                    }
+
+                                                    removeSeasonalFingerprintButton.querySelector('span').innerHTML =
+                                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+
+                                                    view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
+
+                                                    season.Episodes.forEach(intro => {
+                                                        getTableRowHtml(intro).then(html => {
+
+                                                            view.querySelector('.introResultBody').innerHTML += html;
+
+                                                            sortTable(view);
+
+                                                            view.querySelectorAll('.removeIntroData i').forEach(btn => {
+                                                                btn.addEventListener('click', (elem) => {
+                                                                    elem.preventDefault();
+
+                                                                    var episodeId = elem.target.closest('.fab').id;
+
+                                                                    removeIntroItem(episodeId).then(() => {
+                                                                        var index = elem.target.closest('tr').rowIndex;
+                                                                        view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                    });
+
+                                                                });
+                                                            });
+
+                                                            view.querySelectorAll('.removeFingerprint i').forEach(btn => {
+                                                                btn.addEventListener('click', (elem) => {
+                                                                    elem.preventDefault();
+
+                                                                    var episodeId = elem.target.closest('.fab').id;
+
+                                                                    removeIntroItemAndFingerprint(episodeId).then(() => {
+                                                                        var index = elem.target.closest('tr').rowIndex;
+                                                                        view.querySelector('.introResultBody').deleteRow(index - 1);
+                                                                    });
+
+                                                                });
+                                                            });
+
+                                                        });
+                                                    });
+                                                }
                                             }
+                                        });
 
-                                            removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                                "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
-
-                                            view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
-
-                                            result.TitleSequences.Seasons[_seasonIndexNumber -1].Episodes.forEach(intro => {
-                                                getTableRowHtml(intro).then(html => {
-
-                                                    view.querySelector('.introResultBody').innerHTML += html;
-
-                                                    sortTable(view);
-
-                                                    view.querySelectorAll('.removeIntroData i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
-
-                                                            var episodeId = elem.target.closest('.fab').id;
-
-                                                            removeIntroItem(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                            });
-
-                                                        });
-                                                    });
-
-                                                    view.querySelectorAll('.removeFingerprint i').forEach(btn => {
-                                                        btn.addEventListener('click', (elem) => {
-                                                            elem.preventDefault();
-
-                                                            var episodeId = elem.target.closest('.fab').id;
-
-                                                            removeIntroItemAndFingerprint(episodeId).then(() => {
-                                                                var index = elem.target.closest('tr').rowIndex;
-                                                                view.querySelector('.introResultBody').deleteRow(index - 1);
-                                                            });
-
-                                                        });
-                                                    });
-
-                                                });
-
-                                            });
-                                        }
                                     }
                                 } else {
                                     view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                     if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
                                         removeSeasonalFingerprintButton.classList.add('hide');
                                     }
-                                } 
-                            }
-
+                                }
+                            } 
                         });
 
                     });

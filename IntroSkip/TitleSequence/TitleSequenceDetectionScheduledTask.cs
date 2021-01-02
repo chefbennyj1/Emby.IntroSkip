@@ -21,13 +21,14 @@ namespace IntroSkip.TitleSequence
             Log = logManager.GetLogger(Plugin.Instance.Name);
         }
 
-#pragma warning disable 1998
+ 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
-#pragma warning restore 1998
+ 
         {
             Log.Info("Beginning Title Sequence Task");
 
             TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress);
+            await Task.FromResult(true);
             progress.Report(100.0);
         }
 

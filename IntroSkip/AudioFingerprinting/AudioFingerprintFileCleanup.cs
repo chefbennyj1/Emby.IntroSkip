@@ -65,6 +65,7 @@ namespace IntroSkip.AudioFingerprinting
                 FileSystem.DeleteFile(file.FullName);
             }
 
+            await Task.FromResult(true);
         }
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()

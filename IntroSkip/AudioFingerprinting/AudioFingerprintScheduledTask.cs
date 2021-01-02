@@ -41,7 +41,6 @@ namespace IntroSkip.AudioFingerprinting
             Log.Info("Starting episode fingerprint task.");
 
             AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
-
             
 
             ValidateSavedFingerprints();
@@ -132,7 +131,7 @@ namespace IntroSkip.AudioFingerprinting
                     AudioFingerprintFileManager.Instance.RemoveAllSeasonAudioEncodings(season.InternalId);
                 }
             });
-
+            await Task.FromResult(true);
             progress.Report(100.0);
             AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
 
