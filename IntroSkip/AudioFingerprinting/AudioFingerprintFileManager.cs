@@ -21,6 +21,7 @@ namespace IntroSkip.AudioFingerprinting
         public static AudioFingerprintFileManager Instance { get; private set; }
         private IJsonSerializer JsonSerializer             { get; }
 
+        // ReSharper disable once TooManyDependencies
         public AudioFingerprintFileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer jsonSerializer,  ILogManager logMan)
         {
             Instance         = this;
@@ -68,7 +69,7 @@ namespace IntroSkip.AudioFingerprinting
                 catch { }
             }
         }
-
+        
         public string GetFingerprintFileNameHash(BaseItem episode)
         {
             return $"{CreateMD5(episode.Path)}";
@@ -78,6 +79,14 @@ namespace IntroSkip.AudioFingerprinting
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             return $"{configDir}{Separator}introEncoding{Separator}fingerprints";
+        }
+
+        public AudioFingerprintDto GetSavedFingerPrintFromFile(string filePath)
+        {
+            using (var sr = new StreamReader(filePath))
+            {
+                return JsonSerializer.DeserializeFromString<AudioFingerprintDto>(sr.ReadToEnd());
+            }
         }
 
         public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprintDto fingerprintDto)
@@ -125,8 +134,7 @@ namespace IntroSkip.AudioFingerprinting
         private void CopyEmbeddedResourceStream(Stream stream, string location, string fileName)
         {
             var fileStream = new FileStream($"{location}{Separator}{fileName}", FileMode.CreateNew);
-            for (int i = 0; i < stream.Length; i++)
-                fileStream.WriteByte((byte)stream.ReadByte());
+            for (int i = 0; i < stream.Length; i++) fileStream.WriteByte((byte)stream.ReadByte());
             fileStream.Close();
         }
 
@@ -171,7 +179,7 @@ namespace IntroSkip.AudioFingerprinting
             var fingerPrintDir   = GetFingerprintDirectory();
             var encodingDir      = GetEncodingDirectory();
 
-            if (!FileSystem.DirectoryExists($"{encodingDir}"))      FileSystem.CreateDirectory( $"{encodingDir}");
+            if (!FileSystem.DirectoryExists($"{encodingDir}")) FileSystem.CreateDirectory( $"{encodingDir}");
 
             if (!FileSystem.DirectoryExists($"{fingerPrintDir}")) FileSystem.CreateDirectory($"{fingerPrintDir}");
             CopyFpCalc($"{encodingDir}"); 

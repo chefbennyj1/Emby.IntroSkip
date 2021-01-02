@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
@@ -18,16 +17,16 @@ using MediaBrowser.Model.Serialization;
 // ReSharper disable ComplexConditionExpression
 // ReSharper disable once TooManyDependencies
 
-namespace IntroSkip.TitleSequenceDetection
+namespace IntroSkip.TitleSequence
 {
-    public class TitleSequenceIdentification : TitleSequenceDto, IServerEntryPoint
+    public class TitleSequenceDetection : TitleSequenceDto, IServerEntryPoint
     {
         private IJsonSerializer JsonSerializer              { get; }
         private IFileSystem FileSystem                      { get; }
         private static ILogger Logger                       { get; set; }
-        public static TitleSequenceIdentification Instance  { get; private set; }
+        public static TitleSequenceDetection Instance  { get; private set; }
         
-        public TitleSequenceIdentification(IJsonSerializer json, IFileSystem file, ILogManager logMan)
+        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
         {
             JsonSerializer   = json;
             FileSystem       = file;
@@ -203,7 +202,7 @@ namespace IntroSkip.TitleSequenceDetection
         }
         
         
-        public List<EpisodeTitleSequence> Analyze(BaseItem episode1Input, BaseItem episode2Input)
+        public List<Episode> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input)
         {
             var separator      = FileSystem.DirectorySeparatorChar;
             var fingerprintDir = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}";
@@ -224,8 +223,8 @@ namespace IntroSkip.TitleSequenceDetection
                 throw new AudioFingerprintMissingException("Fingerprint data doesn't currently exist");
             }
 
-            var fingerPrintDataEpisode1 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
-            var fingerPrintDataEpisode2 = GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");
+            var fingerPrintDataEpisode1 = AudioFingerprintFileManager.Instance.GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
+            var fingerPrintDataEpisode2 = AudioFingerprintFileManager.Instance.GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");
 
             var introDto =  compareFingerprint(fingerPrintDataEpisode1, fingerPrintDataEpisode2);
 
@@ -243,16 +242,8 @@ namespace IntroSkip.TitleSequenceDetection
            
         }
 
-        private AudioFingerprintDto GetSavedFingerPrintFromFile(string filePath)
-        {
-            using (var sr = new StreamReader(filePath))
-            {
-                return JsonSerializer.DeserializeFromString<AudioFingerprintDto>(sr.ReadToEnd());
-            }
-        }
-
        
-        private List<EpisodeTitleSequence> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
+        private List<Episode> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
         {
             
             ////Logger.Info("Analyzing Fingerprint...");
@@ -349,15 +340,15 @@ namespace IntroSkip.TitleSequenceDetection
             
             
             
-            return new List<EpisodeTitleSequence>()
+            return new List<Episode>()
             {
-                new EpisodeTitleSequence() //[0]
+                new Episode() //[0]
                 {
                     HasIntro   = true,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
                     IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
                 },
-                new EpisodeTitleSequence() //[1]
+                new Episode() //[1]
                 {
                     HasIntro   = true,
                     IntroStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart)),

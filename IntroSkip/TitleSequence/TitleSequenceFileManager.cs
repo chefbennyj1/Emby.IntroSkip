@@ -1,11 +1,13 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
-namespace IntroSkip.TitleSequenceDetection
+namespace IntroSkip.TitleSequence
 {
     public class TitleSequenceFileManager : IServerEntryPoint
     {
@@ -26,16 +28,17 @@ namespace IntroSkip.TitleSequenceDetection
             Separator        = FileSystem.DirectorySeparatorChar;
             Instance         = this;
         }
+                
 
-        
         public string GetTitleSequenceDirectory()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             return $"{configDir}{Separator}titleSequences";
         }
         
-        public TitleSequenceDto GetTitleSequenceFromFile(string fileName)
+        public TitleSequenceDto GetTitleSequenceFromFile(BaseItem series)
         {
+            var fileName = GetValidFileName(series);
             var filePath = $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json";
 
             if (!FileSystem.FileExists(filePath))
@@ -50,17 +53,39 @@ namespace IntroSkip.TitleSequenceDetection
 
         }
 
-        public void SaveTitleSequenceJsonToFile(string fileName, TitleSequenceDto introDto)
+        public void SaveTitleSequenceJsonToFile(BaseItem series, TitleSequenceDto introDto)
         {
-            Log.Info($"Saving {fileName}.json");
+            var fileName = GetValidFileName(series);
+            var filePath = $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json";
             
-            using (var sw = new StreamWriter( $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json"))
+            using (var sw = new StreamWriter(filePath))
             {
                 sw.Write(JsonSerializer.SerializeToString(introDto));
                 sw.Flush();
             }
         }
-        
+
+        public void RemoveSeriesTitleSequenceData(BaseItem series)
+        {
+            if (FileSystem.FileExists($"{GetTitleSequenceDirectory()}{Separator}{GetValidFileName(series)}.json"))
+            {
+                FileSystem.DeleteFile($"{GetTitleSequenceDirectory()}{Separator}{GetValidFileName(series)}.json");
+            }
+        }
+
+        private string GetValidFileName(BaseItem series)
+        {
+            //var series         = season.Parent;
+            //var validSeason    = season.IndexNumber < 10 ? "0" + season.IndexNumber : season.IndexNumber.ToString();
+            var productionYear = series.ProductionYear is null ? string.Empty : $" ({series.ProductionYear})"; 
+            var pattern        = "[\\~#%&*{}/:<>?|\"]";
+            var regEx          = new Regex(pattern);
+
+            var fileName       = $"{series.Name}{productionYear}";
+            
+            return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");
+        }
+
         public void Dispose()
         {
             

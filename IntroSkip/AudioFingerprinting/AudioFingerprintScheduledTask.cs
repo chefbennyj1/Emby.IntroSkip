@@ -42,6 +42,8 @@ namespace IntroSkip.AudioFingerprinting
 
             AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
 
+            
+
             ValidateSavedFingerprints();
 
             var config = Plugin.Instance.Configuration;
@@ -97,7 +99,7 @@ namespace IntroSkip.AudioFingerprinting
                     
                     for (var index = 0; index <= episodeQuery.Items.Count() - 1; index++)
                     {
-
+                        
                         if (cancellationToken.IsCancellationRequested)
                         {
                             break;
@@ -246,7 +248,7 @@ namespace IntroSkip.AudioFingerprinting
                 catch { }
             }
         }
-
+        
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
             return new[]
