@@ -228,6 +228,7 @@ namespace IntroSkip.AudioFingerprinting
                 //
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 
+
                 string processOutput = null;
 
                 while ((processOutput = process.StandardError.ReadLine()) != null)
