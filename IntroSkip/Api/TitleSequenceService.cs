@@ -146,10 +146,12 @@ namespace IntroSkip.Api
         {
             try
             {
+
                 var episode        = LibraryManager.GetItemById(request.InternalId);
                 var season         = episode.Parent;
                 var series         = episode.Parent.Parent;
                 var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
+                var separator      = FileSystem.DirectorySeparatorChar;
 
                 if (titleSequences.Seasons is null)
                 {
@@ -166,20 +168,19 @@ namespace IntroSkip.Api
                     }
                     TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
                 }
-
                
-                var fingerPrintHash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
+                var fingerPrintHash   = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
+                var fingerprintFolder = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episode);
+                
                 //Remove the finger print file
-                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json"))
+                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolder}{separator}{fingerPrintHash}.json"))
                 {
                     try
                     {
-                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json");
+                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolder}{separator}{fingerPrintHash}.json");
                     }
                     catch { }
                 }
-
-                
 
                 Log.Info("Title sequence finger print file removed.");
 
@@ -228,7 +229,7 @@ namespace IntroSkip.Api
         private class SeasonTitleSequenceResponse
         {
             public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
-            public TitleSequenceDto TitleSequences { get; set; }
+            public TitleSequenceDto TitleSequences            { get; set; }
         }
         
         public string Get(SeasonTitleSequenceRequest request)

@@ -4,7 +4,6 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip.TitleSequence
@@ -15,16 +14,16 @@ namespace IntroSkip.TitleSequence
         private IApplicationPaths ApplicationPaths      { get; }
         private IJsonSerializer JsonSerializer          { get; }
         public static TitleSequenceFileManager Instance { get; private set; }
-        private ILogger Log                             { get; }
+        //private ILogger Log                             { get; }
         private char Separator                          { get; }
 
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceFileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json, ILogManager logMan)
+        public TitleSequenceFileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer json)
         {
             FileSystem       = file;
             ApplicationPaths = applicationPaths;
             JsonSerializer   = json;
-            Log              = logMan.GetLogger(Plugin.Instance.Name);
+            //Log              = logMan.GetLogger(Plugin.Instance.Name);
             Separator        = FileSystem.DirectorySeparatorChar;
             Instance         = this;
         }

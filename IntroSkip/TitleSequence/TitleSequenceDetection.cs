@@ -11,29 +11,22 @@ using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Serialization;
 
 // ReSharper disable ComplexConditionExpression
-// ReSharper disable once TooManyDependencies
 
 namespace IntroSkip.TitleSequence
 {
     public class TitleSequenceDetection : TitleSequenceDto, IServerEntryPoint
     {
-        private IJsonSerializer JsonSerializer              { get; }
-        private IFileSystem FileSystem                      { get; }
-        private static ILogger Logger                       { get; set; }
+        private IFileSystem FileSystem { get; }
+        
         public static TitleSequenceDetection Instance  { get; private set; }
         
-        public TitleSequenceDetection(IJsonSerializer json, IFileSystem file, ILogManager logMan)
+        public TitleSequenceDetection(IFileSystem file)
         {
-            JsonSerializer   = json;
             FileSystem       = file;
-            Logger           = logMan.GetLogger(Plugin.Instance.Name);
             Instance         = this;
         }
-
         
         // Keep integer in specified range
         private static int clip(int val, int min, int max)
@@ -98,6 +91,7 @@ namespace IntroSkip.TitleSequence
 
             var output = new List<double>();
 
+            // ReSharper disable once UnusedVariable
             foreach (var i in Enumerable.Range(0, iterations))
             {
                 var upper = Math.Abs(a - b);
@@ -204,8 +198,11 @@ namespace IntroSkip.TitleSequence
         
         public List<Episode> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input)
         {
-            var separator      = FileSystem.DirectorySeparatorChar;
-            var fingerprintDir = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}";
+
+            var separator            = FileSystem.DirectorySeparatorChar;
+            var fingerprintDirectory = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
+            var fingerPrintFolder    = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episode1Input);
+            var fingerprintDir       = $"{fingerprintDirectory}{separator}{fingerPrintFolder}{separator}";
             
 
             //Create the the current episode input key. 
@@ -234,11 +231,7 @@ namespace IntroSkip.TitleSequence
             introDto[1].InternalId  = episode2Input.InternalId;
             introDto[1].IndexNumber = episode2Input.IndexNumber;
            
-            //Logger.Info($"\n\n{episode1Input.Parent.Parent.Name} - S: {episode1Input.Parent.IndexNumber} - E: {episode1Input.IndexNumber} \nStarts: {introDto[0].IntroStart} \nEnd: {introDto[0].IntroEnd}\n");
-            //Logger.Info($"\n{episode2Input.Parent.Parent.Name} - S: {episode2Input.Parent.IndexNumber} - E: {episode2Input.IndexNumber} \nStarts: {introDto[1].IntroStart} \nEnd: {introDto[1].IntroEnd}\n\n");
-            
             return introDto;
-
            
         }
 
@@ -246,8 +239,7 @@ namespace IntroSkip.TitleSequence
         private List<Episode> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
         {
             
-            ////Logger.Info("Analyzing Fingerprint...");
-
+            
             var config       = Plugin.Instance.Configuration;
             var duration     = config.EncodingLength * 60;
 
@@ -255,8 +247,6 @@ namespace IntroSkip.TitleSequence
             var fingerprint1 = fingerPrintDataEpisode1.fingerprint;
             var fingerprint2 = fingerPrintDataEpisode2.fingerprint;
             
-            
-            //Logger.Info("Analyzing Finger Prints..");
 
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
             if (fingerprint1.Count % 2 != 0)
@@ -265,25 +255,20 @@ namespace IntroSkip.TitleSequence
                 fingerprint2 = fingerprint2.GetRange(0, fingerprint2.Count() - 1);  
             }
 
-            //Logger.Info("Analyzing Offsets..");
             int offset = getBestOffset(fingerprint1, fingerprint2);
 
-            //Logger.Info($"The calculated fingerprint offset is {offset}");
-
+            
             var _tup_1 = getAlignedFingerprints(offset, fingerprint1, fingerprint2);
             var f1     = _tup_1.Item1;
             var f2     = _tup_1.Item2;
 
-
-            ////Logger.Info("Calculating Hamming Distances.");
+            // ReSharper disable once TooManyChainedReferences
             var hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => getHammingDistance(f1[i], f2[i])).ToList();
-            //Logger.Info("Calculate Hamming Distances Done.");
             
             var _tup_2 = findContiguousRegion(hammingDistances, 8);
             var start  = _tup_2.Item1;
             var end    = _tup_2.Item2;
 
-            
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
             var offsetInSeconds   = offset * secondsPerSample;
@@ -364,6 +349,7 @@ namespace IntroSkip.TitleSequence
             
         }
 
+        // ReSharper disable once MethodNameNotMeaningful
         public void Run()
         {
            

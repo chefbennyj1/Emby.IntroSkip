@@ -10,6 +10,8 @@ using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
+// ReSharper disable TooManyChainedReferences
+
 namespace IntroSkip.TitleSequence
 {
     public class TitleSequenceDetectionManager : IServerEntryPoint
@@ -57,6 +59,7 @@ namespace IntroSkip.TitleSequence
 
         // ReSharper disable once ExcessiveIndentation
         // ReSharper disable once TooManyArguments
+      
         private void Analyze(QueryResult<BaseItem> seriesQuery, CancellationToken cancellationToken, IProgress<double> progress)
         {
             var config = Plugin.Instance.Configuration;
@@ -253,6 +256,7 @@ namespace IntroSkip.TitleSequence
 
         }
 
+        // ReSharper disable once MethodNameNotMeaningful
         public void Run()
         {
 

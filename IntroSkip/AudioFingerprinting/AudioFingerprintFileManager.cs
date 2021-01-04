@@ -81,6 +81,12 @@ namespace IntroSkip.AudioFingerprinting
             return $"{configDir}{Separator}introEncoding{Separator}fingerprints";
         }
 
+        public string GetFingerprintFolderNameHash(BaseItem episode)
+        {
+            var series = episode.Parent.Parent;
+            return CreateMD5(series.Name);
+        }
+
         public AudioFingerprintDto GetSavedFingerPrintFromFile(string filePath)
         {
             using (var sr = new StreamReader(filePath))
@@ -91,8 +97,16 @@ namespace IntroSkip.AudioFingerprinting
 
         public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprintDto fingerprintDto)
         {
+            var folderHash = GetFingerprintFolderNameHash(episode);
+            var savePath   = $"{GetFingerprintDirectory()}{Separator}{folderHash}{Separator}";
+
+            if (!FileSystem.DirectoryExists(savePath))
+            {
+                FileSystem.CreateDirectory(savePath);
+            }
+
             var fileName = GetFingerprintFileNameHash(episode);
-            var filePath = $"{GetFingerprintDirectory()}{Separator}{fileName}.json";
+            var filePath = $"{savePath}{Separator}{fileName}.json";
             
             using (var sw = new StreamWriter(filePath))
             {
@@ -148,6 +162,11 @@ namespace IntroSkip.AudioFingerprinting
         private string CreateMD5(string input)
         {
             // Use input string to calculate MD5 hash
+            if (string.IsNullOrEmpty(input))
+            {
+                Log.Info("Create MD5 string is null");
+                return string.Empty;
+            }
             using (var md5 = MD5.Create())
             {
                 var inputBytes = Encoding.ASCII.GetBytes(input);
@@ -184,5 +203,7 @@ namespace IntroSkip.AudioFingerprinting
             if (!FileSystem.DirectoryExists($"{fingerPrintDir}")) FileSystem.CreateDirectory($"{fingerPrintDir}");
             CopyFpCalc($"{encodingDir}"); 
         }
+        
+
     }
 }

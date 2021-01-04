@@ -13,6 +13,8 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
+// ReSharper disable ComplexConditionExpression
+// ReSharper disable TooManyChainedReferences
 
 namespace IntroSkip.AudioFingerprinting
 {
@@ -41,7 +43,6 @@ namespace IntroSkip.AudioFingerprinting
             Log.Info("Starting episode fingerprint task.");
 
             AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
-            
 
             ValidateSavedFingerprints();
 
@@ -104,12 +105,19 @@ namespace IntroSkip.AudioFingerprinting
                             break;
                         }
 
-                        var audioFileName       = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
-                        var audioFilePath       = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{audioFileName}.wav";
-                        var fingerprintFileName = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episodeQuery.Items[index]);
-                        var fingerprintFilePath = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFileName}.json";
+                        var audioFileName          = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
+                        var audioFilePath          = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{audioFileName}.wav";
+                        var fingerprintFileName    = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episodeQuery.Items[index]);
+                        var fingerprintFolderName  = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episodeQuery.Items[index]);
+                        var fingerprintFilePath    = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolderName}{separator}{fingerprintFileName}.json";
                         
                         
+                        //if (FileSystem.FileExists(fingerprintFileOldPath))
+                        //{
+                        //    MoveFingerprintToFolder(fingerprintFileOldPath, fingerprintFilePath, fingerprintFolderName);
+                        //    continue;
+                        //}
+
                         if (FileSystem.FileExists(fingerprintFilePath))
                         {
                             continue;
@@ -131,13 +139,30 @@ namespace IntroSkip.AudioFingerprinting
                     AudioFingerprintFileManager.Instance.RemoveAllSeasonAudioEncodings(season.InternalId);
                 }
             });
-            await Task.FromResult(true);
-            progress.Report(100.0);
+            
             AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
+            progress.Report(100.0);
+            
 
         }
-        
-      
+
+        //private void MoveFingerprintToFolder(string fingerprintOldPath, string fingerPrintNewFilePath, string folderHash)
+        //{
+        //    var separator = FileSystem.DirectorySeparatorChar;
+        //    var savePath  = $"{ AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{folderHash}{separator}";
+
+        //    if (!FileSystem.DirectoryExists(savePath))
+        //    {
+        //        FileSystem.CreateDirectory(savePath);
+        //    }
+
+        //    try
+        //    {
+        //        FileSystem.CopyFile(fingerprintOldPath, fingerPrintNewFilePath, true);
+        //        FileSystem.DeleteFile(fingerprintOldPath);
+
+        //    }catch{}
+        //}
 
         private AudioFingerprintDto FingerPrintAudio(string inputFileName)
         {
@@ -167,7 +192,6 @@ namespace IntroSkip.AudioFingerprinting
 
             while ((processOutput = process.StandardOutput.ReadLine()) != null)
             {
-                //Logger.Info(processOutput);
                 json += (processOutput);
             }
 
@@ -176,6 +200,7 @@ namespace IntroSkip.AudioFingerprinting
             return JsonSerializer.DeserializeFromString<AudioFingerprintDto>(json);
         }
 
+        // ReSharper disable once InconsistentNaming
         private void ExtractPCMAudio(string input, string audioOut, int duration)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
@@ -193,6 +218,16 @@ namespace IntroSkip.AudioFingerprinting
             {
                 process.Start();
 
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //
+                // Very Important!
+                // Leave the standardError.ReadLine in place for this process,
+                // do not remove it,
+                // or the process will kickoff, and the task will apparently complete before any of the encodings are finished,
+                // resulting in no fingerprinted audio!!
+                //
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                
                 string processOutput = null;
 
                 while ((processOutput = process.StandardError.ReadLine()) != null)
@@ -210,8 +245,10 @@ namespace IntroSkip.AudioFingerprinting
             // Durations 'must' equals the ffmpeg encoding length for perfect results.
             // The finger print file may also be empty.
             // Remove these error files so they get rescanned.
-            var config           = Plugin.Instance.Configuration;
-            var encodingDuration = config.EncodingLength;
+
+            //var config           = Plugin.Instance.Configuration;
+            //var encodingDuration = config.EncodingLength;
+
             var separator        = FileSystem.DirectorySeparatorChar;
             var fingerprintFiles = FileSystem.GetFiles($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}", true).Where(file => file.Extension == ".json").ToList();
 
@@ -229,7 +266,7 @@ namespace IntroSkip.AudioFingerprinting
                     }
                     else
                     {
-                        var printData       = JsonSerializer.DeserializeFromString<AudioFingerprintDto>(json);
+                        var printData = JsonSerializer.DeserializeFromString<AudioFingerprintDto>(json);
                        
                         //Our minimum encoding is 10 minutes. If there are any fingerprint encodings under 10 minutes, try and re-fingerprint the audio.
                         if (printData.duration < 600 - 2) //Leave room for an encoding error of 2 seconds.
@@ -254,7 +291,7 @@ namespace IntroSkip.AudioFingerprinting
             {
                 new TaskTriggerInfo
                 {
-                    Type = TaskTriggerInfo.TriggerInterval,
+                    Type          = TaskTriggerInfo.TriggerInterval,
                     IntervalTicks = TimeSpan.FromHours(24).Ticks
                 }
             };

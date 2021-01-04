@@ -58,7 +58,10 @@ namespace IntroSkip.AudioFingerprinting
                 }
             }
 
-            var files = FileSystem.GetFiles(AudioFingerprintFileManager.Instance.GetFingerprintDirectory() + FileSystem.DirectorySeparatorChar);
+            var fingerprintDirectory = AudioFingerprintFileManager.Instance.GetFingerprintDirectory() +
+                                       FileSystem.DirectorySeparatorChar;
+
+            var files = FileSystem.GetFiles(fingerprintDirectory, true);
             foreach (var file in files)
             {
                 if (episodes.Exists(e => $"{e}.json" == file.Name)) continue;

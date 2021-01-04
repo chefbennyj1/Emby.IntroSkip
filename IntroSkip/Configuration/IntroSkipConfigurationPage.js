@@ -474,8 +474,7 @@
                     });
 
                 });
-
-
+                 
 
                 seasonSelect.addEventListener('change', (e) => {
                     e.preventDefault();
