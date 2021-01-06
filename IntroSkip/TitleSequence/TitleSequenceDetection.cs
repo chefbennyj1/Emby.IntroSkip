@@ -195,29 +195,25 @@ namespace IntroSkip.TitleSequence
             return false;
         }
         
-        
         public List<Episode> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input)
         {
-
-            var separator            = FileSystem.DirectorySeparatorChar;
-            var fingerprintDirectory = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
-            var fingerPrintFolder    = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episode1Input);
-            var fingerprintDir       = $"{fingerprintDirectory}{separator}{fingerPrintFolder}{separator}";
+            var separator             = FileSystem.DirectorySeparatorChar;
+            var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
+            var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode1Input);
+            var fingerprintDir        = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{separator}";
             
-
             //Create the the current episode input key. 
-            var episode1InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode1Input)}";
-            var episode2InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode2Input)}";
+            var episode1InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode1Input)}";
+            var episode2InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode2Input)}";
             
-
             if (!FileSystem.FileExists($"{fingerprintDir}{episode1InputKey}.json"))
             {
-                throw new AudioFingerprintMissingException("Fingerprint data doesn't currently exist");
+                throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
             }
 
             if (!FileSystem.FileExists($"{fingerprintDir}{episode2InputKey}.json"))
             {
-                throw new AudioFingerprintMissingException("Fingerprint data doesn't currently exist");
+                throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
             }
 
             var fingerPrintDataEpisode1 = AudioFingerprintFileManager.Instance.GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
@@ -238,7 +234,6 @@ namespace IntroSkip.TitleSequence
        
         private List<Episode> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
         {
-            
             
             var config       = Plugin.Instance.Configuration;
             var duration     = config.EncodingLength * 60;

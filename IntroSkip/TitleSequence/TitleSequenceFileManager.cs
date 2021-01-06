@@ -8,7 +8,7 @@ using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip.TitleSequence
 {
-    public class TitleSequenceFileManager : IServerEntryPoint
+    public class TitleSequenceFileManager : FileManagerHelper, IServerEntryPoint
     {
         private IFileSystem FileSystem                  { get; }
         private IApplicationPaths ApplicationPaths      { get; }
@@ -27,8 +27,15 @@ namespace IntroSkip.TitleSequence
             Separator        = FileSystem.DirectorySeparatorChar;
             Instance         = this;
         }
-                
-
+        private static string GetTitleSequenceFolderName(BaseItem series)
+        {
+            var productionYear = series.ProductionYear is null ? string.Empty : $" ({series.ProductionYear})"; 
+            var pattern        = "[\\~#%&*{}/:<>?|\"]";
+            var regEx          = new Regex(pattern);
+            var fileName       = $"{series.Name}{productionYear}";
+            
+            return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");
+        }
         public string GetTitleSequenceDirectory()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
@@ -37,7 +44,7 @@ namespace IntroSkip.TitleSequence
         
         public TitleSequenceDto GetTitleSequenceFromFile(BaseItem series)
         {
-            var fileName = GetValidFileName(series);
+            var fileName = GetTitleSequenceFolderName(series);
             var filePath = $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json";
 
             if (!FileSystem.FileExists(filePath))
@@ -54,7 +61,7 @@ namespace IntroSkip.TitleSequence
 
         public void SaveTitleSequenceJsonToFile(BaseItem series, TitleSequenceDto introDto)
         {
-            var fileName = GetValidFileName(series);
+            var fileName = GetTitleSequenceFolderName(series);
             var filePath = $"{GetTitleSequenceDirectory()}{Separator}{fileName}.json";
             
             using (var sw = new StreamWriter(filePath))
@@ -66,21 +73,13 @@ namespace IntroSkip.TitleSequence
 
         public void RemoveSeriesTitleSequenceData(BaseItem series)
         {
-            if (FileSystem.FileExists($"{GetTitleSequenceDirectory()}{Separator}{GetValidFileName(series)}.json"))
+            if (FileSystem.FileExists($"{GetTitleSequenceDirectory()}{Separator}{GetTitleSequenceFolderName(series)}.json"))
             {
-                FileSystem.DeleteFile($"{GetTitleSequenceDirectory()}{Separator}{GetValidFileName(series)}.json");
+                FileSystem.DeleteFile($"{GetTitleSequenceDirectory()}{Separator}{GetTitleSequenceFolderName(series)}.json");
             }
         }
 
-        private string GetValidFileName(BaseItem series)
-        {
-            var productionYear = series.ProductionYear is null ? string.Empty : $" ({series.ProductionYear})"; 
-            var pattern        = "[\\~#%&*{}/:<>?|\"]";
-            var regEx          = new Regex(pattern);
-            var fileName       = $"{series.Name}{productionYear}";
-            
-            return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");
-        }
+        
 
         public void Dispose()
         {

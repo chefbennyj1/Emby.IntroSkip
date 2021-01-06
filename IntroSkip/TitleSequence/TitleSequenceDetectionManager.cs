@@ -75,8 +75,7 @@ namespace IntroSkip.TitleSequence
                 }
 
                 progress?.Report((currentProgress += step) - 1);
-
-                Log.Info(series.Name);
+                
 
                 var titleSequence = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
 
@@ -91,7 +90,6 @@ namespace IntroSkip.TitleSequence
                     IsVirtualItem = false
 
                 });
-
 
                 foreach (var season in seasonQuery.Items)
                 {
@@ -112,7 +110,6 @@ namespace IntroSkip.TitleSequence
                             IndexNumber = season.IndexNumber
                         };
                     }
-                    
                       
 
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
@@ -226,7 +223,7 @@ namespace IntroSkip.TitleSequence
                             }
                             catch (AudioFingerprintMissingException ex)
                             {
-                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex}\n ID: {unmatched[index].Parent.InternalId}{unmatched[index].InternalId}");
+                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex}");
                             }
                         }
                     }

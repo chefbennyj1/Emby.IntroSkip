@@ -107,8 +107,8 @@ namespace IntroSkip.AudioFingerprinting
 
                         var audioFileName          = $"{season.InternalId}{episodeQuery.Items[index].InternalId}";
                         var audioFilePath          = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{audioFileName}.wav";
-                        var fingerprintFileName    = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episodeQuery.Items[index]);
-                        var fingerprintFolderName  = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episodeQuery.Items[index]);
+                        var fingerprintFileName    = AudioFingerprintFileManager.Instance.GetFingerprintFileName(episodeQuery.Items[index]);
+                        var fingerprintFolderName  = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episodeQuery.Items[index]);
                         var fingerprintFilePath    = $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolderName}{separator}{fingerprintFileName}.json";
                         
                         

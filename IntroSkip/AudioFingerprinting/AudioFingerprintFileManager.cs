@@ -1,8 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.RegularExpressions;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
@@ -10,9 +8,12 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 
+// ReSharper disable twice TooManyChainedReferences
+// ReSharper disable once TooManyDependencies
+
 namespace IntroSkip.AudioFingerprinting
 {
-    public class AudioFingerprintFileManager : IServerEntryPoint
+    public class AudioFingerprintFileManager : FileManagerHelper, IServerEntryPoint
     {
         private IFileSystem FileSystem                     { get; }
         private IApplicationPaths ApplicationPaths         { get; }
@@ -21,7 +22,7 @@ namespace IntroSkip.AudioFingerprinting
         public static AudioFingerprintFileManager Instance { get; private set; }
         private IJsonSerializer JsonSerializer             { get; }
 
-        // ReSharper disable once TooManyDependencies
+        
         public AudioFingerprintFileManager(IFileSystem file, IApplicationPaths applicationPaths, IJsonSerializer jsonSerializer,  ILogManager logMan)
         {
             Instance         = this;
@@ -69,10 +70,15 @@ namespace IntroSkip.AudioFingerprinting
                 catch { }
             }
         }
-        
-        public string GetFingerprintFileNameHash(BaseItem episode)
+
+        public string GetFingerprintFileName(BaseItem episode)
         {
-            return $"{CreateMD5(episode.Path)}";
+            var season = episode.Parent;
+            var series = season.Parent;
+            var fileName = $"{series.Name} {season.IndexNumber}x{episode.IndexNumber} {episode.DateCreated.Date:yy-MM-dd}";
+            var pattern = "[\\~#%&*{}/:<>?|\"]";
+            var regEx = new Regex(pattern);
+            return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");
         }
 
         public string GetFingerprintDirectory()
@@ -81,10 +87,15 @@ namespace IntroSkip.AudioFingerprinting
             return $"{configDir}{Separator}introEncoding{Separator}fingerprints";
         }
 
-        public string GetFingerprintFolderNameHash(BaseItem episode)
+        public string GetFingerprintFolderName(BaseItem episode)
         {
             var series = episode.Parent.Parent;
-            return CreateMD5(series.Name);
+            var productionYear = series.ProductionYear is null ? string.Empty : $" ({series.ProductionYear})"; 
+            var pattern        = "[\\~#%&*{}/:<>?|\"]";
+            var regEx          = new Regex(pattern);
+            var fileName       = $"{series.Name}{productionYear}";
+            
+            return Regex.Replace(regEx.Replace(fileName, ""), @"\s+", " ");
         }
 
         public AudioFingerprintDto GetSavedFingerPrintFromFile(string filePath)
@@ -97,15 +108,15 @@ namespace IntroSkip.AudioFingerprinting
 
         public void SaveFingerPrintToFile(BaseItem episode, AudioFingerprintDto fingerprintDto)
         {
-            var folderHash = GetFingerprintFolderNameHash(episode);
-            var savePath   = $"{GetFingerprintDirectory()}{Separator}{folderHash}{Separator}";
+            var folder = GetFingerprintFolderName(episode);
+            var savePath   = $"{GetFingerprintDirectory()}{Separator}{folder}{Separator}";
 
             if (!FileSystem.DirectoryExists(savePath))
             {
                 FileSystem.CreateDirectory(savePath);
             }
 
-            var fileName = GetFingerprintFileNameHash(episode);
+            var fileName = GetFingerprintFileName(episode);
             var filePath = $"{savePath}{Separator}{fileName}.json";
             
             using (var sw = new StreamWriter(filePath))
@@ -122,7 +133,7 @@ namespace IntroSkip.AudioFingerprinting
                 if (!FileSystem.FileExists($"{location}{Separator}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("linux_fpcalc");
-                    CopyEmbeddedResourceStream(stream, location, "fpcalc");
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc", Separator);
                 }
             }
 
@@ -131,7 +142,7 @@ namespace IntroSkip.AudioFingerprinting
                 if (!FileSystem.FileExists($"{location}{Separator}fpcalc"))
                 {
                     var stream = GetEmbeddedResourceStream("mac_fpcalc");
-                    CopyEmbeddedResourceStream(stream, location, "fpcalc");
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc", Separator);
                 }
             }
 
@@ -140,46 +151,34 @@ namespace IntroSkip.AudioFingerprinting
                 if (!FileSystem.FileExists($"{location}{Separator}fpcalc.exe"))
                 {
                     var stream = GetEmbeddedResourceStream("fpcalc.exe");
-                    CopyEmbeddedResourceStream(stream, location, "fpcalc.exe");
+                    CopyEmbeddedResourceStream(stream, location, "fpcalc.exe", Separator);
                 }
             }
         }
 
-        private void CopyEmbeddedResourceStream(Stream stream, string location, string fileName)
-        {
-            var fileStream = new FileStream($"{location}{Separator}{fileName}", FileMode.CreateNew);
-            for (int i = 0; i < stream.Length; i++) fileStream.WriteByte((byte)stream.ReadByte());
-            fileStream.Close();
-        }
+        
 
-        private Stream GetEmbeddedResourceStream(string resourceName)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var name     = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
-            return GetType().Assembly.GetManifestResourceStream(name);
-        }
+        //private string CreateMD5(string input)
+        //{
+        //    // Use input string to calculate MD5 hash
+        //    if (string.IsNullOrEmpty(input))
+        //    {
+        //        Log.Info("Create MD5 string is null");
+        //        return string.Empty;
+        //    }
+        //    using (var md5 = MD5.Create())
+        //    {
+        //        var inputBytes = Encoding.ASCII.GetBytes(input);
+        //        var hashBytes  = md5.ComputeHash(inputBytes);
+        //        var sb         = new StringBuilder();
 
-        private string CreateMD5(string input)
-        {
-            // Use input string to calculate MD5 hash
-            if (string.IsNullOrEmpty(input))
-            {
-                Log.Info("Create MD5 string is null");
-                return string.Empty;
-            }
-            using (var md5 = MD5.Create())
-            {
-                var inputBytes = Encoding.ASCII.GetBytes(input);
-                var hashBytes  = md5.ComputeHash(inputBytes);
-                var sb         = new StringBuilder();
-
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    sb.Append(hashBytes[i].ToString("X2"));
-                }
-                return sb.ToString();
-            }
-        }
+        //        for (int i = 0; i < hashBytes.Length; i++)
+        //        {
+        //            sb.Append(hashBytes[i].ToString("X2"));
+        //        }
+        //        return sb.ToString();
+        //    }
+        //}
 
         public string GetEncodingDirectory()
         {

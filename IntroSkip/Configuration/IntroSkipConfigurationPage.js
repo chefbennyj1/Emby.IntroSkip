@@ -144,6 +144,16 @@
             html += '<div style="flex-grow:1;">';
             
             html += '<div class="inputContainer">';
+            html += '<button is="emby-button" type="submit" class="removeAllData raised button-submit block emby-button" style="background-color:orangered; color:white">';
+            html += '<span>Reset</span>';
+            html += '</button>';
+            html += '<div class="fieldDescription">';
+            html += 'Remove all title sequence related data and start from scratch.';
+            html += '</div>';
+            html += '</div>';
+
+
+            html += '<div class="inputContainer">';
             html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
             html += '<input is="emby-toggle" type="checkbox" id="enableItemAddedEvent"  class="chkitemAddedEvent noautofocus mdl-switch__input" data-embytoggle="true">';
             html += '<span class="toggleButtonLabel mdl-switch__label">Enable new episode auto scan</span>';
@@ -182,18 +192,19 @@
             html += '<div class="fieldDescription">';
             html += 'The duration of episode audio encoding used to find title sequences. Default is 10 minutes. A longer encoding may match episodes with title sequences which appear later in the stream, but will cause longer scans.';
             html += '</div>';
-            html += '</div>';
+            html += '</div>'; 
 
 
             html += '<div class="inputContainer">';
-            html += '<button is="emby-button" type="submit" class="removeAllData raised button-submit block emby-button">';
-            html += '<span>Reset title sequence data</span>';
+            html += '<button is="emby-button" type="submit" class="btnCloseDialog raised button-submit block emby-button">';
+            html += '<span>Ok</span>';
             html += '</button>';
             html += '<div class="fieldDescription">';
             html += 'Remove all title sequence related data and start from scratch.';
             html += '</div>';
             html += '</div>';
-               
+
+
 
             html += '</div>';
             html += '</div>';

@@ -127,13 +127,18 @@ namespace IntroSkip.Api
 
             foreach (var episode in episodeQuery.Items)
             {
-                var fingerPrintHash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
+                var separator             = FileSystem.DirectorySeparatorChar;
+                var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
+                var fingerprintFileName   = AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode);
+                var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode);
+                var filePath              = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{fingerprintFileName}.json";
+                
                 //Remove the finger print file
-                if (!FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json")) continue;
+                if (!FileSystem.FileExists(filePath)) continue;
                 
                 try
                 {
-                    FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}{fingerPrintHash}.json");
+                    FileSystem.DeleteFile(filePath);
                 }
                 catch { }
             }
@@ -146,7 +151,6 @@ namespace IntroSkip.Api
         {
             try
             {
-
                 var episode        = LibraryManager.GetItemById(request.InternalId);
                 var season         = episode.Parent;
                 var series         = episode.Parent.Parent;
@@ -160,6 +164,8 @@ namespace IntroSkip.Api
 
                 if (titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber))
                 {
+                    // ReSharper disable twice ComplexConditionExpression (it is not)
+                    // ReSharper disable twice PossibleNullReferenceException we check above if they exist
                     if(titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
                         .Episodes.Exists(item => item.InternalId == episode.InternalId))
                     {
@@ -169,20 +175,22 @@ namespace IntroSkip.Api
                     TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
                 }
                
-                var fingerPrintHash   = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
-                var fingerprintFolder = AudioFingerprintFileManager.Instance.GetFingerprintFolderNameHash(episode);
-                
                 //Remove the finger print file
-                if (FileSystem.FileExists($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolder}{separator}{fingerPrintHash}.json"))
+                var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
+                var fingerprintFileName   = AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode);
+                var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode);
+                var filePath              = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{fingerprintFileName}.json";
+                
+                if (FileSystem.FileExists(filePath))
                 {
                     try
                     {
-                        FileSystem.DeleteFile($"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{separator}{fingerprintFolder}{separator}{fingerPrintHash}.json");
+                        FileSystem.DeleteFile(filePath);
                     }
                     catch { }
                 }
 
-                Log.Info("Title sequence finger print file removed.");
+                Log.Info("Title sequence fingerprint file removed.");
 
                 return "OK";
             }
@@ -228,6 +236,7 @@ namespace IntroSkip.Api
 
         private class SeasonTitleSequenceResponse
         {
+            // ReSharper disable twice UnusedAutoPropertyAccessor.Local
             public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
             public TitleSequenceDto TitleSequences            { get; set; }
         }

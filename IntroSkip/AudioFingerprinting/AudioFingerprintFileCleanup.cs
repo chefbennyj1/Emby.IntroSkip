@@ -6,27 +6,24 @@ using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 
 namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintFileCleanup : IScheduledTask, IConfigurableScheduledTask
     {
-        private ILibraryManager LibraryManager { get; set; }
-        private ILogger Log                    { get; set; }
-        private IUserManager UserManager       { get; set; }
-        private IFileSystem FileSystem         { get; set; }
+        private ILibraryManager LibraryManager { get; }
+        private IUserManager UserManager       { get; }
+        private IFileSystem FileSystem         { get; }
 
         // ReSharper disable once TooManyDependencies
-        public AudioFingerprintFileCleanup(ILibraryManager libraryManager, ILogManager logManager, IUserManager user, IFileSystem file)
+        public AudioFingerprintFileCleanup(ILibraryManager libraryManager, IUserManager user, IFileSystem file)
         {
             LibraryManager = libraryManager;
             UserManager = user;
             FileSystem = file;
-            Log = logManager.GetLogger(Plugin.Instance.Name);
         }
-
+        // ReSharper disable twice TooManyChainedReferences
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var episodes = new List<string>();
@@ -35,7 +32,6 @@ namespace IntroSkip.AudioFingerprinting
                 Recursive = true,
                 IncludeItemTypes = new[] { "Series" },
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
-
             });
 
             foreach (var series in seriesQuery.Items)
@@ -50,12 +46,7 @@ namespace IntroSkip.AudioFingerprinting
 
                 });
 
-                foreach (var episode in episodeQuery.Items)
-                {
-                    var hash = AudioFingerprintFileManager.Instance.GetFingerprintFileNameHash(episode);
-                    Log.Info(hash);
-                    episodes.Add(hash);
-                }
+                episodes.AddRange(episodeQuery.Items.Select(episode => AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode)));
             }
 
             var fingerprintDirectory = AudioFingerprintFileManager.Instance.GetFingerprintDirectory() +
