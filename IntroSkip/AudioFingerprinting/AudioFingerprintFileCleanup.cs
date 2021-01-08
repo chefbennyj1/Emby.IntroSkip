@@ -20,8 +20,8 @@ namespace IntroSkip.AudioFingerprinting
         public AudioFingerprintFileCleanup(ILibraryManager libraryManager, IUserManager user, IFileSystem file)
         {
             LibraryManager = libraryManager;
-            UserManager = user;
-            FileSystem = file;
+            UserManager    = user;
+            FileSystem     = file;
         }
         // ReSharper disable twice TooManyChainedReferences
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
@@ -29,20 +29,20 @@ namespace IntroSkip.AudioFingerprinting
             var episodes = new List<string>();
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
-                Recursive = true,
+                Recursive        = true,
                 IncludeItemTypes = new[] { "Series" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             });
 
             foreach (var series in seriesQuery.Items)
             {
                 var episodeQuery = LibraryManager.QueryItems(new InternalItemsQuery()
                 {
-                    Parent = series,
-                    Recursive = true,
+                    Parent           = series,
+                    Recursive        = true,
                     IncludeItemTypes = new[] { "Episode" },
-                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    IsVirtualItem = false
+                    User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                    IsVirtualItem    = false
 
                 });
 

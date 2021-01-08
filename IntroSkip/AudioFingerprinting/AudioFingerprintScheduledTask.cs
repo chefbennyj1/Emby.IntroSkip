@@ -60,7 +60,7 @@ namespace IntroSkip.AudioFingerprinting
             var step = 100.0 / seriesQuery.TotalRecordCount;
             var currentProgress = 0.0;
 
-            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
+            Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.FingerprintingMaxDegreeOfParallelism }, (series, state) =>
             {
                 if (cancellationToken.IsCancellationRequested)
                 {

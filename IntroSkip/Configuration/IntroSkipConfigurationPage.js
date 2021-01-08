@@ -131,7 +131,7 @@
             dlg.classList.add("ui-body-a");
             dlg.classList.add("background-theme-a");
             dlg.style.maxWidth = "45%";
-            dlg.style.maxHeight = "80%";
+            dlg.style.maxHeight = "87%";
 
             var html = '';
 
@@ -141,43 +141,60 @@
 
             html += '<div class="formDialogContent" style="margin:2em">';
             html += '<div class="dialogContentInner" style="max-height: 42em;">';
-            html += '<div style="flex-grow:1;">';
-            
-            html += '<div class="inputContainer">';
-            html += '<button is="emby-button" type="submit" class="removeAllData raised button-submit block emby-button" style="background-color:orangered; color:white">';
-            html += '<span>Reset</span>';
-            html += '</button>';
+            html += '<div style="flex-grow:1;">'; 
+
+            html += '<div class="detailSectionHeader" style="margin-bottom:2em;">';
+            html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove all</h2>';
+            html += '<button is="emby-button" class="removeAllData fab emby-input-iconbutton paper-icon-button-light emby-button" style="margin-left: 1em;background-color:orangered; color:white"><i class="md-icon">clear</i></button>';
             html += '<div class="fieldDescription">';
             html += 'Remove all title sequence related data and start from scratch.';
             html += '</div>';
             html += '</div>';
+             
+            html += '<hr>';
 
-
-            html += '<div class="inputContainer">';
-            html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
-            html += '<input is="emby-toggle" type="checkbox" id="enableItemAddedEvent"  class="chkitemAddedEvent noautofocus mdl-switch__input" data-embytoggle="true">';
-            html += '<span class="toggleButtonLabel mdl-switch__label">Enable new episode auto scan</span>';
-            html += '<div class="mdl-switch__trackContainer">';
-            html += '<div class="mdl-switch__track"></div>';
-            html += '<div class="mdl-switch__thumb">';
-            html += '<span class="mdl-switch__focus-helper"></span>';
-            html += '</div>';
-            html += '</div>';
-            html += '</label>';
-            html += '<div class="fieldDescription">';
-            html += 'Auto scan episodes after they are added to the library automatically.';
-            html += '</div>';
-            html += '</div>';
-
-            html += '<div class="inputContainer">';
-            html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParralelism">Maximum parralel series to process at once:</label> ';
-            html += '<input type="number" id="txtMaxDegreeOfParralelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
-            html += '<div class="fieldDescription">';
-            html += 'The number of series to attempt to proccess at once. Lower powered machines should keep the default of 2.';
-            html += '</div>';
-            html += '</div>';
-
+            html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">';
+            html += 'Fingerprinting';
+            html += '</h2>';
               
+            //html += '<div class="inputContainer">';
+            //html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
+            //html += '<input is="emby-toggle" type="checkbox" id="enableItemAddedEvent"  class="chkitemAddedEvent noautofocus mdl-switch__input" data-embytoggle="true">';
+            //html += '<span class="toggleButtonLabel mdl-switch__label">Enable new episode auto scan</span>';
+            //html += '<div class="mdl-switch__trackContainer">';
+            //html += '<div class="mdl-switch__track"></div>';
+            //html += '<div class="mdl-switch__thumb">';
+            //html += '<span class="mdl-switch__focus-helper"></span>';
+            //html += '</div>';
+            //html += '</div>';
+            //html += '</label>';
+            //html += '<div class="fieldDescription">';
+            //html += 'Auto scan episodes after they are added to the library automatically.';
+            //html += '</div>';
+            //html += '</div>';
+
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="txtFingerprintingMaxDegreeOfParallelism">Maximum parallel series to process at once:</label> ';
+            html += '<input type="number" id="txtFingerprintingMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
+            html += '<div class="fieldDescription">';
+            html += 'The number of series to attempt fingerprint proccessing for at once. Lower powered machines should keep the default of 2.';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceEncodingLength">Fingerprinting audio encoding length (minutes):</label> ';
+            html += '<input type="number" id="txtTitleSequenceEncodingLength" min="10" max="15" step="1" label="Title sequence encoding duration (minutes):" class="emby-input">';
+            html += '<div class="fieldDescription">';
+            html += 'The duration of episode audio encoding used to find title sequences. Default is 10 minutes. A longer encoding may match episodes with title sequences which appear later in the stream, but will cause longer scans.';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<hr>';
+
+            html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">';
+            html += 'Title Sequence Detection';
+            html += '</h2>';
+
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceThreshold">Title sequence duration threshold (seconds):</label> ';
             html += '<input type="number" id="txtTitleSequenceThreshold" min="5" max="15" step="1" label="Title sequence duration threshold (seconds):" class="emby-input">';
@@ -185,26 +202,20 @@
             html += 'The duration threshold for accepted title sequence lengths. Any match with a duration less then this number will be ignored.';
             html += '</div>';
             html += '</div>';
-             
+            
             html += '<div class="inputContainer">';
-            html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceEncodingLength">Title sequence audio encoding length (minutes):</label> ';
-            html += '<input type="number" id="txtTitleSequenceEncodingLength" min="10" max="15" step="1" label="Title sequence encoding duration (minutes):" class="emby-input">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParallelism">Maximum parallel series to process at once:</label> ';
+            html += '<input type="number" id="txtTitleSequenceMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
             html += '<div class="fieldDescription">';
-            html += 'The duration of episode audio encoding used to find title sequences. Default is 10 minutes. A longer encoding may match episodes with title sequences which appear later in the stream, but will cause longer scans.';
+            html += 'The number of series to attempt title sequence proccessing for, at once. Lower powered machines should keep the default of 2.';
             html += '</div>';
-            html += '</div>'; 
-
+            html += '</div>';
 
             html += '<div class="inputContainer">';
-            html += '<button is="emby-button" type="submit" class="btnCloseDialog raised button-submit block emby-button">';
+            html += '<button is="emby-button" type="submit" class="btnOk raised button-submit block emby-button">';
             html += '<span>Ok</span>';
-            html += '</button>';
-            html += '<div class="fieldDescription">';
-            html += 'Remove all title sequence related data and start from scratch.';
-            html += '</div>';
-            html += '</div>';
-
-
+            html += '</button>'; 
+            html += '</div>'; 
 
             html += '</div>';
             html += '</div>';
@@ -213,17 +224,17 @@
             dialogHelper.open(dlg);
 
             
-            var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
-            var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
-            var maxDegreeOfParralelism      = dlg.querySelector('#txtMaxDegreeOfParralelism');
-            var enableItemAddedEventToggle  = dlg.querySelector('#enableItemAddedEvent');
-            var removeAllButton             = dlg.querySelector('.removeAllData');
+            var titleSequenceThresholdInput         = dlg.querySelector('#txtTitleSequenceThreshold');
+            var titleSequenceEncodingLength         = dlg.querySelector('#txtTitleSequenceEncodingLength');
+            var titleSequenceMaxDegreeOfParallelism = dlg.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
+            var fingerprintMaxDegreeOfParallelism   = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
+            var removeAllButton                     = dlg.querySelector('.removeAllData');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                titleSequenceThresholdInput.value  = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
-                titleSequenceEncodingLength.value  = config.EncodingLength               ? config.EncodingLength               : 15;
-                maxDegreeOfParralelism.value       = config.MaxDegreeOfParallelism       ? config.MaxDegreeOfParallelism       : 2;
-                enableItemAddedEventToggle.checked = config.EnableItemAddedTaskAutoRun;
+                titleSequenceThresholdInput.value               = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
+                titleSequenceEncodingLength.value               = config.EncodingLength               ? config.EncodingLength               : 15;
+                titleSequenceMaxDegreeOfParallelism.value       = config.MaxDegreeOfParallelism       ? config.MaxDegreeOfParallelism       : 2;
+                fingerprintMaxDegreeOfParallelism.value         = config.FingerprintingMaxDegreeOfParallelism;
             });
 
             removeAllButton.addEventListener('click', (e) => {
@@ -231,21 +242,29 @@
                     openConfirmationDialog();
                 });
 
-            enableItemAddedEventToggle.addEventListener('change', (e) => {
-                e.preventDefault();
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    config.EnableItemAddedTaskAutoRun = enableItemAddedEventToggle.checked;
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                });
-            }); 
+            //enableItemAddedEventToggle.addEventListener('change', (e) => {
+            //    e.preventDefault();
+            //    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+            //        config.EnableItemAddedTaskAutoRun = enableItemAddedEventToggle.checked;
+            //        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+            //    });
+            //}); 
 
-            maxDegreeOfParralelism.addEventListener('change', (e) => {
+            titleSequenceMaxDegreeOfParallelism.addEventListener('change', (e) => {
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    config.MaxDegreeOfParallelism = maxDegreeOfParralelism.value;
+                    config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
                     ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                 });
-            }); 
+            });
+            
+            fingerprintMaxDegreeOfParallelism.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            });
 
             titleSequenceThresholdInput.addEventListener('change', (e) => {
                 e.preventDefault();
@@ -264,6 +283,10 @@
             });
 
             dlg.querySelector('.btnCloseDialog').addEventListener('click',() => {
+                dialogHelper.close(dlg);
+            });
+
+            dlg.querySelector('.btnOk').addEventListener('click',() => {
                 dialogHelper.close(dlg);
             });
 
