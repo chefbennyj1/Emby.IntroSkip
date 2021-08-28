@@ -10,22 +10,19 @@ using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
-using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Querying;
 
 // ReSharper disable ComplexConditionExpression
 
 namespace IntroSkip.TitleSequence
 {
-    public class TitleSequenceDetection : TitleSequenceDto, IServerEntryPoint
-    {
-        private IFileSystem FileSystem { get; }
-        
+    public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
+    {             
         public static TitleSequenceDetection Instance  { get; private set; }
-        
-        public TitleSequenceDetection(IFileSystem file)
+      
+        public TitleSequenceDetection()
         {
-            FileSystem       = file;
-            Instance         = this;
+            Instance = this;
         }
         
         // Keep integer in specified range
@@ -195,52 +192,50 @@ namespace IntroSkip.TitleSequence
             return false;
         }
         
-        public List<Episode> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input)
-        {
-            var separator             = FileSystem.DirectorySeparatorChar;
-            var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
-            var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode1Input);
-            var fingerprintDir        = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{separator}";
+        public List<TitleSequenceResult> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input, QueryResult<TitleSequenceResult> result)
+        {            
             
-            //Create the the current episode input key. 
-            var episode1InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode1Input)}";
-            var episode2InputKey = $"{AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode2Input)}";
-            
-            if (!FileSystem.FileExists($"{fingerprintDir}{episode1InputKey}.json"))
+            var episode1InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
+
+            var episode2InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode2Input.InternalId);
+                        
+            if (episode1InputKey is null)
             {
                 throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
             }
 
-            if (!FileSystem.FileExists($"{fingerprintDir}{episode2InputKey}.json"))
+            if (episode2InputKey is null)
             {
                 throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
             }
 
-            var fingerPrintDataEpisode1 = AudioFingerprintFileManager.Instance.GetSavedFingerPrintFromFile($"{fingerprintDir}{episode1InputKey}.json");
-            var fingerPrintDataEpisode2 = AudioFingerprintFileManager.Instance.GetSavedFingerPrintFromFile($"{fingerprintDir}{episode2InputKey}.json");
+            if(episode1InputKey.Duration != episode2InputKey.Duration)
+            {
+                throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
+            }
 
-            var introDto =  compareFingerprint(fingerPrintDataEpisode1, fingerPrintDataEpisode2);
+            var introDto =  compareFingerprint(episode1InputKey, episode2InputKey);
 
-            introDto[0].InternalId  = episode1Input.InternalId;
-            introDto[0].IndexNumber = episode1Input.IndexNumber;
+            //introDto[0].InternalId  = episode1Input.InternalId;
+            //introDto[0].IndexNumber = episode1Input.IndexNumber;
 
-            introDto[1].InternalId  = episode2Input.InternalId;
-            introDto[1].IndexNumber = episode2Input.IndexNumber;
+            //introDto[1].InternalId  = episode2Input.InternalId;
+            //introDto[1].IndexNumber = episode2Input.IndexNumber;
            
-            return introDto;
+            return introDto; //compareFingerprint(episode1InputKey, episode2InputKey);
            
         }
 
        
-        private List<Episode> compareFingerprint(AudioFingerprintDto fingerPrintDataEpisode1, AudioFingerprintDto fingerPrintDataEpisode2)
+        private List<TitleSequenceResult> compareFingerprint(TitleSequenceResult Episode1, TitleSequenceResult Episode2)
         {
             
             var config       = Plugin.Instance.Configuration;
-            var duration     = config.EncodingLength * 60;
+            var duration     = Episode1.Duration * 60; //Both episodes should have the same encoding duration
 
 
-            var fingerprint1 = fingerPrintDataEpisode1.fingerprint;
-            var fingerprint2 = fingerPrintDataEpisode2.fingerprint;
+            var fingerprint1 = Episode1.Fingerprint;
+            var fingerprint2 = Episode2.Fingerprint;
             
 
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
@@ -314,26 +309,21 @@ namespace IntroSkip.TitleSequence
             {
                 throw new TitleSequenceInvalidDetectionException("Episode common region are both 00:00:00.");
             }
+                       
             
+            Episode1.HasSequence = true;
+            Episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
+            Episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
+             
+
+            Episode2.HasSequence = true;
+            Episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
+            Episode2.TitleSequenceEnd   = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
             
-            //Logger.Info("Audio Analysis Complete.");
-            
-            
-            
-            return new List<Episode>()
+            return new List<TitleSequenceResult>()
             {
-                new Episode() //[0]
-                {
-                    HasIntro   = true,
-                    IntroStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart)),
-                    IntroEnd   = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd))
-                },
-                new Episode() //[1]
-                {
-                    HasIntro   = true,
-                    IntroStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart)),
-                    IntroEnd   = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd))
-                }
+                Episode1,
+                Episode2
             };
 
             
@@ -341,13 +331,13 @@ namespace IntroSkip.TitleSequence
 
         public void Dispose()
         {
-            
+
         }
 
         // ReSharper disable once MethodNameNotMeaningful
         public void Run()
         {
-           
+
         }
     }
 }

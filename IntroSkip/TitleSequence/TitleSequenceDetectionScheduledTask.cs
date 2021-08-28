@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Logging;
@@ -14,21 +15,35 @@ namespace IntroSkip.TitleSequence
     public class TitleSequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private static ILogger Log                  { get; set; }
-
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager)
+        private ITaskManager TaskManager {get; set;}
+        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
+            TaskManager = taskManager;
         }
 
  
-        public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
- 
+        public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress) 
         {
-            Log.Info("Beginning Title Sequence Task");
+            var tasks = TaskManager.ScheduledTasks.ToList();
+            if(tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting").State == TaskState.Running)
+            {
+                Log.Info("Title sequence task will wait until chroma-printing task has completed.");
+                progress.Report(100.0);
+                return;
+            }
 
-            TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress);
-            await Task.FromResult(true);
-            progress.Report(100.0);
+            Log.Info("Beginning Title Sequence Task");
+            try
+            {
+                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, IntroSkipPluginEntryPoint.Instance.Repository);
+                await Task.FromResult(true);
+                progress.Report(100.0);
+            }
+            catch (Exception)
+            {
+                progress.Report(100.0);
+            }
         }
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -43,7 +58,7 @@ namespace IntroSkip.TitleSequence
             };
         }
 
-        public string Name        => "Detect Episode Title Sequence";
+        public string Name        => "Episode Title Sequence Detection";
         public string Key         => "Intro Skip Options";
         public string Description => "Detect start and finish times of episode title sequences to allow for a 'skip' option";
         public string Category    => "Intro Skip";

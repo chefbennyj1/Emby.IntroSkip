@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
@@ -45,10 +48,10 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
         }
 
-        [Route("/RemoveFingerprint", "DELETE", Summary = "Remove Episode Title Sequence fingerprint data")]
-        public class RemoveFingerprintRequest : IReturn<string>
+        [Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
+        public class RemoveTitleSequenceDataRequest : IReturn<string>
         {
-            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long InternalId { get; set; }
         }
 
@@ -67,78 +70,126 @@ namespace IntroSkip.Api
             
         }
 
+        [Route("/UpdateTitleSequence", "GET", Summary = "Episode Title Sequence Update Data")]
+        public class UpdateTitleSequenceRequest : IReturn<string>
+        {
+            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public long InternalId { get; set; }
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public long SeasonId { get; set; }
+            [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public TimeSpan TitleSequenceStart {get; set;}
+            [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public TimeSpan TitleSequenceEnd {get; set;}
+            [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
+            public bool HasSequence { get; set; }
+            
+           
+        }
         
         private IJsonSerializer JsonSerializer      { get; }
-        private ILogger Log                         { get; }
-        private IFileSystem FileSystem              { get; }
-        private ILibraryManager LibraryManager      { get; }
+        private ILogger Log                         { get; }  
+        
+        private ILibraryManager LibraryManager { get; }
 
         // ReSharper disable once TooManyDependencies
         public TitleSequenceService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
         {
             JsonSerializer = json;
-            FileSystem     = fileSystem;
-            LibraryManager = libraryManager;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
+            LibraryManager = libraryManager;
+        }
+
+       
+        public string Get(UpdateTitleSequenceRequest request)
+        {
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            var dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            var titleSequences = dbResults.Items.ToList();
+
+            if (titleSequences.Any(item => item.InternalId == request.InternalId))
+            {
+                var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
+                titleSequence.TitleSequenceStart = request.TitleSequenceStart;
+                titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
+                titleSequence.HasSequence = request.HasSequence;
+                
+                repo.Delete(request.InternalId.ToString());
+                repo.SaveResult(titleSequence, CancellationToken.None);
+
+                titleSequences.RemoveAll(s => s.InternalId == titleSequence.InternalId);
+                titleSequences.Add(titleSequence);
+            }
+                      
+
+            var seasonTitleSequences = titleSequences.Where(r => r.SeasonId == request.SeasonId).ToList();
+
+            TimeSpan commonDuration;
+            try
+            {
+                commonDuration = CalculateCommonTitleSequenceLength(seasonTitleSequences);
+            }
+            catch
+            {
+                commonDuration = new TimeSpan(0, 0, 0);
+            }
+
+            return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
+            {
+                CommonEpisodeTitleSequenceLength = commonDuration,
+                TitleSequences = seasonTitleSequences
+            });
         }
 
         public void Post(ScanSeriesRequest request)
         {
-            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds);
+            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, IntroSkipPluginEntryPoint.Instance.Repository);
         }
 
-        public string Delete(RemoveAllRequest request)
-        {
-            try
-            {
-                var fingerprintFiles = FileSystem
-                    .GetFiles(
-                        $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}",
-                        true).Where(file => file.Extension == ".json");
-                foreach (var file in fingerprintFiles)
-                {
-                    FileSystem.DeleteFile(file.FullName);
-                }
-            }catch {}
+        //public string Delete(RemoveAllRequest request)
+        //{
+        //    try
+        //    {
+        //        var fingerprintFiles = FileSystem
+        //            .GetFiles(
+        //                $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}",
+        //                true).Where(file => file.Extension == ".json");
+        //        foreach (var file in fingerprintFiles)
+        //        {
+        //            FileSystem.DeleteFile(file.FullName);
+        //        }
+        //    }catch {}
 
-            try
-            {
-                var titleSequenceFiles = FileSystem
-                    .GetFiles(
-                        $"{TitleSequenceFileManager.Instance.GetTitleSequenceDirectory()}{FileSystem.DirectorySeparatorChar}",
-                        true).Where(file => file.Extension == ".json");
-                foreach (var file in titleSequenceFiles)
-                {
-                    FileSystem.DeleteFile(file.FullName);
-                }
-            }catch {}
+        //    try
+        //    {
+        //        var titleSequenceFiles = FileSystem
+        //            .GetFiles(
+        //                $"{TitleSequenceManager.Instance.GetTitleSequenceDirectory()}{FileSystem.DirectorySeparatorChar}",
+        //                true).Where(file => file.Extension == ".json");
+        //        foreach (var file in titleSequenceFiles)
+        //        {
+        //            FileSystem.DeleteFile(file.FullName);
+        //        }
+        //    }catch {}
 
-            return "OK";
-        }
+        //    return "OK";
+        //}
 
         public string Delete(RemoveSeasonFingerprintsRequest request)
         {
             var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
             {
-                ParentIds = new []{ request.SeasonId },
+                ParentIds = new[] { request.SeasonId },
                 Recursive = true,
                 IncludeItemTypes = new[] { "Episode" }
             });
 
             foreach (var episode in episodeQuery.Items)
             {
-                var separator             = FileSystem.DirectorySeparatorChar;
-                var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
-                var fingerprintFileName   = AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode);
-                var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode);
-                var filePath              = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{fingerprintFileName}.json";
-                
-                //Remove the finger print file
-                if (!FileSystem.FileExists(filePath)) continue;
-                
+                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
                 try
                 {
-                    FileSystem.DeleteFile(filePath);
+                    repo.Delete(episode.InternalId.ToString());
                 }
                 catch { }
             }
@@ -147,48 +198,12 @@ namespace IntroSkip.Api
 
         }
 
-        public string Delete(RemoveFingerprintRequest request)
+        public string Delete(RemoveTitleSequenceDataRequest request)
         {
             try
             {
-                var episode        = LibraryManager.GetItemById(request.InternalId);
-                var season         = episode.Parent;
-                var series         = episode.Parent.Parent;
-                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
-                var separator      = FileSystem.DirectorySeparatorChar;
-
-                if (titleSequences.Seasons is null)
-                {
-                    return "";
-                }
-
-                if (titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber))
-                {
-                    // ReSharper disable twice ComplexConditionExpression (it is not)
-                    // ReSharper disable twice PossibleNullReferenceException we check above if they exist
-                    if(titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-                        .Episodes.Exists(item => item.InternalId == episode.InternalId))
-                    {
-                        titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-                            .Episodes.RemoveAll(item => item.InternalId == request.InternalId);
-                    }
-                    TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
-                }
-               
-                //Remove the finger print file
-                var fingerprintDirectory  = AudioFingerprintFileManager.Instance.GetFingerprintDirectory();
-                var fingerprintFileName   = AudioFingerprintFileManager.Instance.GetFingerprintFileName(episode);
-                var fingerprintFolderName = AudioFingerprintFileManager.Instance.GetFingerprintFolderName(episode);
-                var filePath              = $"{fingerprintDirectory}{separator}{fingerprintFolderName}{fingerprintFileName}.json";
-                
-                if (FileSystem.FileExists(filePath))
-                {
-                    try
-                    {
-                        FileSystem.DeleteFile(filePath);
-                    }
-                    catch { }
-                }
+                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+                repo.Delete(request.InternalId.ToString());
 
                 Log.Info("Title sequence fingerprint file removed.");
 
@@ -199,113 +214,97 @@ namespace IntroSkip.Api
                 return "";
             }
         }
-        
-        public string Delete(RemoveTitleSequenceRequest request)
-        {
-            try
-            {
-                var episode        = LibraryManager.GetItemById(request.InternalId);
-                var season         = episode.Parent;
-                var series         = season.Parent;
 
-                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
+        //public string Delete(RemoveTitleSequenceRequest request)
+        //{
+        //    try
+        //    {
+        //        var episode        = LibraryManager.GetItemById(request.InternalId);
+        //        var season         = episode.Parent;
+        //        var series         = season.Parent;
 
-                if (titleSequences.Seasons is null) return "";
+        //        var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
 
-                if (!titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber)) return "";
+        //        if (titleSequences.Seasons is null) return "";
 
-                if (titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-                    .Episodes.Exists(item => item.InternalId == episode.InternalId))
-                {
-                    titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-                        .Episodes.RemoveAll(item => item.InternalId == request.InternalId);
-                }
+        //        if (!titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber)) return "";
 
-                TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
+        //        if (titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
+        //            .Episodes.Exists(item => item.InternalId == episode.InternalId))
+        //        {
+        //            titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
+        //                .Episodes.RemoveAll(item => item.InternalId == request.InternalId);
+        //        }
 
-                Log.Info("Title sequence saved intro data removed.");
+        //        TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
+
+        //        Log.Info("Title sequence saved intro data removed.");
 
 
-                return "OK";
-            }
-            catch
-            {
-                return "";
-            }
-        }
+        //        return "OK";
+        //    }
+        //    catch
+        //    {
+        //        return "";
+        //    }
+        //}
 
         private class SeasonTitleSequenceResponse
         {
             // ReSharper disable twice UnusedAutoPropertyAccessor.Local
             public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
-            public TitleSequenceDto TitleSequences            { get; set; }
+            public List<TitleSequenceResult> TitleSequences   { get; set; }
         }
-        
+
         public string Get(SeasonTitleSequenceRequest request)
         {
-            var season = LibraryManager.GetItemById(request.SeasonId);
-            var series = season.Parent;
-            var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
-            
+
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            var dbResults = repo.GetResults(new TitleSequenceResultQuery());
+
+            var titleSequences = dbResults.Items.Where(r => r.SeasonId == request.SeasonId).ToList();
+
             TimeSpan commonDuration;
             try
             {
-                commonDuration = CalculateCommonTitleSequenceLength(titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber));
+                commonDuration = CalculateCommonTitleSequenceLength(titleSequences);
             }
             catch
             {
-                commonDuration = new TimeSpan(0,0,0);
+                commonDuration = new TimeSpan(0, 0, 0);
             }
-            
+
             return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
-                TitleSequences                   = titleSequences
+                TitleSequences = titleSequences
             });
 
         }
-        
+
         public string Get(EpisodeTitleSequenceRequest request)
         {
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            
             try
             {
-                var episode        = LibraryManager.GetItemById(request.InternalId);
-                var season         = episode.Parent;
-                var series         = season.Parent;
-                var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
+                return JsonSerializer.SerializeToString(repo.GetResult(request.InternalId.ToString()));
 
-                if (titleSequences.Seasons is null)
-                {
-                    return JsonSerializer.SerializeToString(new Episode()); //Empty
-                }
-
-                if (titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber))
-                {
-                    var s = titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber);
-                    
-                    if(s.Episodes.Exists(item => item.InternalId == episode.InternalId))
-                    {
-                        return JsonSerializer.SerializeToString(s.Episodes.FirstOrDefault(e => e.InternalId == request.InternalId));
-                    }
-                    
-                }
-                
             }
             catch
             {
-                return JsonSerializer.SerializeToString(new Episode()); //Empty
+                return JsonSerializer.SerializeToString(new TitleSequenceResult()); //Empty
             }
 
-            return JsonSerializer.SerializeToString(new Episode()); //Empty
         }
 
-        private TimeSpan CalculateCommonTitleSequenceLength(Season season)
+        private TimeSpan CalculateCommonTitleSequenceLength(List<TitleSequenceResult> season)
         {
-            var titleSequences      = season.Episodes.Where(intro => intro.HasIntro);
-            var groups              = titleSequences.GroupBy(sequence => sequence.IntroEnd - sequence.IntroStart);
+            var titleSequences = season.Where(intro => intro.HasSequence);
+            var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
-            int maxCount            = enumerableSequences.Max(g => g.Count());
-            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            int maxCount = enumerableSequences.Max(g => g.Count());
+            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
 
