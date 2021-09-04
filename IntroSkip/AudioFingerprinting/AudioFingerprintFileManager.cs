@@ -1,12 +1,8 @@
-﻿using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using MediaBrowser.Common.Configuration;
+﻿using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Serialization;
 
 // ReSharper disable twice TooManyChainedReferences
 // ReSharper disable once TooManyDependencies
@@ -36,7 +32,7 @@ namespace IntroSkip.AudioFingerprinting
             try
             {
                 FileSystem.DeleteFile(path);
-                Log.Info($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Removed encoding .bin file.");
+                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: .bin file removed.");
             }
             catch { }
         }

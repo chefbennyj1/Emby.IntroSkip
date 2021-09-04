@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Emby.AutoOrganize.Data;
 using IntroSkip.TitleSequence;
+using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
@@ -29,14 +30,17 @@ namespace IntroSkip.AudioFingerprinting
         private ILibraryManager LibraryManager { get; }
         private ILogger Log { get; }
         private ITaskManager TaskManager { get; set; }
+
+        private IDtoService DtoService { get; set; }
         // ReSharper disable once TooManyDependencies
-        public AudioFingerprintScheduledTask(IFfmpegManager ffmpegManager, IFileSystem fileSystem, ILogManager logMan, IUserManager userManager, ILibraryManager libraryManager, ITaskManager taskManager)
+        public AudioFingerprintScheduledTask(IFfmpegManager ffmpegManager, IFileSystem fileSystem, ILogManager logMan, IUserManager userManager, ILibraryManager libraryManager, ITaskManager taskManager, IDtoService dtoService)
         {
             FfmpegManager = ffmpegManager;
             FileSystem = fileSystem;
             UserManager = userManager;
             LibraryManager = libraryManager;
             TaskManager = taskManager;
+            DtoService = dtoService;
             Log = logMan.GetLogger(Plugin.Instance.Name);
         }
 
@@ -51,9 +55,10 @@ namespace IntroSkip.AudioFingerprinting
             }
             if (cancellationToken.IsCancellationRequested)
             {
-
                 progress.Report(100.0);
             }
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+           
             try
             {
                 Log.Info("Starting episode fingerprint task.");
@@ -69,12 +74,13 @@ namespace IntroSkip.AudioFingerprinting
                 {
                     Recursive = true,
                     IncludeItemTypes = new[] { "Series" },
-                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                    
                 });
 
                 var step = 100.0 / seriesQuery.TotalRecordCount;
                 var currentProgress = 0.1;
-                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+               
 
                 //Our database info
                 QueryResult<TitleSequenceResult> dbResults = null;
@@ -85,18 +91,14 @@ namespace IntroSkip.AudioFingerprinting
                     titleSequences = dbResults.Items.ToList();
                     Log.Info($"Chroma-print database contains {dbResults.TotalRecordCount} items.");
                 }
-                catch
+                catch(Exception)
                 {
-                    //The Repo is in use from the other task. Fail silently. Goodbye
-                    progress.Report(100.0);
-                    return;
+                    Log.Info("Title sequence datbase is new.");
+                    titleSequences = new List<TitleSequenceResult>();
                 }
 
                 progress.Report((currentProgress += step) - 1); //Give the user some kind of progress to show the task has started
-
-                //TODO: if the config duration does not match the season result duration, reencode the entire season.
-
-                //ValidateSavedFingerprints(dbResults.Items, repo);
+                                
 
                 Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.FingerprintingMaxDegreeOfParallelism }, (series, state) =>
                 {
@@ -104,9 +106,7 @@ namespace IntroSkip.AudioFingerprinting
                     {
                         state.Break();
                         progress.Report(100.0);
-                    }
-
-                    
+                    }                    
 
                     var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
@@ -134,15 +134,37 @@ namespace IntroSkip.AudioFingerprinting
                             User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
                             IsVirtualItem = false
                         });
-
-                        //The season has been processed and all episodes have a sequence - move on.
+                        
+                        //The season has been processed and all episodes have a sequence - remove chromaprints and move on.                        
                         if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
-                        {
+                        {                                    
                             if (processedEpisodeResults.All(result => result.HasSequence || result.Confirmed))
                             {
-                                Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} has complete title sequence profile.");
-                                continue;
+                                Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} all title sequence profiles processed or confirmed.");
+                                if (IsComplete(seasonQuery.Items[seasonIndex]))
+                                {
+                                    //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
+                                    foreach (var result in processedEpisodeResults)
+                                    {
+                                        try
+                                        {
+                                            if (!(result.Fingerprint is null))
+                                            {
+                                                result.Fingerprint.Clear();                  //Empty fingerprint List                                                                                             
+                                                repo.SaveResult(result, cancellationToken);  //Save it back to the db
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Log.Warn(ex.Message);
+                                        }
+                                    }
+                                }
+                                Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} title sequence profiles up to date.");
+                                continue;                               
                             }
+                            Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
+                            continue;
                         }
                                                
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
@@ -160,15 +182,14 @@ namespace IntroSkip.AudioFingerprinting
                             if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
                             {
                                 var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episodeQuery.Items[index].InternalId);
-
-                                //If episodes are added to the season it may alter the encoding duration for the fingerprint.
+                                                               
                                 if (titleSequenceResult.Duration == duration)
                                 {
                                     continue;
                                 }
-                                else
+                                else  //If new episodes are added to the season it may alter the encoding duration for the fingerprint. The duration for all fingerprints must be the same.
                                 {
-                                    Log.Info($"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name} E: {episodeQuery.Items[index].IndexNumber}");
+                                    Log.Info($"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
                                     repo.Delete(titleSequenceResult.InternalId.ToString());
 
                                     dbResults = repo.GetResults(new TitleSequenceResultQuery());
@@ -183,11 +204,14 @@ namespace IntroSkip.AudioFingerprinting
                             var fingerprintBinFileName = $"{seasonQuery.Items[seasonIndex].InternalId} - {episodeQuery.Items[index].InternalId}.bin";
                             var fingerprintBinFilePath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
+                            //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
+                            var stopWatch = new Stopwatch();
+                            stopWatch.Start();
+
                             ExtractFingerprintBinaryData($"{episodeQuery.Items[index].Path}", fingerprintBinFilePath, duration, cancellationToken);
 
                             Task.Delay(300); //Give enough time for ffmpeg to save the file.
-
-                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}.");
+                                               
 
                             List<uint> fingerPrintData = null;
 
@@ -197,13 +221,14 @@ namespace IntroSkip.AudioFingerprinting
                             }
                             catch (Exception ex)
                             {
+                                stopWatch.Stop();
                                 Log.Warn(ex.Message);
                                 continue;
                             }
 
                             try
                             {
-                                Log.Info($"{series.Name} - S:{seasonQuery.Items[seasonIndex].IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: Saving...");
+                                Log.Info($"{series.Name} - S:{seasonQuery.Items[seasonIndex].IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: Saving.");
                                 repo.SaveResult(new TitleSequenceResult()
                                 {
                                     Duration = duration,
@@ -215,17 +240,20 @@ namespace IntroSkip.AudioFingerprinting
                                     SeriesId = series.InternalId,
                                     TitleSequenceStart = new TimeSpan(),
                                     TitleSequenceEnd = new TimeSpan(),
-                                    Confirmed = false
+                                    Confirmed = false,
+                                    Processed = false
                                 }, cancellationToken);
                             }
                             catch (Exception ex)
                             {
+                                stopWatch.Stop();
                                 Log.Warn(ex.Message);
-                            }
-
-                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber} Successful.");
+                            }                            
+                            
+                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber} chromaprint took {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                            
                         }
-
+                                     
                     }
                     progress.Report((currentProgress += step) - 1);
                 });
@@ -234,12 +262,28 @@ namespace IntroSkip.AudioFingerprinting
             {
                 progress.Report(100.0);
             }
+
+            repo.Vacuum();
             progress.Report(100.0);
 
 
         }
 
+        private bool IsComplete(BaseItem season)
+        {
+            var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            { 
+                Parent = season,
+                IsVirtualItem = true,
+                IncludeItemTypes = new[] { "Episode" },
+                Recursive = true
+                
+            });
 
+            if(episodeQuery.Items.Any(item => item.IsVirtualItem || item.IsUnaired)) { return false; }
+
+            return true;
+        }
 
         private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken)
         {
@@ -304,7 +348,7 @@ namespace IntroSkip.AudioFingerprinting
 
         private List<uint> SplitByteData(string bin, BaseItem item)
         {
-            Log.Info($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
+            Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
             if (!FileSystem.FileExists(bin))
             {
                 Log.Warn($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");
@@ -325,7 +369,7 @@ namespace IntroSkip.AudioFingerprinting
 
         private List<uint> SplitByteDataFromStream(Stream bin, BaseItem item)
         {
-            Log.Info($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
+            Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
             //if (!FileSystem.FileExists(bin))
             //{
             //    Log.Warn($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");

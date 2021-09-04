@@ -260,9 +260,10 @@ namespace IntroSkip.Api
         {
 
             var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            var dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
+            var dbResults = repo.GetResults(query);
 
-            var titleSequences = dbResults.Items.Where(r => r.SeasonId == request.SeasonId).ToList();
+            var titleSequences = dbResults.Items.ToList();
 
             TimeSpan commonDuration;
             try

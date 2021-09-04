@@ -30,6 +30,8 @@ namespace Emby.AutoOrganize.Data
         /// <returns>TitleSequenceResult.</returns>
         TitleSequenceResult GetResult(string id);
 
+        void Vacuum();
+
         /// <summary>
         /// Gets the results.
         /// </summary>

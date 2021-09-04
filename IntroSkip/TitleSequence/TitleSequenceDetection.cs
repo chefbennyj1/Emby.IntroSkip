@@ -6,10 +6,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
 // ReSharper disable ComplexConditionExpression
@@ -19,9 +21,10 @@ namespace IntroSkip.TitleSequence
     public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
     {             
         public static TitleSequenceDetection Instance  { get; private set; }
-      
-        public TitleSequenceDetection()
+        private ILogger Log { get; set; }
+        public TitleSequenceDetection(ILogManager logMan)
         {
+            Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
         
@@ -201,27 +204,31 @@ namespace IntroSkip.TitleSequence
                         
             if (episode1InputKey is null)
             {
-                throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
+                 
+                throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
             if (episode2InputKey is null)
             {
-                throw new AudioFingerprintMissingException($"{episode2InputKey}: fingerprint data doesn't currently exist");
+                 
+                throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
             if(episode1InputKey.Duration != episode2InputKey.Duration)
             {
+                 
                 throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
             }
 
+            
             var introDto =  compareFingerprint(episode1InputKey, episode2InputKey);
-
+           
             //introDto[0].InternalId  = episode1Input.InternalId;
             //introDto[0].IndexNumber = episode1Input.IndexNumber;
 
             //introDto[1].InternalId  = episode2Input.InternalId;
             //introDto[1].IndexNumber = episode2Input.IndexNumber;
-           
+          
             return introDto; //compareFingerprint(episode1InputKey, episode2InputKey);
            
         }

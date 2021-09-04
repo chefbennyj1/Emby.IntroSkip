@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace IntroSkip.TitleSequence
         private IUserManager UserManager                     { get; }       
         public static TitleSequenceDetectionManager Instance { get; private set; }
 
+       
         public TitleSequenceDetectionManager(ILogManager logManager, ILibraryManager libMan, IUserManager user)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
@@ -40,12 +42,14 @@ namespace IntroSkip.TitleSequence
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
 
             });                        
-          
+            
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, ITitleSequenceRepository repo)
-        {                    
+        {      
+            
+            
             var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
             {
                 Recursive = true,
@@ -61,8 +65,10 @@ namespace IntroSkip.TitleSequence
       
         private void Analyze(QueryResult<BaseItem> seriesQuery, IProgress<double> progress, ITitleSequenceRepository repo, CancellationToken cancellationToken)
         {
+            
             if (cancellationToken.IsCancellationRequested)
             {
+                
                 progress.Report(100.0);
             }    
             var config = Plugin.Instance.Configuration;
@@ -87,6 +93,7 @@ namespace IntroSkip.TitleSequence
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    
                     state.Break();
                     progress.Report(100.0);
                 }
@@ -126,8 +133,14 @@ namespace IntroSkip.TitleSequence
                     if(!dbEpisodes.Any())
                     {
                         dbEpisodes = new List<TitleSequenceResult>();                        
-                    }              
+                    }      
                     
+                    if(dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
+                    {
+                        Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
+                        continue;
+                    }
+
                     var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasSequence || e.Confirmed).Select(y => y.InternalId).Distinct());
                     var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
@@ -141,8 +154,10 @@ namespace IntroSkip.TitleSequence
 
                     for (var index = 0; index <= unmatched.Count() - 1; index++)
                     {
+                        
                         if (cancellationToken.IsCancellationRequested)
                         {
+                            
                             break;
                         }
                         
@@ -173,25 +188,35 @@ namespace IntroSkip.TitleSequence
                                     continue;
                                 }
                             }
-
+                            
                             try
                             {
-                                 //The magic!
-                                var titleSequenceDetection = TitleSequenceDetection.Instance;
                                 
-                                var data = titleSequenceDetection.DetectTitleSequence(episodeQuery.Items[episodeComparableIndex], unmatched[index], dbResults);
+                                 //The magic!
+                                var titleSequenceDetection = TitleSequenceDetection.Instance;                        
+                               
+                                var stopWatch = new Stopwatch();
+                                stopWatch.Start();
 
+                                var data = titleSequenceDetection.DetectTitleSequence(episodeQuery.Items[episodeComparableIndex], unmatched[index], dbResults);
+                                
                                 foreach (var dataPoint in data)
                                 {
+                                    
                                     if (dbEpisodes.Exists(item => item.IndexNumber == dataPoint.IndexNumber && item.SeasonId == dataPoint.SeasonId))
                                     {
                                         dbEpisodes.RemoveAll(item => item.IndexNumber == dataPoint.IndexNumber && item.SeasonId == dataPoint.SeasonId);
                                     }
 
                                     dbEpisodes.Add(dataPoint);
-                                    //var found = episodeQuery.Items.FirstOrDefault(item => item.InternalId == dataPoint.InternalId);
-                                    ///Log.Info($"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence obtained successfully.");
+                                    
                                 }
+
+                                stopWatch.Stop();
+                                
+                                var unmatchedBaseItem = episodeQuery.Items.FirstOrDefault(item => item.InternalId == unmatched[index].InternalId);
+                                Log.Info($"{unmatchedBaseItem.Parent.Parent.Name} - {unmatchedBaseItem.Parent.Name} - Episode {unmatched[index].IndexNumber} detection took {stopWatch.ElapsedMilliseconds /1000} seconds.");
+                                
                             }
                             catch (TitleSequenceInvalidDetectionException)
                             {
@@ -205,26 +230,26 @@ namespace IntroSkip.TitleSequence
 
                             }
                             catch (AudioFingerprintMissingException ex)
-                            {
+                            {                               
                                 Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex.Message}");
-                            }
+                            }                            
+
                         }
                     }
 
                     foreach(var episode in dbEpisodes)
                     {
-                        if ((dbResults.Items.ToList().Exists(i => i.InternalId == episode.InternalId)))
-                        {
-                            repo.Delete(episode.InternalId.ToString());
-                        }
+                        episode.Processed = true;
 
                         repo.SaveResult(episode, cancellationToken);
                         
                         var found = LibraryManager.GetItemById(episode.InternalId); //This will take up time, and could be removed later
-                        Log.Info($"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence obtained successfully.");
+                        Log.Info($"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence successful.");
 
                         dbResults = repo.GetResults(new TitleSequenceResultQuery());
                     }
+
+                    
                     
                 }
 

@@ -245,9 +245,11 @@ namespace IntroSkip.Data
         {
             var queries = new List<string>
             {
+                "PRAGMA auto_vacuum=1",
                 "PRAGMA journal_mode=WAL",
                 "PRAGMA page_size=4096",
                 "PRAGMA synchronous=Normal"
+                
             };
 
             if (EnableTempStoreMemory)
@@ -266,6 +268,7 @@ namespace IntroSkip.Data
                 });
             }
 
+            
             db.ExecuteAll(string.Join(";", queries.ToArray()));
         }
 

@@ -226,15 +226,12 @@
             dialogHelper.open(dlg);
 
 
-            //var titleSequenceThresholdInput = dlg.querySelector('#txtTitleSequenceThreshold');
-            //var titleSequenceEncodingLength = dlg.querySelector('#txtTitleSequenceEncodingLength');
+           
             var titleSequenceMaxDegreeOfParallelism = dlg.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
             var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
             var removeAllButton = dlg.querySelector('.removeAllData');
 
-            ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                //titleSequenceThresholdInput.value = config.TitleSequenceLengthThreshold ? config.TitleSequenceLengthThreshold : 10.5;
-                //titleSequenceEncodingLength.value = config.EncodingLength ? config.EncodingLength : 10;
+            ApiClient.getPluginConfiguration(pluginId).then((config) => {                
                 titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                 fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism;
             });
@@ -243,14 +240,7 @@
                 e.preventDefault();
                 openConfirmationDialog();
             });
-
-            //enableItemAddedEventToggle.addEventListener('change', (e) => {
-            //    e.preventDefault();
-            //    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-            //        config.EnableItemAddedTaskAutoRun = enableItemAddedEventToggle.checked;
-            //        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-            //    });
-            //}); 
+                           
 
             titleSequenceMaxDegreeOfParallelism.addEventListener('change', (e) => {
                 e.preventDefault();
@@ -268,21 +258,6 @@
                 });
             });
 
-            //titleSequenceThresholdInput.addEventListener('change', (e) => {
-            //    e.preventDefault();
-            //    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-            //        config.TitleSequenceLengthThreshold = titleSequenceThresholdInput.value;
-            //        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-            //    });
-            //});
-
-            //titleSequenceEncodingLength.addEventListener('change', (e) => {
-            //    e.preventDefault();
-            //    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-            //        config.EncodingLength = titleSequenceEncodingLength.value;
-            //        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-            //    });
-            //});
 
             dlg.querySelector('.btnCloseDialog').addEventListener('click', () => {
                 dialogHelper.close(dlg);

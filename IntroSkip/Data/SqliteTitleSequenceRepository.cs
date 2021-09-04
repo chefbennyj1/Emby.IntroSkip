@@ -44,8 +44,8 @@ namespace Emby.AutoOrganize.Data
                 
                 string[] queries =
                 {
-                     "create table if not exists TitleSequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, HasSequence TEXT, Fingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT)",                                                                                              
-                     "create index if not exists idx_TitleSequenceResults on TitleSequenceResults(ResultId)",  
+                     "create table if not exists TitleSequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, HasSequence TEXT, Fingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",                                                                                              
+                     "create index if not exists idx_TitleSequenceResults on TitleSequenceResults(ResultId)"
                 };
 
                 connection.RunQueries(queries);
@@ -54,21 +54,6 @@ namespace Emby.AutoOrganize.Data
         }
 
 
-
-        //public void CreateColumn2(string name, string type)
-        //{
-        //    using (WriteLock.Write())
-        //    {
-        //        using (var connection = CreateConnection())
-        //        {
-        //            string[] queries = {
-        //                    $"ALTER TABLE TitleSequenceResults ADD COLUMN {name} {type}"
-        //                };
-
-        //            connection.RunQueries(queries);
-        //        }
-        //    }
-        //}
 
         public void SaveResult(TitleSequenceResult result, CancellationToken cancellationToken)
         {
@@ -85,7 +70,7 @@ namespace Emby.AutoOrganize.Data
                 {
                     connection.RunInTransaction(db =>
                     {
-                        var commandText = "replace into TitleSequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @HasSequence, @Fingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed)";
+                        var commandText = "replace into TitleSequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @HasSequence, @Fingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed, @Processed)";
 
                         using (var statement = db.PrepareStatement(commandText))
                         {
@@ -99,6 +84,7 @@ namespace Emby.AutoOrganize.Data
                             statement.TryBind("@SeasonId", result.SeasonId);
                             statement.TryBind("@IndexNumber", result.IndexNumber);
                             statement.TryBind("@Confirmed", result.Confirmed);
+                            statement.TryBind("@Processed", result.Processed);
                             statement.MoveNext();
                         }
                     }, TransactionMode);
@@ -106,6 +92,21 @@ namespace Emby.AutoOrganize.Data
             }
         }
 
+        public void Vacuum()
+        {
+            using (WriteLock.Write())
+            {
+                using (var connection = CreateConnection())
+                {
+                    //connection.RunInTransaction(db =>
+                    //{
+                       connection.Vacuum();
+
+                    //}, TransactionMode);
+
+                }
+            }
+        }
         public void Delete(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -125,6 +126,7 @@ namespace Emby.AutoOrganize.Data
                             statement.MoveNext();
                         }
                     }, TransactionMode);
+
                 }
             }
         }
@@ -156,7 +158,16 @@ namespace Emby.AutoOrganize.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    var commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed from TitleSequenceResults";
+                    var commandText = string.Empty;
+                    if(query.SeasonInternalId.HasValue)
+                    {
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                    } 
+                    else
+                    {
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
+                    }   
+                       
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
@@ -206,7 +217,7 @@ namespace Emby.AutoOrganize.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed from TitleSequenceResults where ResultId=@ResultId"))
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
                     {
                         statement.TryBind("@ResultId", Convert.ToInt64(id));
 
@@ -282,9 +293,12 @@ namespace Emby.AutoOrganize.Data
             {
                 result.Confirmed = reader.GetBoolean(index);
 
-            } else
+            } 
+
+            index++;
+            if (!reader.IsDBNull(index))
             {
-                result.Confirmed = false;
+                result.Processed = reader.GetBoolean(index);
             } 
             
 
