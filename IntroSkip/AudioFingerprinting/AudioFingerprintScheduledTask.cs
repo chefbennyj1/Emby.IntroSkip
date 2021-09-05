@@ -135,7 +135,7 @@ namespace IntroSkip.AudioFingerprinting
                             IsVirtualItem = false
                         });
 
-                        ////The season has been processed and all episodes have a sequence - remove chromaprints and move on.                        
+                        ////The season has been processed and all episodes have a sequence - move on.                        
                         if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {                            
                             Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
