@@ -135,12 +135,38 @@ namespace IntroSkip.TitleSequence
                         dbEpisodes = new List<TitleSequenceResult>();                        
                     }      
                     
-                    //After processing, the DB entry is marked as 'processed'. if the item has been rpocessed already, just move on.
+                    // The DB file gets really big with all the finger print data. If we can remove some, do it here.
+                    if (dbEpisodes.All(result => result.HasSequence || result.Confirmed))
+                    {                        
+                        if (IsComplete(season))
+                        {
+                            //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
+                            foreach (var result in dbEpisodes)
+                            {
+                                try
+                                {
+                                    if (!(result.Fingerprint is null))
+                                    {
+                                        result.Fingerprint.Clear();                  //Empty fingerprint List                                                                                             
+                                        repo.SaveResult(result, cancellationToken);  //Save it back to the db
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Warn(ex.Message);
+                                }
+                            }
+                        }
+                    }
+
+
+                    //After processing, the DB entry is marked as 'processed'. if the item has been pocessed already, just move on.
                     if(dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
-                    {
+                    { 
                         Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
                         continue;
                     }
+                                 
 
                     // All our processed episodes with sequences, or user confirmed information
                     var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasSequence || e.Confirmed).Select(y => y.InternalId).Distinct());
@@ -163,7 +189,7 @@ namespace IntroSkip.TitleSequence
                             break;
                         }
                         
-                        //Compare the unmatched episode baseItem with every other episode in the season untgil there is a match.
+                        //Compare the unmatched episode  with every other episode in the season untill there is a match.
                         for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
                         {
                             if (cancellationToken.IsCancellationRequested)
@@ -203,7 +229,7 @@ namespace IntroSkip.TitleSequence
                                 
                                 foreach (var sequence in sequences)
                                 {
-                                    //Just remove these entries in the list and add them back. Faster!
+                                    //Just remove these entries in the list (if they exist) and add the new result back. Easier!
                                     if (dbEpisodes.Exists(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId))
                                     {
                                         dbEpisodes.RemoveAll(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId);
@@ -221,7 +247,7 @@ namespace IntroSkip.TitleSequence
                                 
                             }
                             catch (TitleSequenceInvalidDetectionException)
-                            {
+                            {                                
                                 //Keep going!
                                 if (episodeComparableIndex != episodeQuery.Items.Count() - 1) continue;
 
@@ -249,16 +275,32 @@ namespace IntroSkip.TitleSequence
                         Log.Info($"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence successful.");
 
                         dbResults = repo.GetResults(new TitleSequenceResultQuery());
-                    }
-
-                    
+                    }            
                     
                 }
 
             });
 
+            repo.Vacuum();
+            progress.Report(100.0);
+
         }
         
+        private bool IsComplete(BaseItem season)
+        {
+            var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            { 
+                Parent = season,
+                IsVirtualItem = true,
+                IncludeItemTypes = new[] { "Episode" },
+                Recursive = true
+                
+            });
+
+            if(episodeQuery.Items.Any(item => item.IsVirtualItem || item.IsUnaired)) { return false; }
+
+            return true;
+        }
 
         public void Dispose()
         {
