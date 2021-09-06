@@ -142,7 +142,10 @@ namespace Emby.AutoOrganize.Data
                         var commandText = "delete from TitleSequenceResults";
 
                         db.Execute(commandText);
+
                     }, TransactionMode);
+
+                    connection.Vacuum();
                 }
             }
         }

@@ -1,6 +1,7 @@
 ﻿using Emby.AutoOrganize.Data;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Configuration;
+using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
@@ -8,6 +9,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -45,9 +47,7 @@ namespace IntroSkip
         }
 
         public void Run()
-        {
-                    
-
+        {                  
             try
             {
                 Repository = GetRepository();
@@ -59,20 +59,59 @@ namespace IntroSkip
              
             _logger.Info("Database loaded Sucessfully...");
 
-            LibraryManager.ItemAdded += LibraryManager_ItemAdded;
+            LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
+            LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
+        }
 
+       
+        private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
+        {            
+            var item = e.Item;
+            var removableItems = new List<long>();
+            switch (item.GetType().Name)
+            {
+                case "Episode":
+                    {
+                        removableItems.Add(e.Item.InternalId);
+                        break;
+                    }
+                case "Season":
+                    {
+                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = e.Item.InternalId}).Items.Select(i => i.InternalId));                        
+                        break;
+                    }
+                case "Series":
+                    {
+                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery()).Items.Where(i => i.SeriesId == item.InternalId).Select(i => i.InternalId));                        
+                        break;
+                    }                
+            }
+
+            foreach(var removableItem in removableItems)
+            {
+                Repository.Delete(removableItem.ToString());
+            }
+            Repository.Vacuum();
         }
 
         private async void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
         {
+            if (e.UpdateReason != ItemUpdateType.MetadataDownload || e.UpdateReason != ItemUpdateType.None)
+            {
+                return;
+            }
+
             var fingerprint = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting");
-            if(fingerprint.State != TaskState.Running)
+            if (fingerprint.State != TaskState.Running)
             {
                 try
                 {
                     await fingerprint.ScheduledTask.Execute(new CancellationToken(), new Progress<double>()).ConfigureAwait(false);
                 }
-                catch { }
+                catch(Exception ex)
+                {
+                    _logger.Warn(ex.Message);
+                }
             }
         }
 

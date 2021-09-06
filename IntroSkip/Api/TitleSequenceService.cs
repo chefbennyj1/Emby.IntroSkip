@@ -41,8 +41,8 @@ namespace IntroSkip.Api
            
         }
 
-        [Route("/RemoveSeasonFingerprints", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
-        public class RemoveSeasonFingerprintsRequest : IReturn<string>
+        [Route("/RemoveSeasonDataRequest", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
+        public class RemoveSeasonDataRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
@@ -111,10 +111,9 @@ namespace IntroSkip.Api
             {
                 var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
                 titleSequence.TitleSequenceStart = request.TitleSequenceStart;
-                titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
-                titleSequence.HasSequence = request.HasSequence;
+                titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
+                titleSequence.HasSequence        = request.HasSequence;
                 
-                repo.Delete(request.InternalId.ToString());
                 repo.SaveResult(titleSequence, CancellationToken.None);
 
                 titleSequences.RemoveAll(s => s.InternalId == titleSequence.InternalId);
@@ -175,21 +174,15 @@ namespace IntroSkip.Api
         //    return "OK";
         //}
 
-        public string Delete(RemoveSeasonFingerprintsRequest request)
+        public string Delete(RemoveSeasonDataRequest request)
         {
-            var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            var seasonResult = repo.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            foreach (var item in seasonResult.Items)
             {
-                ParentIds = new[] { request.SeasonId },
-                Recursive = true,
-                IncludeItemTypes = new[] { "Episode" }
-            });
-
-            foreach (var episode in episodeQuery.Items)
-            {
-                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
                 try
                 {
-                    repo.Delete(episode.InternalId.ToString());
+                    repo.Delete(item.InternalId.ToString());
                 }
                 catch { }
             }

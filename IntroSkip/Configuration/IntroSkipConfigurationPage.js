@@ -32,8 +32,8 @@
             });
         };
 
-        ApiClient.deleteSeasonFingerprintData = function (seasonId) {
-            var url = this.getUrl('RemoveSeasonFingerprints?SeasonId=' + seasonId);
+        ApiClient.deleteSeasonData = function (seasonId) {
+            var url = this.getUrl('RemoveSeasonDataRequest?SeasonId=' + seasonId);
             return this.ajax({
                 type: "DELETE",
                 url: url
@@ -625,15 +625,27 @@
                 removeSeasonalFingerprintButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     loading.show();
-                    ApiClient.deleteSeasonFingerprintData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                        if (result == "OK") {
-                            view.querySelector('.introResultBody').innerHTML = "";
-                            getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
-                                reloadItems(r.TitleSequences, view);
-                            });                            
-                        }
+
+                    var message = 'Are you sure you wish to proceed?';
+
+                    require(['confirm'], function (confirm) {
+
+                        confirm(message, 'Remove Season Data').then(function () {
+
+                            ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
+                                if (result == "OK") {
+                                    view.querySelector('.introResultBody').innerHTML = "";
+                                    getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
+                                        reloadItems(r.TitleSequences, view);
+                                    });
+                                }
+                                
+                            });
+                        });
                         loading.hide();
-                    });                    
+                        reloadItems(page, false);
+                    });
+                               
                 });
 
                 settingsButton.addEventListener('click', (e) => {

@@ -133,36 +133,17 @@ namespace IntroSkip.TitleSequence
                     if(!dbEpisodes.Any()) //<-- this should not happen unless the fingerprint task was never run on this season. 
                     {
                         dbEpisodes = new List<TitleSequenceResult>();                        
-                    }      
-                    
-                    // The DB file gets really big with all the finger print data. If we can remove some, do it here.
-                    if (dbEpisodes.All(result => result.HasSequence || result.Confirmed))
-                    {                        
-                        if (IsComplete(season))
-                        {
-                            //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
-                            foreach (var result in dbEpisodes)
-                            {
-                                try
-                                {
-                                    if (!(result.Fingerprint is null))
-                                    {
-                                        result.Fingerprint.Clear();                  //Empty fingerprint List                                                                                             
-                                        repo.SaveResult(result, cancellationToken);  //Save it back to the db
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Warn(ex.Message);
-                                }
-                            }
-                        }
                     }
 
+                    if (dbEpisodes.All(item => item.HasSequence == false) && dbEpisodes.All(item => item.Processed))
+                    {
+                        Log.Warn($"\n{series.Name} {season.Name}: There currently are no title sequences available for this season. Please remove the season in the plugin configuration and rescan.\n");
+                    }
 
                     //After processing, the DB entry is marked as 'processed'. if the item has been pocessed already, just move on.
-                    if(dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
+                    if (dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
                     { 
+                        
                         Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
                         continue;
                     }
@@ -277,11 +258,12 @@ namespace IntroSkip.TitleSequence
                         dbResults = repo.GetResults(new TitleSequenceResultQuery());
                     }            
                     
+                    Clean(dbResults.Items.Where(item => item.SeasonId == season.InternalId).ToList(), season, repo, cancellationToken);
+
                 }
 
             });
-
-            repo.Vacuum();
+            
             progress.Report(100.0);
 
         }
@@ -301,6 +283,37 @@ namespace IntroSkip.TitleSequence
 
             return true;
         }
+
+        private void Clean(List<TitleSequenceResult> dbEpisodes, BaseItem season, ITitleSequenceRepository repo, CancellationToken cancellationToken)
+        {
+
+            // The DB file gets really big with all the finger print data. If we can remove some, do it here.
+            if (dbEpisodes.All(result => result.HasSequence || result.Confirmed))
+            {
+                if (IsComplete(season))
+                {
+                    //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
+                    foreach (var result in dbEpisodes)
+                    {
+                        try
+                        {
+                            if (!(result.Fingerprint is null))
+                            {
+                                result.Fingerprint.Clear();                  //Empty fingerprint List                                                                                             
+                                repo.SaveResult(result, cancellationToken);  //Save it back to the db
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warn(ex.Message);
+                        }
+                    }
+                }
+
+                repo.Vacuum();
+            }
+        }
+              
 
         public void Dispose()
         {
