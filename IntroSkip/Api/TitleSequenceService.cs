@@ -74,17 +74,15 @@ namespace IntroSkip.Api
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public long InternalId { get; set; }
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public long SeasonId { get; set; }
+            public long InternalId { get; set; }           
             [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
             public TimeSpan TitleSequenceStart {get; set;}
             [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
             public TimeSpan TitleSequenceEnd {get; set;}
             [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
             public bool HasSequence { get; set; }
-            
-           
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public long SeasonId { get; set; }                     
         }
         
         private IJsonSerializer JsonSerializer      { get; }
@@ -104,29 +102,36 @@ namespace IntroSkip.Api
         public string Get(UpdateTitleSequenceRequest request)
         {
             var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            var dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            var dbResults = repo.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
 
-            if (titleSequences.Any(item => item.InternalId == request.InternalId))
+
+            var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
+            
+            titleSequence.TitleSequenceStart = request.TitleSequenceStart;
+            titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
+            titleSequence.HasSequence = request.HasSequence;
+            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>();
+            try
             {
-                var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
-                titleSequence.TitleSequenceStart = request.TitleSequenceStart;
-                titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
-                titleSequence.HasSequence        = request.HasSequence;
+                //repo.Delete(titleSequence.InternalId.ToString());
                 
                 repo.SaveResult(titleSequence, CancellationToken.None);
-
-                titleSequences.RemoveAll(s => s.InternalId == titleSequence.InternalId);
-                titleSequences.Add(titleSequence);
             }
-                      
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+            }
 
-            var seasonTitleSequences = titleSequences.Where(r => r.SeasonId == request.SeasonId).ToList();
+
+            titleSequences.RemoveAll(s => s.InternalId == titleSequence.InternalId);
+            titleSequences.Add(titleSequence);
+                       
 
             TimeSpan commonDuration;
             try
             {
-                commonDuration = CalculateCommonTitleSequenceLength(seasonTitleSequences);
+                commonDuration = CalculateCommonTitleSequenceLength(titleSequences);
             }
             catch
             {
@@ -136,7 +141,7 @@ namespace IntroSkip.Api
             return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
-                TitleSequences = seasonTitleSequences
+                TitleSequences = titleSequences
             });
         }
 

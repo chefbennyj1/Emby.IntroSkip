@@ -22,15 +22,7 @@
                 url: url
             });
         };
-
-        
-        ApiClient.deleteIntroItemAndFingerprint = function (episodeId) {
-            var url = this.getUrl('RemoveEpisodeTitleSequenceData?InternalId=' + episodeId);
-            return this.ajax({
-                type: "DELETE",
-                url: url
-            });
-        };
+                           
 
         ApiClient.deleteSeasonData = function (seasonId) {
             var url = this.getUrl('RemoveSeasonDataRequest?SeasonId=' + seasonId);
@@ -155,9 +147,9 @@
 
             html += '<hr>';
 
-            html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">';
-            html += 'Fingerprinting';
-            html += '</h2>';
+            //html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">';
+            //html += 'Fingerprinting';
+            //html += '</h2>';
 
             //html += '<div class="inputContainer">';
             //html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
@@ -175,13 +167,13 @@
             //html += '</div>';
             //html += '</div>';
 
-            html += '<div class="inputContainer">';
-            html += '<label class="inputLabel inputLabelUnfocused" for="txtFingerprintingMaxDegreeOfParallelism">Maximum parallel series to process at once:</label> ';
-            html += '<input type="number" id="txtFingerprintingMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
-            html += '<div class="fieldDescription">';
-            html += 'The number of series to attempt fingerprint proccessing for at once. Lower powered machines should keep the default of 5.';
-            html += '</div>';
-            html += '</div>';
+            //html += '<div class="inputContainer">';
+            //html += '<label class="inputLabel inputLabelUnfocused" for="txtFingerprintingMaxDegreeOfParallelism">Maximum parallel series to process at once:</label> ';
+            //html += '<input type="number" id="txtFingerprintingMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
+            //html += '<div class="fieldDescription">';
+            //html += 'The number of series to attempt fingerprint proccessing for at once. Lower powered machines should keep the default of 5.';
+            //html += '</div>';
+            //html += '</div>';
 
             //html += '<div class="inputContainer">';
             //html += '<label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceEncodingLength">Fingerprinting audio encoding length (minutes):</label> ';
@@ -191,7 +183,7 @@
             //html += '</div>';
             //html += '</div>';
 
-            html += '<hr>';
+            //html += '<hr>';
 
             html += '<h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">';
             html += 'Title Sequence Detection';
@@ -209,7 +201,7 @@
             html += '<label class="inputLabel inputLabelUnfocused" for="txtMaxDegreeOfParallelism">Maximum parallel series to process at once:</label> ';
             html += '<input type="number" id="txtTitleSequenceMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to proccess at once:" class="emby-input">';
             html += '<div class="fieldDescription">';
-            html += 'The number of series to attempt title sequence proccessing for, at once. Lower powered machines should keep the default of 4.';
+            html += 'The number of series to attempt title sequence proccessing, at once. Lower powered machines should keep the default of 4.';
             html += '</div>';
             html += '</div>';
 
@@ -233,7 +225,7 @@
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {                
                 titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
-                fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism;
+                //fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism;
             });
 
             removeAllButton.addEventListener('click', (e) => {
@@ -246,17 +238,18 @@
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
                     config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
+                    config.FingerprintingMaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
                     ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                 });
             });
 
-            fingerprintMaxDegreeOfParallelism.addEventListener('change', (e) => {
-                e.preventDefault();
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                });
-            });
+            //fingerprintMaxDegreeOfParallelism.addEventListener('change', (e) => {
+            //    e.preventDefault();
+            //    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+            //        config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
+            //        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+            //    });
+            //});
 
 
             dlg.querySelector('.btnCloseDialog').addEventListener('click', () => {
@@ -365,11 +358,11 @@
                     //html += '</td>';
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
                     //html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove and Re-Scan</p>';
-                    html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeFingerprint emby-button">';
-                    html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
-                    html += '<path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />';
-                    html += '</svg>';
-                    html += '</button>';
+                    //html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeFingerprint emby-button">';
+                    //html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
+                    //html += '<path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />';
+                    //html += '</svg>';
+                    //html += '</button>';
 
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
                     html += '<span>Save</span>';
@@ -382,34 +375,14 @@
                 });
             });
         }
-
-        //function removeIntroItem(episodeId) {
-        //    return new Promise((resolve, reject) => {
-        //        ApiClient.deleteIntroItem(episodeId).then(result => {
-        //            if (result.statusText === "OK") {
-        //                Dashboard.alert("Title sequence removed.");
-        //            }
-        //        });
-        //        resolve(true);
-        //    });
-        //}
+                   
 
         function reloadItems(titleSequences, view) {
             view.querySelector('.introResultBody').innerHTML = '';
             titleSequences.forEach(intro => {
                 getTableRowHtml(intro).then(html => {
                     view.querySelector('.introResultBody').innerHTML += html;
-                    view.querySelectorAll('.removeFingerprint').forEach(btn => {
-                        btn.addEventListener('click', (elem) => {
-                            elem.preventDefault();
-                            var episodeId = elem.target.closest('.fab').id;
-                            removeIntroItemAndFingerprint(episodeId).then(() => {
-                                var index = elem.target.closest('tr').rowIndex;
-                                view.querySelector('.introResultBody').deleteRow(index - 1);
-                            });
-
-                        });
-                    });
+                 
 
                     view.querySelectorAll('.saveSequence').forEach(btn => {
                         btn.addEventListener('click', (elem) => {
@@ -418,38 +391,14 @@
                             saveIntro(row, view);
                         });
                     });
-
-                    //view.querySelectorAll('.hasIntroSelect').forEach(elem => {
-                    //    elem.addEventListener('change', (e) => {
-                    //        //e.preventDefault();
-                    //        var select = e.target;
-                    //        var td = select.closest('td');
-                    //        var v = select.options[select.selectedIndex].value;
-                    //        if (v == 'true') {
-                    //            select.style.color == "#5EC157";
-                    //        }
-                    //        else {
-                    //            select.style.color = "var(--theme-text-color)";
-                    //        }
-                    //    });
-                    //});
+                                           
 
                     sortTable(view);
                     
                 });
             });
         }
-
-        function removeIntroItemAndFingerprint(episodeId) {
-            return new Promise((resolve, reject) => {
-                ApiClient.deleteIntroItemAndFingerprint(episodeId).then(result => {
-                    if (result.statusText === "OK") {
-                        Dashboard.alert("Title sequence removed.");
-                    }
-                });
-                resolve(true);
-            });
-        }
+                     
 
         function sortTable(view) {
             var table, rows, switching, i, x, y, shouldSwitch;
@@ -524,7 +473,7 @@
                                     }
 
                                     removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                        "Rescan " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
@@ -561,7 +510,7 @@
                                 }
 
                                 removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                    "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                    "Rescan data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                 view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                 var titleSequences = result.TitleSequences;

@@ -135,9 +135,10 @@ namespace IntroSkip.AudioFingerprinting
                             IsVirtualItem = false
                         });
 
-                        ////The season has been processed and all episodes have a sequence - move on.                        
+                        //The season has been processed and all episodes have a sequence - move on.                        
                         if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
-                        {                            
+                        {        
+                            
                             Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
                             continue;
                         }
@@ -225,7 +226,7 @@ namespace IntroSkip.AudioFingerprinting
                                 Log.Warn(ex.Message);
                             }                            
                             
-                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber} chromaprint took {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
                             
                         }
                                      
@@ -237,7 +238,7 @@ namespace IntroSkip.AudioFingerprinting
             {
                 progress.Report(100.0);
             }
-
+            Log.Info("Chromaprint Task Complete");
             //repo.Vacuum();
             progress.Report(100.0);
 

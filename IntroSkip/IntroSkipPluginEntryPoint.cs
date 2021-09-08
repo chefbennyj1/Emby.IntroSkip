@@ -106,7 +106,7 @@ namespace IntroSkip
             {
                 try
                 {
-                    await fingerprint.ScheduledTask.Execute(new CancellationToken(), new Progress<double>()).ConfigureAwait(false);
+                    await TaskManager.Execute(fingerprint, new TaskOptions());
                 }
                 catch(Exception ex)
                 {

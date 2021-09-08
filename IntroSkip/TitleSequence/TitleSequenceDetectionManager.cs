@@ -135,10 +135,10 @@ namespace IntroSkip.TitleSequence
                         dbEpisodes = new List<TitleSequenceResult>();                        
                     }
 
-                    // An entire season with no title sequence might be the case. However, soemthing else might have caused an entire season to have no results. - Warn the log.
+                    // An entire season with no title sequence might be the case. However, something else might have caused an entire season to have no results. - Warn the log.
                     if (dbEpisodes.All(item => item.HasSequence == false) && dbEpisodes.All(item => item.Processed)) 
                     {
-                        Log.Warn($"\n{series.Name} {season.Name}: There currently are no title sequences available for this season. Please remove the season in the plugin configuration and rescan.\n");
+                        Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
                     }
 
 
@@ -265,7 +265,7 @@ namespace IntroSkip.TitleSequence
                 }
 
             });
-            
+            Log.Info("TitleSequence task complete");
             progress.Report(100.0);
 
         }
