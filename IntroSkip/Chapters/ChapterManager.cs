@@ -12,14 +12,16 @@ namespace IntroSkip.Chapters
     {
         private ILibraryManager LibraryManager {get; set;}
         private IDtoService DtoService { get; set; }
-       
+        public static ChapterManager Instance {get; set; }
         public ChapterManager(ILibraryManager libraryManager, IDtoService dtoService)
         {
             LibraryManager = libraryManager;
-            DtoService = dtoService;                 
+            DtoService = dtoService;  
+            Instance = this;
+            
         }
 
-        private void EditChapters(long id)
+        public void EditChapters(long id)
         {
             var repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var titleSequence = repo.GetResult(id.ToString());
@@ -75,7 +77,7 @@ namespace IntroSkip.Chapters
                     
                 }
             }
-            
+           
             LibraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit); //<-- Does this update the itemDto?
             
         }
