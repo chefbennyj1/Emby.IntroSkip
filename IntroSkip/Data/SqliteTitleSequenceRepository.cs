@@ -209,9 +209,9 @@ namespace Emby.AutoOrganize.Data
                 }
             }
         }
-        public TitleSequenceResult GetResult(string id)
+        public TitleSequenceResult GetResult(long id)
         {
-            if (string.IsNullOrEmpty(id))
+            if (string.IsNullOrEmpty(id.ToString()))
             {
                 throw new ArgumentNullException("id");
             }
@@ -222,7 +222,7 @@ namespace Emby.AutoOrganize.Data
                 {
                     using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
                     {
-                        statement.TryBind("@ResultId", Convert.ToInt64(id));
+                        statement.TryBind("@ResultId", id);
 
                         foreach (var row in statement.ExecuteQuery())
                         {

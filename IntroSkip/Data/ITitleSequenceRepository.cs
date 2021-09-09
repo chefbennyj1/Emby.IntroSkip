@@ -28,7 +28,7 @@ namespace Emby.AutoOrganize.Data
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>TitleSequenceResult.</returns>
-        TitleSequenceResult GetResult(string id);
+        TitleSequenceResult GetResult(long id);
 
         void Vacuum();
 

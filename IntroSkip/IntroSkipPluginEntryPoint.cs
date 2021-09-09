@@ -1,6 +1,4 @@
 ﻿using Emby.AutoOrganize.Data;
-using IntroSkip.AudioFingerprinting;
-using IntroSkip.Configuration;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
@@ -11,30 +9,28 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 
 namespace IntroSkip
 {
     public class IntroSkipPluginEntryPoint : IServerEntryPoint
     {
         public static IntroSkipPluginEntryPoint Instance { get; set; }
-        public ITitleSequenceRepository Repository {get; set;}
-        private ILibraryManager LibraryManager { get; set; }
-        private ITaskManager TaskManager { get; set; }
-        private IServerConfigurationManager _config { get; set; }
-        private ILogger _logger {get; set;}
-        private IJsonSerializer _json { get; set; }
-
-        private readonly int CurrentVersion = 3;
+        public ITitleSequenceRepository Repository       { get; set; }
+        private ILibraryManager LibraryManager           { get; set; }
+        private ITaskManager TaskManager                 { get; set; }
+        private IServerConfigurationManager _config      { get; set; }
+        private ILogger _logger                          { get; set; }
+        private IJsonSerializer _json                    { get; set; }
+               
 
         public IntroSkipPluginEntryPoint(ILogger logger, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
         {
-            _logger = logger;
-            _json = json;
-            _config = config;
+            _logger        = logger;
+            _json          = json;
+            _config        = config;
             LibraryManager = libraryManager;
-            TaskManager = taskManager;
-            Instance = this;
+            TaskManager    = taskManager;
+            Instance       = this;
         }
 
         public void Dispose()

@@ -232,7 +232,7 @@ namespace IntroSkip.TitleSequence
                                 
                                 foreach (var sequence in sequences)
                                 {
-                                    //Just remove these entries in the list (if they exist) and add the new result back. Easier!
+                                    //Just remove these entries in the episode list (if they exist) and add the new result back. Easier!
                                     if (dbEpisodes.Exists(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId))
                                     {
                                         dbEpisodes.RemoveAll(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId);
@@ -257,7 +257,7 @@ namespace IntroSkip.TitleSequence
                                 //We have exhausted all our episode comparing
                                 if (dbEpisodes.Exists(item => item.InternalId == unmatchedItem.InternalId)) continue;
 
-                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence.");
+                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
 
                             }
                             catch (AudioFingerprintMissingException ex)

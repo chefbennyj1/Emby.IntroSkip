@@ -110,13 +110,11 @@ namespace IntroSkip.Api
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
             
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
-            titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
-            titleSequence.HasSequence = request.HasSequence;
-            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>();
+            titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
+            titleSequence.HasSequence        = request.HasSequence;
+            titleSequence.Fingerprint        = titleSequence.Fingerprint ?? new List<uint>();
             try
-            {
-                //repo.Delete(titleSequence.InternalId.ToString());
-                
+            {                
                 repo.SaveResult(titleSequence, CancellationToken.None);
             }
             catch (Exception ex)
@@ -300,11 +298,11 @@ namespace IntroSkip.Api
 
         private TimeSpan CalculateCommonTitleSequenceLength(List<TitleSequenceResult> season)
         {
-            var titleSequences = season.Where(intro => intro.HasSequence);
-            var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
+            var titleSequences      = season.Where(intro => intro.HasSequence);
+            var groups              = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
-            int maxCount = enumerableSequences.Max(g => g.Count());
-            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            int maxCount            = enumerableSequences.Max(g => g.Count());
+            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
 

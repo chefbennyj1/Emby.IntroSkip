@@ -64,9 +64,7 @@ namespace IntroSkip.AudioFingerprinting
             {
                 Log.Info("Starting episode fingerprint task.");
 
-                //AudioFingerprintFileManager.Instance.RemoveAllAudioEncodings();
-
-                //ValidateSavedFingerprints();
+                
 
                 var config = Plugin.Instance.Configuration;
                                
@@ -255,13 +253,14 @@ namespace IntroSkip.AudioFingerprinting
         }
                
 
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken)
+        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken, string titleSequenceStart = "00:00:00")
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
 
             var args = new[]
             {
+                $"-ss {titleSequenceStart}",
                 $"-t 00:{duration}:00",
                 $"-i \"{input}\"",
                 "-ac 1",

@@ -621,7 +621,9 @@
                             });
                         });
                         loading.hide();
-                        reloadItems(page, false);
+                        getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
+                            reloadItems(r.TitleSequences, view);
+                        });
                     });
                                
                 });
