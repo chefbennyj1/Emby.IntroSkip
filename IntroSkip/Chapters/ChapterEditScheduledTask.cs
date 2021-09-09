@@ -21,10 +21,11 @@ namespace IntroSkip.Chapters
         }
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            
+
+            //NEED TO PULL THE ID FROM TITLESEQUENCE DATABASE WHEN RUNNING THIS.
             //ChapterManager.Instance.EditChapters(11954); // Wesworld S01 Episode 4
-            //ChapterManager.Instance.EditChapters(11952); // Westworld S02 episode 2
-            ChapterManager.Instance.EditChapters(12056);   // Westworld S02 Episode 3 tricky one!!
+            ChapterManager.Instance.EditChapters(11952); // Westworld S02 episode 2
+            ChapterManager.Instance.EditChapters(12056); // Westworld S02 Episode 3 tricky one!!
         }
 
         public bool IsHidden => false;
