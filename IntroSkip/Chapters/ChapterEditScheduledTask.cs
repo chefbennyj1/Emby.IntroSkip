@@ -1,4 +1,5 @@
 ﻿using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
@@ -11,14 +12,19 @@ namespace IntroSkip.Chapters
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         public ILibraryManager LibraryManager {get; set;}
-        public ChapterEditScheduledTask(ILibraryManager libraryManager)
+        public IItemRepository ItemRepository;
+
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, IItemRepository itemRepo)
         {
             LibraryManager = libraryManager;
+            ItemRepository = itemRepo;
         }
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             
-            ChapterManager.Instance.EditChapters(40);
+            //ChapterManager.Instance.EditChapters(11954); // Wesworld S01 Episode 4
+            //ChapterManager.Instance.EditChapters(11952); // Westworld S02 episode 2
+            ChapterManager.Instance.EditChapters(12056);   // Westworld S02 Episode 3 tricky one!!
         }
 
         public bool IsHidden => false;
@@ -27,11 +33,11 @@ namespace IntroSkip.Chapters
 
         public bool IsLogged => true;
 
-        public string Name => "Chapter Edit";
+        public string Name => "IntroSkip Chapter Edit";
 
         public string Key => "Chapter Edit Options";
 
-        public string Description => "Edit Chapters with found intro timestamps";
+        public string Description => "Insert a Chapter Marker for Intro Timestamp";
 
         public string Category => "Intro Skip";
 
