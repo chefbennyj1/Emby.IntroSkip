@@ -4,7 +4,7 @@ using MediaBrowser.Model.Querying;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Emby.AutoOrganize.Data
+namespace IntroSkip.Data
 {
     public interface ITitleSequenceRepository
     {

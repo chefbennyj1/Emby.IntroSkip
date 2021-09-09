@@ -8,6 +8,7 @@ using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
 using MediaBrowser.Model.Entities;
 using System.Linq;
+using IntroSkip.Data;
 
 namespace IntroSkip.Chapters
 {
@@ -31,7 +32,7 @@ namespace IntroSkip.Chapters
         public void EditChapters(long id)
         {
             Log.Info("CHAPTER EDIT: PASSED ID = {0}", id);
-            Emby.AutoOrganize.Data.ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id);
             
             var item = ItemRepository.GetItemById(id);

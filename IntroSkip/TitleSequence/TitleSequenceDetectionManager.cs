@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Emby.AutoOrganize.Data;
 using IntroSkip.AudioFingerprinting;
+using IntroSkip.Data;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;

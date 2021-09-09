@@ -1,4 +1,5 @@
 ﻿using Emby.AutoOrganize.Data;
+using IntroSkip.Data;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
