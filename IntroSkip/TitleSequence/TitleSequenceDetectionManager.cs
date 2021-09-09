@@ -9,6 +9,7 @@ using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
@@ -33,29 +34,48 @@ namespace IntroSkip.TitleSequence
         }
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, long[] seriesInternalIds, ITitleSequenceRepository repo)
-        {            
-            var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
-            {
-                Recursive = true,
-                ItemIds = seriesInternalIds,
-                IncludeItemTypes = new[] { "Series" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+        {
+            var config = Plugin.Instance.Configuration;
 
-            });                        
-            
+            var seriesInternalItemQuery = new InternalItemsQuery()
+            {
+                Recursive        = true,
+                ItemIds          = seriesInternalIds,
+                IncludeItemTypes = new[] { "Series" },
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
+            };
+
+            if (config.Limit.HasValue)
+            {
+                seriesInternalItemQuery.Limit = config.Limit.Value;
+            }
+
+            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
+
+
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, ITitleSequenceRepository repo)
         {      
             
-            
-            var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
+            var config = Plugin.Instance.Configuration;
+            var seriesInternalItemQuery = new InternalItemsQuery()
             {
-                Recursive = true,
+                Recursive        = true,
                 IncludeItemTypes = new[] { "Series" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
-            });
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
+            };
+
+            if (config.Limit.HasValue)
+            {
+                seriesInternalItemQuery.Limit = config.Limit.Value;
+            }
+
+            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
+            
 
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }

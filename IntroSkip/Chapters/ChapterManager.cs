@@ -3,8 +3,11 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using System;
 using System.Collections.Generic;
-using  MediaBrowser.Model.Querying;
-using System.Threading;
+using MediaBrowser.Model.Querying;
+using System.Linq;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Model.Entities;
 
 namespace IntroSkip.Chapters
 {
@@ -12,34 +15,50 @@ namespace IntroSkip.Chapters
     {
         private ILibraryManager LibraryManager {get; set;}
         private IDtoService DtoService { get; set; }
+        private IUserManager UserManager {get; set;}
         public static ChapterManager Instance {get; set; }
-        public ChapterManager(ILibraryManager libraryManager, IDtoService dtoService)
+        private ILogger Log {get; set;}
+
+        private IItemRepository ItemRepository {get; set;}
+        public ChapterManager(ILibraryManager libraryManager, IDtoService dtoService, IUserManager userManager, ILogManager logManager, IItemRepository itemRepo)
         {
+            UserManager    = userManager;
             LibraryManager = libraryManager;
-            DtoService = dtoService;  
-            Instance = this;
+            DtoService     = dtoService;  
+            Log            = logManager.GetLogger(Plugin.Instance.Name);
+            ItemRepository = itemRepo;
+            Instance       = this;
             
         }
 
         public void EditChapters(long id)
         {
+            var admin = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator);
             var repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var titleSequence = repo.GetResult(id.ToString());
+
+            var item = LibraryManager.GetItemById(id);
+            var itemDto = DtoService.GetBaseItemDto(item, new DtoOptions() { Fields = new ItemFields[] { ItemFields.Chapters } });
 
             if (!titleSequence.HasSequence)
             {
                 return;
             }
-
-
-            var item = LibraryManager.GetItemById(id);
-            var itemDto = DtoService.GetBaseItemDto(item, new DtoOptions() { Fields = new ItemFields[] { ItemFields.Chapters } });
+                      
             
             //We are about to edit chapters by increasing the existing chapter data by the duration of the intro.
             //We do not want to edit chapters beyond the item runtime!
             var runtime               = itemDto.RunTimeTicks;
             var titleSequenceDuration = (titleSequence.TitleSequenceEnd - titleSequence.TitleSequenceStart).Ticks;
-            var chapters              = itemDto.Chapters;
+            List<ChapterInfo> chapters = new List<ChapterInfo>();
+            foreach(var chap in ItemRepository.GetChapters(item))
+            {
+                chapters.Add(new ChapterInfo
+                {
+                    Name = chap.Name,
+                    StartPositionTicks = chap.StartPositionTicks,
+                });
+            }
 
             if(titleSequence.TitleSequenceStart == TimeSpan.FromSeconds(0))
             {
@@ -55,8 +74,7 @@ namespace IntroSkip.Chapters
                         break;
                     }
                     
-                    chapters[i].StartPositionTicks = startPositionTicks + titleSequenceDuration;
-                    
+                    chapters[i].StartPositionTicks = startPositionTicks + titleSequenceDuration;                    
                 }                
                 
             }
@@ -77,8 +95,8 @@ namespace IntroSkip.Chapters
                     
                 }
             }
-           
-            LibraryManager.UpdateItem(item, item.Parent, ItemUpdateType.MetadataEdit); //<-- Does this update the itemDto?
+                        
+            ItemRepository.SaveChapters(id, chapters);
             
         }
 
@@ -89,7 +107,7 @@ namespace IntroSkip.Chapters
 
         public void Run()
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

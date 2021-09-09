@@ -11,6 +11,7 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
@@ -69,14 +70,22 @@ namespace IntroSkip.AudioFingerprinting
 
                 var config = Plugin.Instance.Configuration;
                                
-
-                var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
+                var seriesInternalItemQuery = new InternalItemsQuery()
                 {
-                    Recursive = true,
+                    Recursive        = true,
                     IncludeItemTypes = new[] { "Series" },
-                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    
-                });
+                    User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                    OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
+                };
+
+                if (config.Limit.HasValue)
+                {
+                    seriesInternalItemQuery.Limit = config.Limit.Value;
+                }
+
+                var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
+
+                
 
                 var step = 100.0 / seriesQuery.TotalRecordCount;
                 var currentProgress = 0.1;

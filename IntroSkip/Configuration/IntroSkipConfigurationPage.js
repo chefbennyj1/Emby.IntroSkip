@@ -13,7 +13,15 @@
             };
         };
 
-        
+        ApiClient.saveChapterData = function (internalId, baseItemDto) {
+            var url = this.getUrl('Items/' + internalId);
+            return this.ajax({
+                type: 'POST',
+                url: url,
+                data: baseItemDto,
+                contentType: 'application/json'
+            })
+        }
 
         ApiClient.deleteAll = function () {
             var url = this.getUrl('RemoveAll');
@@ -262,7 +270,22 @@
 
             loading.hide();
         }
-                
+         
+        function saveNewChapterData(baseItemDto) {
+            return new Promise((resolve, reject) => {
+                ApiClient.saveChapterData(baseItemDto).then(r => {
+                    resolve(r);
+                });
+            })
+        }
+
+        function getNewChapters(internalId) {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl("GetTitleSequenceChapterData?InternalId=" + internalId)).then(r => {
+                    resolve(r);
+                });
+            });
+        }
 
         function titleSequenceStatusIcon(confirmed) {
             return confirmed ? 
@@ -339,7 +362,6 @@
                     html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
                     html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
                     
-                    //html += '<div contenteditable>' + intro.HasSequence.toString() + '</div>';
                     html += '<div class="selectContainer" style="top:15px">';
                     html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
                     html += '<option value="true" '  + (intro.HasSequence  ? 'selected' : "") + '>true</option>';
@@ -349,24 +371,19 @@
                     html += '</div>';
 
                     html +='</td>';
-                    //html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="color:' + (intro.HasSequence === true ? "#5EC157" : "") + '"><div contenteditable>' + intro.HasSequence.toString() + '</div></td>';
+                    
                     html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</div></td>';
                     html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '<div></td>';
-                    //html += '<td data-title="Remove" class="detailTableBodyCell fileCell">';
-                    //html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove Title Sequence</p>';
-                    //html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
-                    //html += '</td>';
+
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
-                    //html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove and Re-Scan</p>';
-                    //html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeFingerprint emby-button">';
-                    //html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
-                    //html += '<path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />';
-                    //html += '</svg>';
-                    //html += '</button>';
 
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
                     html += '<span>Save</span>';
                     html += '</button>';
+
+                    //html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="editChapters emby-button button-submit">';
+                    //html += '<span>Edit Chapter</span>';
+                    //html += '</button>';
 
                     html += '</td>';
                     html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
@@ -391,9 +408,21 @@
                             saveIntro(row, view);
                         });
                     });
+
+                    //view.querySelectorAll('.editChapters').forEach(btn => {
+                    //    btn.addEventListener('click', (elem) => {
+                    //        elem.preventDefault();                            
+                    //        var id = elem.target.dataset.id;
+                    //        getNewChapters(id).then(result => {
+                    //            saveNewChapterData(id, result).then(r => {
+                    //                console.log(r)
+                    //            })
+                    //        })
+                    //    });
+                    //});
                                            
 
-                    sortTable(view);
+                    sortTable(view);                    
                     
                 });
             });

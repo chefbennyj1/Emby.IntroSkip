@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
+using IntroSkip.Chapters;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -20,7 +21,7 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceService : IService
     {
-
+        
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -97,7 +98,7 @@ namespace IntroSkip.Api
             Log            = logMan.GetLogger(Plugin.Instance.Name);
             LibraryManager = libraryManager;
         }
-
+                
        
         public string Get(UpdateTitleSequenceRequest request)
         {

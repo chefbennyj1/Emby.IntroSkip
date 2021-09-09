@@ -61,6 +61,9 @@ namespace IntroSkip
 
             LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
+
+            
+            Plugin.Instance.SaveConfiguration();
         }
 
        
