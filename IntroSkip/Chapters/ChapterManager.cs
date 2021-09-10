@@ -25,7 +25,7 @@ namespace IntroSkip.Chapters
         {
             Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             Emby.AutoOrganize.Data.ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id);
+            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             
             var item = ItemRepository.GetItemById(id);
             Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);

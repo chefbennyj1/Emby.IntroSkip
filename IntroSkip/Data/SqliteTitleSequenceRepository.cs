@@ -209,7 +209,7 @@ namespace Emby.AutoOrganize.Data
                 }
             }
         }
-        public TitleSequenceResult GetResult(long id)
+        public TitleSequenceResult GetResult(string id)
         {
             string stringId = id.ToString();
             if (string.IsNullOrEmpty(stringId))
