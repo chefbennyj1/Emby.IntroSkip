@@ -28,7 +28,7 @@ namespace IntroSkip.Data
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>TitleSequenceResult.</returns>
-        TitleSequenceResult GetResult(long id);
+        TitleSequenceResult GetResult(string id);
 
         void Vacuum();
 

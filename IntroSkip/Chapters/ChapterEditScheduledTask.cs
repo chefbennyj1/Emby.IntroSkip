@@ -3,9 +3,13 @@ using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Emby.AutoOrganize.Data;
+using IntroSkip.TitleSequence;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Querying;
+using IntroSkip.Data;
 
 namespace IntroSkip.Chapters
 {
@@ -13,31 +17,36 @@ namespace IntroSkip.Chapters
     {
         public ILibraryManager LibraryManager {get; set;}
         public IItemRepository ItemRepository;
+        //private ITitleSequenceRepository Repo;
+        //private ILogger Log;
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, IItemRepository itemRepo)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, IItemRepository itemRepo /*ITitleSequenceRepository repo ILogger log*/)
         {
             LibraryManager = libraryManager;
             ItemRepository = itemRepo;
+            //Repo = repo;
+            //Log = log;
         }
+        //QueryResult<TitleSequenceResult> dbResults = null;
+        
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            
-            //ChapterManager.Instance.EditChapters(11954); // Wesworld S01 Episode 4
-            //ChapterManager.Instance.EditChapters(11952); // Westworld S02 episode 2
-            ChapterManager.Instance.EditChapters(12056);   // Westworld S02 Episode 3 tricky one!!
+            ProcessEpisodeChaptersPoints();
+            //ChapterManager.Instance.EditChapters(11951);
         }
 
+        
         public bool IsHidden => false;
 
         public bool IsEnabled => true;
 
         public bool IsLogged => true;
 
-        public string Name => "IntroSkip Chapter Edit";
+        public string Name => "IntroSkip Chapter Insertion";
 
         public string Key => "Chapter Edit Options";
 
-        public string Description => "Insert a Chapter Marker for Intro Timestamp";
+        public string Description => "Insert a Chapter Marker for Intro Start and End Times";
 
         public string Category => "Intro Skip";
 
@@ -53,6 +62,25 @@ namespace IntroSkip.Chapters
                     IntervalTicks = TimeSpan.FromHours(24).Ticks
                 }                
             };
+        }
+
+        public void ProcessEpisodeChaptersPoints()
+        {
+            ILogger Log;
+            QueryResult<TitleSequenceResult> dbResults = null;
+            ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            
+            foreach (var episode in dbResults.Items)
+            {
+                if(episode.HasSequence)
+                {
+                    var id = episode.InternalId;
+                    //Log.Info("CHAPTER EDIT: TASK ---- ID = {0}", id);
+                    ChapterManager.Instance.EditChapters(id);
+
+                }
+            }
         }
     }
 }

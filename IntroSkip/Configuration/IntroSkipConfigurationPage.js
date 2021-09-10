@@ -372,8 +372,8 @@
 
                     html +='</td>';
                     
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</div></td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '<div></td>';
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell" contenteditable><div>' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</div></td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell" contenteditable><div>' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '</div></td>';
 
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
 
@@ -611,19 +611,19 @@
                         confirm(message, 'Remove Season Data').then(function () {
 
                             ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                                if (result == "OK") {
+                                if (result.statusText == "OK") {
                                     view.querySelector('.introResultBody').innerHTML = "";
-                                    getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
-                                        reloadItems(r.TitleSequences, view);
-                                    });
+                                    //getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
+                                    //    reloadItems(r.TitleSequences, view);
+                                    //});
                                 }
                                 
                             });
                         });
                         loading.hide();
-                        getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
-                            reloadItems(r.TitleSequences, view);
-                        });
+                        //getIntros(seasonSelect[seasonSelect.selectedIndex].value).then(r => {
+                        //    reloadItems(r.TitleSequences, view);
+                        //});
                     });
                                
                 });

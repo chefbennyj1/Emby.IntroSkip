@@ -1,29 +1,22 @@
-﻿using MediaBrowser.Controller.Dto;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Plugins;
+﻿using MediaBrowser.Controller.Plugins;
 using System;
-using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
 using MediaBrowser.Model.Entities;
-using System.Linq;
 using IntroSkip.Data;
 
 namespace IntroSkip.Chapters
 {
     public class ChapterManager : IServerEntryPoint
     {
-        private ILibraryManager LibraryManager {get; set;}
-        private IDtoService DtoService { get; set; }
-        public static ChapterManager Instance {get; set; }
+       public static ChapterManager Instance {get; set; }
 
         public ILogger Log;
+
         public IItemRepository ItemRepository;
-        public ChapterManager(ILibraryManager libraryManager, IDtoService dtoService, ILogger log, IItemRepository itemRepo)
+        public ChapterManager(ILogger log, IItemRepository itemRepo)
         {
-            LibraryManager = libraryManager;
-            DtoService = dtoService;
             Log = log;
             ItemRepository = itemRepo;
             Instance = this;            
@@ -31,12 +24,12 @@ namespace IntroSkip.Chapters
 
         public void EditChapters(long id)
         {
-            Log.Info("CHAPTER EDIT: PASSED ID = {0}", id);
+            Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id);
+            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             
             var item = ItemRepository.GetItemById(id);
-            Log.Info("CHAPTER EDIT: Name of Episode = {0}", item.Name);
+            Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
                         
             List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
             List<ChapterInfo> chapters = new List<ChapterInfo>();
@@ -49,7 +42,7 @@ namespace IntroSkip.Chapters
                     Name = chap.Name,
                     StartPositionTicks = chap.StartPositionTicks,
                 });
-                Log.Info("CHAPTER EDIT: ADDED.... NAME = {0} --- START TIME = {1}", chap.Name.ToString(), chap.StartPositionTicks.ToString());
+                Log.Debug("INTROSKIP CHAPTER EDIT: ADDED.... NAME = {0} --- START TIME = {1}", chap.Name.ToString(), chap.StartPositionTicks.ToString());
             }
 
             long insertStart = titleSequence.TitleSequenceStart.Ticks;
@@ -57,36 +50,68 @@ namespace IntroSkip.Chapters
 
             if (titleSequence.HasSequence)
             {
-                string introStart = "Intro Start";
-                string introEnd = "Intro End";
+                string introStartString = "Intro Start";
+                string introEndString = "Intro End";
 
-                //This wil check if the Introstart and introend chapter points are already in the list
-                if (chapters.Exists(Item => Item.Name == introStart))
+                //This wil check if the Introstart and introEnd chapter points are already in the list, we may have one or the other so lets independently check.
+                if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
-                    Log.Info("CHAPTER EDIT: INTRO START CHAPTER ALREADY ADDED - move along nothing to see here");
+                    Log.Info("INTROSKIP CHAPTER EDIT: INTRO START CHAPTER ALREADY ADDED - move along nothing to see here");
                 }
                 else
                 {
+                    //create new chapter entry point for the Start of the Intro
                     ChapterInfo IntroStart = new ChapterInfo();
-                    IntroStart.Name = "Intro Start";
+                    IntroStart.Name = introStartString;
                     IntroStart.StartPositionTicks = insertStart;
+
+                    //add the entry and lets arrange the chapter list
                     chapters.Add(IntroStart);
                     chapters.Sort(CompareStartTimes);
-                    //we need to put this in here otherwise having the SaveChapters outside will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
+
+                    //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
                 }
 
-                if (chapters.Exists(Item => Item.Name == introEnd))
+                if (chapters.Exists(chapterPoint => chapterPoint.Name == introEndString))
                 {
-                    Log.Info("CHAPTER EDIT: INTRO END CHAPTER ALREADY ADDED");
+                    Log.Info("INTROSKIP CHAPTER EDIT: INTRO END CHAPTER ALREADY ADDED - move along nothing to see here");
                 }
                 else 
                 { 
+                    //create new chapter entry point for the End of the Intro
                     ChapterInfo IntroEnd = new ChapterInfo();
-                    IntroEnd.Name = "Intro End";
+                    IntroEnd.Name = introEndString;
                     IntroEnd.StartPositionTicks = insertEnd;
-                    chapters.Add(IntroEnd);
+
+                    //add the entry and lets arrange the chapter list
+                    chapters.Add(IntroEnd);                    
                     chapters.Sort(CompareStartTimes);
+
+                    //lets check and remove any chapters that fall inbetween the IntroStart and IntroEnd they are not needed.
+                    List<ChapterInfo> organisedChapters = new List<ChapterInfo>();
+                    int startIndex = chapters.FindIndex(st => st.Name == introStartString);
+                    int endIndex = chapters.FindIndex(en => en.Name == introEndString);
+                    Log.Info("INTROSKIP CHAPTER EDIT: IntroStartIndex = {0} & IntroEndIndex = {1}", startIndex.ToString(), endIndex.ToString());
+
+                    if (startIndex + 1 != endIndex)
+                    {
+                        Log.Info("INTROSKIP CHAPTER EDIT: HOUSTON WE HAVE A PROBLEM, Removing Chapter at Index = {0}", (endIndex-1));
+                        var naughtyIndex = endIndex - 1;
+                        chapters.RemoveAt(naughtyIndex);
+                        
+                        foreach (var chap in chapters)
+                        {
+                            //put in some stuff to rename emby standard chapters so it looks good and has sequencial numbering and add it to the organised chapter list.
+                            //chapters = organisedchapters;
+                        }
+                    }
+                    else
+                    {
+                        Log.Info("INTROSKIP CHAPTER EDIT: No issues with Rogue Chapters");
+                    }
+
+                    //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
                 }
             }

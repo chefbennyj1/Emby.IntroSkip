@@ -43,17 +43,10 @@ namespace IntroSkip.TitleSequence
                 Recursive        = true,
                 ItemIds          = seriesInternalIds,
                 IncludeItemTypes = new[] { "Series" },
-                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
-            };
-
-            if (config.Limit.HasValue)
-            {
-                seriesInternalItemQuery.Limit = config.Limit.Value;
-            }
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)                
+            };            
 
             var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
-
 
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }
@@ -67,16 +60,10 @@ namespace IntroSkip.TitleSequence
                 Recursive        = true,
                 IncludeItemTypes = new[] { "Series" },
                 User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
-            };
+                
+            };           
 
-            if (config.Limit.HasValue)
-            {
-                seriesInternalItemQuery.Limit = config.Limit.Value;
-            }
-
-            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
-            
+            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);           
 
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }

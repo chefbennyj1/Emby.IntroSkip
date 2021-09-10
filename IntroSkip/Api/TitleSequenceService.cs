@@ -286,7 +286,7 @@ namespace IntroSkip.Api
             
             try
             {
-                return JsonSerializer.SerializeToString(repo.GetResult(request.InternalId));
+                return JsonSerializer.SerializeToString(repo.GetResult(request.InternalId.ToString()));
 
             }
             catch

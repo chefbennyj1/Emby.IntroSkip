@@ -14,13 +14,11 @@
   <None Remove="AudioFingerprinting\5fnb1sma.csw~" />
   <None Remove="Configuration\IntroSkipConfigurationPage.html" />
   <None Remove="Configuration\IntroSkipConfigurationPage.js" />
-  <None Remove="thumb.jpg" />
 </ItemGroup>
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
-  <EmbeddedResource Include="thumb.jpg" />
 </ItemGroup>
 
 

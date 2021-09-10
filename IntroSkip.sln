@@ -1,9 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1259
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntroSkip", "IntroSkip\IntroSkip.csproj", "{747D6841-3BF8-4D24-817F-428357189031}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2F53893C-CE67-4C77-972C-AC2AAFF172F7}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\..\Desktop\thumb.jpg = ..\..\..\..\Desktop\thumb.jpg
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
