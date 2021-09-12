@@ -3,7 +3,10 @@ using System;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Tasks;
 
 namespace IntroSkip.Chapters
 {
@@ -14,6 +17,8 @@ namespace IntroSkip.Chapters
         public ILogger Log;
 
         public IItemRepository ItemRepository;
+
+        private ITaskManager TaskManager;
         public ChapterManager(ILogger log, IItemRepository itemRepo)
         {
             Log = log;
@@ -26,10 +31,10 @@ namespace IntroSkip.Chapters
             Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             Emby.AutoOrganize.Data.ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
-            
+
             var item = ItemRepository.GetItemById(id);
             Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
-                        
+            
             List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
             List<ChapterInfo> chapters = new List<ChapterInfo>();
 
@@ -112,6 +117,8 @@ namespace IntroSkip.Chapters
 
                     //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
+                    //ChapterEditScheduledTask task = new ChapterEditScheduledTask(libraryManager, ItemRepository, TaskManager);
+                    //task.ProcessChapterImageExtraction();
                 }
             }
         }

@@ -8,6 +8,7 @@ namespace IntroSkip.Configuration
         public int MaxDegreeOfParallelism               { get; set; } = 4;
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 5;
         public bool EnableItemAddedTaskAutoRun          { get; set; }
+        public bool EnableAutomaticImageExtraction      { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
         public int Version { get; set; } = 0;
     }
 }
