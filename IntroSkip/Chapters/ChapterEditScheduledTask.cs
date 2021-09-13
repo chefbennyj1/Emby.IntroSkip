@@ -1,5 +1,9 @@
-﻿using MediaBrowser.Controller.Library;
+﻿using IntroSkip.Data;
+using IntroSkip.TitleSequence;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
@@ -33,7 +37,7 @@ namespace IntroSkip.Chapters
         
         public bool IsHidden => false;
 
-        public bool IsEnabled => true;
+        public bool IsEnabled => false;
 
         public bool IsLogged => true;
 
@@ -51,17 +55,13 @@ namespace IntroSkip.Chapters
         {
             return new[]
             {
-                new TaskTriggerInfo
-                {
-                    Type          = TaskTriggerInfo.TriggerInterval,
-                    IntervalTicks = TimeSpan.FromHours(24).Ticks
-                }                
+                new TaskTriggerInfo()
             };
         }
 
         public void ProcessEpisodeChaptersPoints()
         {
-            ILogger Log;
+            //ILogger Log;
             QueryResult<TitleSequenceResult> dbResults = null;
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             dbResults = repo.GetResults(new TitleSequenceResultQuery());

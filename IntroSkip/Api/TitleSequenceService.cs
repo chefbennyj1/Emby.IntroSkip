@@ -47,12 +47,12 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
         }
 
-        [Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
-        public class RemoveTitleSequenceDataRequest : IReturn<string>
-        {
-            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long InternalId { get; set; }
-        }
+        //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
+        //public class RemoveTitleSequenceDataRequest : IReturn<string>
+        //{
+        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+        //    public long InternalId { get; set; }
+        //}
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
@@ -193,22 +193,22 @@ namespace IntroSkip.Api
 
         }
 
-        public string Delete(RemoveTitleSequenceDataRequest request)
-        {
-            try
-            {
-                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-                repo.Delete(request.InternalId.ToString());
+        //public string Delete(RemoveTitleSequenceDataRequest request)
+        //{
+        //    try
+        //    {
+        //        var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+        //        repo.Delete(request.InternalId.ToString());
 
-                Log.Info("Title sequence fingerprint file removed.");
+        //        Log.Info("Title sequence fingerprint file removed.");
 
-                return "OK";
-            }
-            catch
-            {
-                return "";
-            }
-        }
+        //        return "OK";
+        //    }
+        //    catch
+        //    {
+        //        return "";
+        //    }
+        //}
 
         //public string Delete(RemoveTitleSequenceRequest request)
         //{

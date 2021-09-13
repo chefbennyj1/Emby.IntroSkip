@@ -11,6 +11,6 @@ namespace IntroSkip.Configuration
         public bool EnableAutomaticImageExtraction      { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
         public int Version { get; set; } = 0;
         public int? Limit { get; set; } = null;
-        public bool EnableAutomaticImageExtraction { get; internal set; }
+        
     }
 }
