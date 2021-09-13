@@ -52,7 +52,7 @@ namespace IntroSkip.Chapters
                 string introStartString = "Intro Start";
                 string introEndString = "Intro End";
 
-                //This wil check if the Introstart and introEnd chapter points are already in the list, we may have one or the other so lets independently check.
+                //This will check if the Introstart chapter point is already in the list.
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
                     Log.Info("INTROSKIP CHAPTER EDIT: INTRO START CHAPTER ALREADY ADDED - move along nothing to see here");
@@ -68,6 +68,7 @@ namespace IntroSkip.Chapters
                     chapters.Add(IntroStart);
                     chapters.Sort(CompareStartTimes);
 
+<<<<<<< Updated upstream
                     //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
                 }
@@ -83,9 +84,34 @@ namespace IntroSkip.Chapters
                     IntroEnd.Name = introEndString;
                     IntroEnd.StartPositionTicks = insertEnd;
 
+=======
+                    //create new chapter entry point for the End of the Intro
+                    ChapterInfo introEnd = new ChapterInfo
+                    {
+                        Name = introEndString,
+                        StartPositionTicks = insertEnd
+                    };
+                    int startIndex = chapters.FindIndex(st => st.Name == introStartString);
+                    
+                    //Get the next chapter information
+                    ChapterInfo neededChapInfo = chapters[startIndex + 1];
+                    string chapName = neededChapInfo.Name;
+                    Log.Info("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
+                    string newVal = introEndString.Replace(introEndString, chapName);
+
+                    //remove the IntroEnd point and replace it with the correct chapter name.
+                    int changeStart = startIndex + 1;
+                    chapters.RemoveAt(changeStart);
+                    ChapterInfo edit = new ChapterInfo
+                    {
+                        Name = newVal,
+                        StartPositionTicks = insertEnd
+                    };
+>>>>>>> Stashed changes
                     //add the entry and lets arrange the chapter list
                     chapters.Add(IntroEnd);                    
                     chapters.Sort(CompareStartTimes);
+<<<<<<< Updated upstream
 
                     //lets check and remove any chapters that fall inbetween the IntroStart and IntroEnd they are not needed.
                     int startIndex = chapters.FindIndex(st => st.Name == introStartString);
@@ -106,6 +132,11 @@ namespace IntroSkip.Chapters
                     //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
                     
+=======
+                    
+                    //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
+                    ItemRepository.SaveChapters(id, chapters);
+>>>>>>> Stashed changes
                 }
             }
         }
