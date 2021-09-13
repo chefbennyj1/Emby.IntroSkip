@@ -30,6 +30,7 @@ namespace IntroSkip.Chapters
             TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             var config = Plugin.Instance.Configuration;
 
+            var item = ItemRepository.GetItemById(id);
             Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
 
             List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
@@ -58,7 +59,7 @@ namespace IntroSkip.Chapters
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
                     Log.Info(
-                        "INTROSKIP CHAPTER EDIT: Title Sequence Chapter already Add - move along nothing to see here");
+                        "INTROSKIP CHAPTER EDIT: Title Sequence Chapter already Added - move along nothing to do here");
                 }
                 else
                 {
@@ -74,13 +75,7 @@ namespace IntroSkip.Chapters
                     chapters.Sort(CompareStartTimes);
 
                     //create new chapter entry point for the End of the Intro
-                    ChapterInfo introEnd = new ChapterInfo
-                    {
-                        Name = introEndString,
-                        StartPositionTicks = insertEnd
-                    };
                     int startIndex = chapters.FindIndex(st => st.Name == introStartString);
-                    int endIndex = chapters.FindIndex(en => en.Name == introEndString);
 
                     ChapterInfo neededChapInfo = chapters[startIndex + 1];
                     string chapName = neededChapInfo.Name;

@@ -62,7 +62,11 @@ namespace IntroSkip.Chapters
         {
             return new[]
             {
-                new TaskTriggerInfo()                
+                new TaskTriggerInfo
+                {
+                    Type          = TaskTriggerInfo.TriggerInterval,
+                    IntervalTicks = TimeSpan.FromHours(24).Ticks
+                }
             };
         }
 

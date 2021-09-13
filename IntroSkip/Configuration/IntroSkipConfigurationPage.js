@@ -158,7 +158,7 @@ define(["loading", "dialogHelper", "formDialogStyle", "emby-checkbox", "emby-sel
       html += '</div>';
       html += '</label>';
       html += '<div class="fieldDescription">';
-      html += 'This will create start and end points that will be shown in the Chapters Section of your Episodes';
+        html += 'This will create a Title Sequence Entry that will be shown in the Chapters Section of your Episodes';
       html += '</div>';
       html += '</div>';
 
@@ -175,7 +175,8 @@ define(["loading", "dialogHelper", "formDialogStyle", "emby-checkbox", "emby-sel
       html += '</div>';
       html += '</label>';
       html += '<div class="fieldDescription">';
-      html += 'This will Automatically run the Thumbnail Image Extraction Process once the Intro Points have been inserted';
+        html += 'This will Automatically run the Thumbnail Image Extraction Process once the Intro Points have been inserted -- ';
+        html += 'This will only run if you Enable Show Title Sequence in Chapters';
       html += '</div>';
       html += '</div>';
 
@@ -257,6 +258,7 @@ define(["loading", "dialogHelper", "formDialogStyle", "emby-checkbox", "emby-sel
       var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
       var removeAllButton = dlg.querySelector('.removeAllData');
       var autoChapterExtract = dlg.querySelector('.chkChapterExtractEvent');
+      var chapterInsert = dlg.querySelector('.chkChapterInsertEvent');
 
       ApiClient.getPluginConfiguration(pluginId).then((config) => {
         titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;

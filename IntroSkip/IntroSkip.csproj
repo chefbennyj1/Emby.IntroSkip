@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.2.10</AssemblyVersion> <FileVersion>2.0.2.10</FileVersion> <Version>2.0.2.10</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.3.0</AssemblyVersion> <FileVersion>2.0.3.0</FileVersion> <Version>2.0.3.0</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -14,11 +14,15 @@
   <None Remove="AudioFingerprinting\5fnb1sma.csw~" />
   <None Remove="Configuration\IntroSkipConfigurationPage.html" />
   <None Remove="Configuration\IntroSkipConfigurationPage.js" />
+  <None Remove="thumb.jpg" />
 </ItemGroup>
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
+  <EmbeddedResource Include="thumb.jpg">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </EmbeddedResource>
 </ItemGroup>
 
 
@@ -26,6 +30,11 @@
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 
 </ItemGroup>
+
+
+<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Exec Command="xcopy &quot;C:\Users\david.bryce\OneDrive - PROBE\WorkstationSync\Documents\GitHub\Emby.IntroSkip\IntroSkip\bin\Debug\netstandard2.0\IntroSkip.dll&quot; &quot;C:\Users\david.bryce\AppData\Roaming\Emby-Server\programdata\plugins\&quot; /Y" />
+</Target>
 
 
 
