@@ -145,6 +145,23 @@
             html += '</div>';
             html += '</div>';
 
+            //Option for Inserting Chapter Points
+            html += '<div class="inputContainer">';
+            html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
+            html += '<input is="emby-toggle" type="checkbox" id="enableChapterInsertEvent" class="chkChapterInsertEvent" data-embytoggle="">';
+            html += '<span class="toggleButtonLabel mdl-switch__label">Show Title Sequence in Chapters</span>';
+            html += '<div class="mdl-switch__trackContainer">';
+            html += '<div class="mdl-switch__track"></div>';
+            html += '<div class="mdl-switch__thumb">';
+            html += '<span class="mdl-switch__focus-helper"></span>';
+            html += '</div>';
+            html += '</div>';
+            html += '</label>';
+            html += '<div class="fieldDescription">';
+            html += 'This will create start and end points that will be shown in the Chapters Section of your Episodes';
+            html += '</div>';
+            html += '</div>';
+
             //Option for Auto Chapter Image Extraction
             html += '<div class="inputContainer">';
             html += '<label style="width: auto;" class="mdl-switch mdl-js-switch">';
@@ -240,24 +257,34 @@
             var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
             var removeAllButton = dlg.querySelector('.removeAllData');
             var autoChapterExtract = dlg.querySelector('.chkChapterExtractEvent');
+            var chapterInsert = dlg.querySelector('.chkChapterInsertEvent');
 
             ApiClient.getPluginConfiguration(pluginId).then((config) => {                
                 titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                 //fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism;
             });
 
-            
-
             removeAllButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 openConfirmationDialog();
             });
 
-            //auto Chapter image extraction
+            //Chapter Insertion Option
+            ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                chapterInsert.checked = config.EnableChapterInsertion;
+            });
+            chapterInsert.addEventListener('change', (e) => {
+                e.preventDefault();
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    config.EnableChapterInsertion = chapterInsert.checked;
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                });
+            });
+
+            //Auto Chapter image extraction
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
                 autoChapterExtract.checked = config.EnableAutomaticImageExtraction;
             });
-
             autoChapterExtract.addEventListener('change', (e) => {
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
