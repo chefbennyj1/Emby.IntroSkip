@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Emby.AutoOrganize.Data;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using IntroSkip.Data;
@@ -33,7 +32,6 @@ namespace IntroSkip.Chapters
             chapterExecute.Wait(cancellationToken);
 
             var config = Plugin.Instance.Configuration;
-
             // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
             if (chapterExecute.IsCompleted && config.EnableChapterInsertion && config.EnableAutomaticImageExtraction)
             {
