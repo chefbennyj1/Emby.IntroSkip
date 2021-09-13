@@ -30,6 +30,8 @@ namespace IntroSkip.Data
         /// <returns>TitleSequenceResult.</returns>
         TitleSequenceResult GetResult(string id);
 
+        BaseTitleSequence GetBaseTitleSequence(string id);
+
         void Vacuum();
 
         /// <summary>

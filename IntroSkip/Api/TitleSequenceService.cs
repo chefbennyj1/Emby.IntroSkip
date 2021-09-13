@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using IntroSkip.AudioFingerprinting;
-using IntroSkip.Chapters;
+
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -286,12 +284,12 @@ namespace IntroSkip.Api
             
             try
             {
-                return JsonSerializer.SerializeToString(repo.GetResult(request.InternalId.ToString()));
+                return JsonSerializer.SerializeToString(repo.GetBaseTitleSequence(request.InternalId.ToString()));
 
             }
             catch
             {
-                return JsonSerializer.SerializeToString(new TitleSequenceResult()); //Empty
+                return JsonSerializer.SerializeToString(new BaseTitleSequence()); //Empty
             }
 
         }
