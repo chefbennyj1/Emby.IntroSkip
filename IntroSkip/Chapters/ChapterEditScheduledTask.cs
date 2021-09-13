@@ -4,12 +4,10 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Emby.AutoOrganize.Data;
 using IntroSkip.TitleSequence;
-using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
 namespace IntroSkip.Chapters
@@ -19,8 +17,6 @@ namespace IntroSkip.Chapters
         public ILibraryManager LibraryManager {get; set;}
         public IItemRepository ItemRepository;
         private ITaskManager TaskManager { get;}
-        //private ITitleSequenceRepository Repo;
-        //private ILogger Log;
 
         public ChapterEditScheduledTask(ILibraryManager libraryManager, IItemRepository itemRepo, ITaskManager taskManager)
         {

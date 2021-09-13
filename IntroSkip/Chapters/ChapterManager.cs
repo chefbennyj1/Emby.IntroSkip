@@ -3,10 +3,7 @@ using System;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Tasks;
 
 namespace IntroSkip.Chapters
 {
@@ -17,8 +14,6 @@ namespace IntroSkip.Chapters
         public ILogger Log;
 
         public IItemRepository ItemRepository;
-
-        private ITaskManager TaskManager;
         public ChapterManager(ILogger log, IItemRepository itemRepo)
         {
             Log = log;
@@ -93,7 +88,6 @@ namespace IntroSkip.Chapters
                     chapters.Sort(CompareStartTimes);
 
                     //lets check and remove any chapters that fall inbetween the IntroStart and IntroEnd they are not needed.
-                    List<ChapterInfo> organisedChapters = new List<ChapterInfo>();
                     int startIndex = chapters.FindIndex(st => st.Name == introStartString);
                     int endIndex = chapters.FindIndex(en => en.Name == introEndString);
                     Log.Info("INTROSKIP CHAPTER EDIT: IntroStartIndex = {0} & IntroEndIndex = {1}", startIndex.ToString(), endIndex.ToString());
@@ -103,12 +97,6 @@ namespace IntroSkip.Chapters
                         Log.Info("INTROSKIP CHAPTER EDIT: HOUSTON WE HAVE A PROBLEM, Removing Chapter at Index = {0}", (endIndex-1));
                         var naughtyIndex = endIndex - 1;
                         chapters.RemoveAt(naughtyIndex);
-                        
-                        foreach (var chap in chapters)
-                        {
-                            //put in some stuff to rename emby standard chapters so it looks good and has sequencial numbering and add it to the organised chapter list.
-                            //chapters = organisedchapters;
-                        }
                     }
                     else
                     {
@@ -117,8 +105,7 @@ namespace IntroSkip.Chapters
 
                     //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                     ItemRepository.SaveChapters(id, chapters);
-                    //ChapterEditScheduledTask task = new ChapterEditScheduledTask(libraryManager, ItemRepository, TaskManager);
-                    //task.ProcessChapterImageExtraction();
+                    
                 }
             }
         }
