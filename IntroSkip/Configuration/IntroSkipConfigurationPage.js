@@ -237,7 +237,7 @@
 
            
             var titleSequenceMaxDegreeOfParallelism = dlg.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-            //var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
+            var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
             var removeAllButton = dlg.querySelector('.removeAllData');
             var autoChapterExtract = dlg.querySelector('.chkChapterExtractEvent');
 

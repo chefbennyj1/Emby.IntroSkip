@@ -193,12 +193,6 @@ namespace IntroSkip.Api
 
         }
 
-        public string Delete(RemoveAllRequest request)
-        {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            repo.DeleteAll();
-            return "OK";
-        }
         //public string Delete(RemoveTitleSequenceDataRequest request)
         //{
         //    try
