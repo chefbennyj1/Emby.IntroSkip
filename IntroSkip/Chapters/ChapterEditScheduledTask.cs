@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
+using IntroSkip.Data;
 
 namespace IntroSkip.Chapters
 {
@@ -31,7 +32,6 @@ namespace IntroSkip.Chapters
             chapterExecute.Wait(cancellationToken);
 
             var config = Plugin.Instance.Configuration;
-            
             // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
             if (chapterExecute.IsCompleted && config.EnableChapterInsertion && config.EnableAutomaticImageExtraction)
             {
@@ -43,7 +43,7 @@ namespace IntroSkip.Chapters
 
         public bool IsHidden => false;
 
-        public bool IsEnabled => true;
+        public bool IsEnabled => false;
 
         public bool IsLogged => true;
 
@@ -61,11 +61,7 @@ namespace IntroSkip.Chapters
         {
             return new[]
             {
-                new TaskTriggerInfo
-                {
-                    Type          = TaskTriggerInfo.TriggerInterval,
-                    IntervalTicks = TimeSpan.FromHours(24).Ticks
-                }                
+                new TaskTriggerInfo()                
             };
         }
 

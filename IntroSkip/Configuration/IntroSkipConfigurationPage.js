@@ -254,7 +254,7 @@
 
            
             var titleSequenceMaxDegreeOfParallelism = dlg.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-            var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
+            //var fingerprintMaxDegreeOfParallelism = dlg.querySelector('#txtFingerprintingMaxDegreeOfParallelism');
             var removeAllButton = dlg.querySelector('.removeAllData');
             var autoChapterExtract = dlg.querySelector('.chkChapterExtractEvent');
             var chapterInsert = dlg.querySelector('.chkChapterInsertEvent');
@@ -273,6 +273,7 @@
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
                 chapterInsert.checked = config.EnableChapterInsertion;
             });
+          
             chapterInsert.addEventListener('change', (e) => {
                 e.preventDefault();
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {

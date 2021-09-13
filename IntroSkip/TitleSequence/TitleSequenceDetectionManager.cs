@@ -6,9 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Emby.AutoOrganize.Data;
 using IntroSkip.AudioFingerprinting;
+using IntroSkip.Data;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
@@ -33,29 +35,35 @@ namespace IntroSkip.TitleSequence
         }
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, long[] seriesInternalIds, ITitleSequenceRepository repo)
-        {            
-            var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
-            {
-                Recursive = true,
-                ItemIds = seriesInternalIds,
-                IncludeItemTypes = new[] { "Series" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+        {
+            var config = Plugin.Instance.Configuration;
 
-            });                        
-            
+            var seriesInternalItemQuery = new InternalItemsQuery()
+            {
+                Recursive        = true,
+                ItemIds          = seriesInternalIds,
+                IncludeItemTypes = new[] { "Series" },
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)                
+            };            
+
+            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
+
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, ITitleSequenceRepository repo)
         {      
             
-            
-            var seriesQuery = LibraryManager.QueryItems(new InternalItemsQuery()
+            var config = Plugin.Instance.Configuration;
+            var seriesInternalItemQuery = new InternalItemsQuery()
             {
-                Recursive = true,
+                Recursive        = true,
                 IncludeItemTypes = new[] { "Series" },
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
-            });
+                User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                
+            };           
+
+            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);           
 
             Analyze(seriesQuery, progress, repo, cancellationToken);
         }
@@ -212,7 +220,7 @@ namespace IntroSkip.TitleSequence
                                 
                                 foreach (var sequence in sequences)
                                 {
-                                    //Just remove these entries in the list (if they exist) and add the new result back. Easier!
+                                    //Just remove these entries in the episode list (if they exist) and add the new result back. Easier!
                                     if (dbEpisodes.Exists(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId))
                                     {
                                         dbEpisodes.RemoveAll(item => item.IndexNumber == sequence.IndexNumber && item.SeasonId == sequence.SeasonId);
@@ -237,7 +245,7 @@ namespace IntroSkip.TitleSequence
                                 //We have exhausted all our episode comparing
                                 if (dbEpisodes.Exists(item => item.InternalId == unmatchedItem.InternalId)) continue;
 
-                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence.");
+                                Log.Info($"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
 
                             }
                             catch (AudioFingerprintMissingException ex)

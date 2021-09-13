@@ -4,7 +4,7 @@ using MediaBrowser.Model.Querying;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Emby.AutoOrganize.Data
+namespace IntroSkip.Data
 {
     public interface ITitleSequenceRepository
     {
@@ -29,6 +29,8 @@ namespace Emby.AutoOrganize.Data
         /// <param name="id">The identifier.</param>
         /// <returns>TitleSequenceResult.</returns>
         TitleSequenceResult GetResult(string id);
+
+        BaseTitleSequence GetBaseTitleSequence(string id);
 
         void Vacuum();
 

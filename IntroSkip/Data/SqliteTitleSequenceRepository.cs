@@ -209,10 +209,88 @@ namespace Emby.AutoOrganize.Data
                 }
             }
         }
+
+        public BaseTitleSequence GetBaseTitleSequence(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException("id");
+            }
+
+            using (WriteLock.Read())
+            {
+                using (var connection = CreateConnection(true))
+                {
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
+                    {
+                        statement.TryBind("@ResultId", id);
+
+                        foreach (var row in statement.ExecuteQuery())
+                        {
+                            return GetBaseTitleSequenceResult(row);
+                        }
+                    }
+
+                    return null;
+                }
+            }
+
+        }
+        public BaseTitleSequence GetBaseTitleSequenceResult(IResultSet reader)
+        {
+            var index = 0;
+
+            var result = new BaseTitleSequence
+            {
+                InternalId = reader.GetInt64(index)
+            };
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.TitleSequenceStart = TimeSpan.Parse(reader.GetString(index));
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.TitleSequenceEnd = TimeSpan.Parse(reader.GetString(index));
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasSequence = reader.GetBoolean(index);
+            }
+                       
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.SeriesId = reader.GetInt64(index);
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.SeasonId = reader.GetInt64(index);
+            }   
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.IndexNumber = reader.GetInt(index);
+            } 
+                    
+            
+
+            return result;
+        }
+        
         public TitleSequenceResult GetResult(string id)
         {
-            string stringId = id.ToString();
-            if (string.IsNullOrEmpty(stringId))
+            
+            if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException("id");
             }
@@ -223,7 +301,7 @@ namespace Emby.AutoOrganize.Data
                 {
                     using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
                     {
-                        statement.TryBind("@ResultId", Convert.ToInt64(id));
+                        statement.TryBind("@ResultId", id);
 
                         foreach (var row in statement.ExecuteQuery())
                         {

@@ -16,7 +16,7 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceService : IService
     {
-
+        
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -44,12 +44,12 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
         }
 
-        [Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
-        public class RemoveTitleSequenceDataRequest : IReturn<string>
-        {
-            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long InternalId { get; set; }
-        }
+        //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
+        //public class RemoveTitleSequenceDataRequest : IReturn<string>
+        //{
+        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+        //    public long InternalId { get; set; }
+        //}
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
@@ -93,7 +93,7 @@ namespace IntroSkip.Api
             Log            = logMan.GetLogger(Plugin.Instance.Name);
             LibraryManager = libraryManager;
         }
-
+                
        
         public string Get(UpdateTitleSequenceRequest request)
         {
@@ -105,13 +105,11 @@ namespace IntroSkip.Api
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
             
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
-            titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
-            titleSequence.HasSequence = request.HasSequence;
-            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>();
+            titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
+            titleSequence.HasSequence        = request.HasSequence;
+            titleSequence.Fingerprint        = titleSequence.Fingerprint ?? new List<uint>();
             try
-            {
-                //repo.Delete(titleSequence.InternalId.ToString());
-                
+            {                
                 repo.SaveResult(titleSequence, CancellationToken.None);
             }
             catch (Exception ex)
@@ -192,22 +190,28 @@ namespace IntroSkip.Api
 
         }
 
-        public string Delete(RemoveTitleSequenceDataRequest request)
+        public string Delete(RemoveAllRequest request)
         {
-            try
-            {
-                var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-                repo.Delete(request.InternalId.ToString());
-
-                Log.Info("Title sequence fingerprint file removed.");
-
-                return "OK";
-            }
-            catch
-            {
-                return "";
-            }
+            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            repo.DeleteAll();
+            return "OK";
         }
+        //public string Delete(RemoveTitleSequenceDataRequest request)
+        //{
+        //    try
+        //    {
+        //        var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+        //        repo.Delete(request.InternalId.ToString());
+
+        //        Log.Info("Title sequence fingerprint file removed.");
+
+        //        return "OK";
+        //    }
+        //    catch
+        //    {
+        //        return "";
+        //    }
+        //}
 
         //public string Delete(RemoveTitleSequenceRequest request)
         //{
@@ -283,23 +287,23 @@ namespace IntroSkip.Api
             
             try
             {
-                return JsonSerializer.SerializeToString(repo.GetResult(request.InternalId.ToString()));
+                return JsonSerializer.SerializeToString(repo.GetBaseTitleSequence(request.InternalId.ToString()));
 
             }
             catch
             {
-                return JsonSerializer.SerializeToString(new TitleSequenceResult()); //Empty
+                return JsonSerializer.SerializeToString(new BaseTitleSequence()); //Empty
             }
 
         }
 
         private TimeSpan CalculateCommonTitleSequenceLength(List<TitleSequenceResult> season)
         {
-            var titleSequences = season.Where(intro => intro.HasSequence);
-            var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
+            var titleSequences      = season.Where(intro => intro.HasSequence);
+            var groups              = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
-            int maxCount = enumerableSequences.Max(g => g.Count());
-            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            int maxCount            = enumerableSequences.Max(g => g.Count());
+            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
 

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.2.11</AssemblyVersion> <FileVersion>2.0.2.11</FileVersion> <Version>2.0.2.11</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.2.9</AssemblyVersion> <FileVersion>2.0.2.9</FileVersion> <Version>2.0.2.9</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -25,6 +25,11 @@
 <ItemGroup> <PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3" />
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 
+</ItemGroup>
+
+
+<ItemGroup>
+  <Folder Include="Chapters\" />
 </ItemGroup>
 
 
