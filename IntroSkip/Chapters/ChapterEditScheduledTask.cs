@@ -33,9 +33,9 @@ namespace IntroSkip.Chapters
             chapterExecute.Wait(cancellationToken);
 
             var config = Plugin.Instance.Configuration;
-            
-            // If the user has enabled Chapter Image Extraction in the Advanced menu then lets run that process! 
-            if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction == true)
+
+            // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
+            if (chapterExecute.IsCompleted && config.EnableChapterInsertion && config.EnableAutomaticImageExtraction)
             {
                 ProcessChapterImageExtraction();
             }
