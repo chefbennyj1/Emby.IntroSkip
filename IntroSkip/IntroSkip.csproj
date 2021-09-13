@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.2.10</AssemblyVersion> <FileVersion>2.0.2.10</FileVersion> <Version>2.0.2.10</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>2.0.2.11</AssemblyVersion> <FileVersion>2.0.2.11</FileVersion> <Version>2.0.2.11</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
