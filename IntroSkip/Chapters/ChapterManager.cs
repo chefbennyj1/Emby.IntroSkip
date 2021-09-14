@@ -1,22 +1,24 @@
-﻿using MediaBrowser.Controller.Plugins;
-using System;
-using MediaBrowser.Model.Logging;
+﻿using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
-using System.Linq;
 using MediaBrowser.Model.Entities;
 using IntroSkip.Data;
+using IntroSkip.TitleSequence;
 
 namespace IntroSkip.Chapters
 {
-    public class ChapterManager : IServerEntryPoint
+    public class ChapterInsertion
     {
-       public static ChapterManager Instance {get; set; }
+       public ChapterInsertion Instance {get; set; }
 
         public ILogger Log;
 
         public IItemRepository ItemRepository;
+<<<<<<< Updated upstream
         public ChapterManager(ILogManager logManager, IItemRepository itemRepo)
+=======
+        public ChapterInsertion(ILogger log, IItemRepository itemRepo)
+>>>>>>> Stashed changes
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
@@ -27,16 +29,17 @@ namespace IntroSkip.Chapters
         {
             Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
-            var config = Plugin.Instance.Configuration;
-
+            TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
+            
             var item = ItemRepository.GetItemById(id);
             Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
+
+            var config = Plugin.Instance.Configuration;
 
             List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
             List<ChapterInfo> chapters = new List<ChapterInfo>();
 
-            if (titleSequence.HasSequence && config.EnableChapterInsertion)
+            if (config.EnableChapterInsertion)
             {
                 //Lets get the existing chapters and put them in a new list so we can insert the new Intro Chapter
                 foreach (var chap in getChapters)
@@ -106,14 +109,19 @@ namespace IntroSkip.Chapters
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
 
-        public void Dispose()
+        /*public void Dispose()
         {
             //Leave empty so we don't get the error in the log
         }
 
         public void Run()
         {
+<<<<<<< Updated upstream
             //Leave empty so we don't get the error in the log
         }
+=======
+            throw new NotImplementedException();
+        }*/
+>>>>>>> Stashed changes
     }
 }
