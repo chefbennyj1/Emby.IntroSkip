@@ -76,10 +76,7 @@ namespace IntroSkip.AudioFingerprinting
                     OrderBy          = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
                 };
 
-                if (config.Limit.HasValue)
-                {
-                    seriesInternalItemQuery.Limit = config.Limit.Value;
-                }
+                
 
                 var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 

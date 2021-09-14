@@ -234,7 +234,7 @@ namespace IntroSkip.TitleSequence
                                 
                                 
                                 var unmatchedBaseItem = episodeQuery.Items.FirstOrDefault(item => item.InternalId == unmatched[index].InternalId); //<-- For logging purpose only. Should be removed later.
-                                Log.Info($"{unmatchedBaseItem.Parent.Parent.Name} - {unmatchedBaseItem.Parent.Name} - Episode {unmatched[index].IndexNumber} detection took {stopWatch.ElapsedMilliseconds /1000} seconds.");
+                                Log.Info($"{unmatchedBaseItem.Parent.Parent.Name} - {unmatchedBaseItem.Parent.Name} - Episode {unmatched[index].IndexNumber} title sequence found - detection took {stopWatch.ElapsedMilliseconds /1000} seconds.");
                                 
                             }
                             catch (TitleSequenceInvalidDetectionException)
@@ -269,12 +269,11 @@ namespace IntroSkip.TitleSequence
                     }            
                     
                     Clean(dbResults.Items.Where(item => item.SeasonId == season.InternalId).ToList(), season, repo, cancellationToken);
-
+                    
                 }
 
             });
-            Log.Info("TitleSequence task complete");
-            progress.Report(100.0);
+            
 
         }
         

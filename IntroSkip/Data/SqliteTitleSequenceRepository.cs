@@ -27,10 +27,7 @@ namespace Emby.AutoOrganize.Data
             _json = json;
             DbFilePath = Path.Combine(appPaths.DataPath, "titlesequence.db");
         }
-
-        
           
-
 
         /// <summary>
         /// Opens the connection to the database
@@ -52,7 +49,6 @@ namespace Emby.AutoOrganize.Data
                 
             }
         }
-
 
 
         public void SaveResult(TitleSequenceResult result, CancellationToken cancellationToken)
@@ -150,7 +146,9 @@ namespace Emby.AutoOrganize.Data
             }
         }
               
-        public QueryResult<TitleSequenceResult> GetResults(TitleSequenceResultQuery query)
+
+        //BaseTitleSequence
+        public QueryResult<BaseTitleSequence> GetBaseTitleSequenceResults(TitleSequenceResultQuery query)
         {
             if (query == null)
             {
@@ -164,11 +162,11 @@ namespace Emby.AutoOrganize.Data
                     var commandText = string.Empty;
                     if(query.SeasonInternalId.HasValue)
                     {
-                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
                     } 
                     else
                     {
-                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
                     }   
                        
 
@@ -185,13 +183,13 @@ namespace Emby.AutoOrganize.Data
                         commandText += " LIMIT " + query.Limit.Value.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    var list = new List<TitleSequenceResult>();
+                    var list = new List<BaseTitleSequence>();
 
                     using (var statement = connection.PrepareStatement(commandText))
                     {
                         foreach (var row in statement.ExecuteQuery())
                         {
-                            list.Add(GetResult(row));
+                            list.Add(GetBaseTitleSequenceResult(row));
                         }
                     }
 
@@ -201,7 +199,7 @@ namespace Emby.AutoOrganize.Data
                         count = statement.ExecuteQuery().First().GetInt(0);
                     }
 
-                    return new QueryResult<TitleSequenceResult>()
+                    return new QueryResult<BaseTitleSequence>()
                     {
                         Items = list.ToArray(),
                         TotalRecordCount = count
@@ -209,7 +207,6 @@ namespace Emby.AutoOrganize.Data
                 }
             }
         }
-
         public BaseTitleSequence GetBaseTitleSequence(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -287,6 +284,66 @@ namespace Emby.AutoOrganize.Data
             return result;
         }
         
+        //TitleSequenceResult - Full Result including FIngerprint and duration
+        public QueryResult<TitleSequenceResult> GetResults(TitleSequenceResultQuery query)
+        {
+            if (query == null)
+            {
+                throw new ArgumentNullException("query");
+            }
+
+            using (WriteLock.Read())
+            {
+                using (var connection = CreateConnection(true))
+                {
+                    var commandText = string.Empty;
+                    if(query.SeasonInternalId.HasValue)
+                    {
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                    } 
+                    else
+                    {
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
+                    }   
+                       
+
+                    if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
+                    {
+                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM TitleSequenceResults ORDER BY SeasonId desc LIMIT {0})",
+                            query.StartIndex.Value.ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    commandText += " ORDER BY SeasonId desc";
+
+                    if (query.Limit.HasValue)
+                    {
+                        commandText += " LIMIT " + query.Limit.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+
+                    var list = new List<TitleSequenceResult>();
+
+                    using (var statement = connection.PrepareStatement(commandText))
+                    {
+                        foreach (var row in statement.ExecuteQuery())
+                        {
+                            list.Add(GetResult(row));
+                        }
+                    }
+
+                    int count;
+                    using (var statement = connection.PrepareStatement("select count (ResultId) from TitleSequenceResults"))
+                    {
+                        count = statement.ExecuteQuery().First().GetInt(0);
+                    }
+
+                    return new QueryResult<TitleSequenceResult>()
+                    {
+                        Items = list.ToArray(),
+                        TotalRecordCount = count
+                    };
+                }
+            }
+        }
         public TitleSequenceResult GetResult(string id)
         {
             

@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-
 using IntroSkip.TitleSequence;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
@@ -110,7 +107,8 @@ namespace IntroSkip.Api
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
             titleSequence.HasSequence        = request.HasSequence;
-            titleSequence.Fingerprint        = titleSequence.Fingerprint ?? new List<uint>();
+            titleSequence.Fingerprint        = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+            
             try
             {                
                 repo.SaveResult(titleSequence, CancellationToken.None);
@@ -118,28 +116,11 @@ namespace IntroSkip.Api
             catch (Exception ex)
             {
                 Log.Warn(ex.Message);
+                return "error";
             }
+                          
+            return "OK";
 
-
-            titleSequences.RemoveAll(s => s.InternalId == titleSequence.InternalId);
-            titleSequences.Add(titleSequence);
-                       
-
-            TimeSpan commonDuration;
-            try
-            {
-                commonDuration = CalculateCommonTitleSequenceLength(titleSequences);
-            }
-            catch
-            {
-                commonDuration = new TimeSpan(0, 0, 0);
-            }
-
-            return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
-            {
-                CommonEpisodeTitleSequenceLength = commonDuration,
-                TitleSequences = titleSequences
-            });
         }
 
         public void Post(ScanSeriesRequest request)
@@ -193,12 +174,6 @@ namespace IntroSkip.Api
 
         }
 
-        public string Delete(RemoveAllRequest request)
-        {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            repo.DeleteAll();
-            return "OK";
-        }
         //public string Delete(RemoveTitleSequenceDataRequest request)
         //{
         //    try
@@ -254,7 +229,7 @@ namespace IntroSkip.Api
         {
             // ReSharper disable twice UnusedAutoPropertyAccessor.Local
             public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
-            public List<TitleSequenceResult> TitleSequences   { get; set; }
+            public List<BaseTitleSequence> TitleSequences   { get; set; }
         }
 
         public string Get(SeasonTitleSequenceRequest request)
@@ -262,7 +237,7 @@ namespace IntroSkip.Api
 
             var repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
-            var dbResults = repo.GetResults(query);
+            var dbResults = repo.GetBaseTitleSequenceResults(query);
 
             var titleSequences = dbResults.Items.ToList();
 
@@ -300,7 +275,7 @@ namespace IntroSkip.Api
 
         }
 
-        private TimeSpan CalculateCommonTitleSequenceLength(List<TitleSequenceResult> season)
+        private TimeSpan CalculateCommonTitleSequenceLength(List<BaseTitleSequence> season)
         {
             var titleSequences      = season.Where(intro => intro.HasSequence);
             var groups              = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);

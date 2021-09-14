@@ -22,6 +22,22 @@ namespace IntroSkip.Data
         /// <param name="id">The identifier.</param>
         /// <returns>Task.</returns>
         void Delete(string id);
+        
+        /// <summary>
+        /// Get TitleSequence Base Items
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        QueryResult<BaseTitleSequence> GetBaseTitleSequenceResults(TitleSequenceResultQuery query);
+
+        /// <summary>
+        /// Get title sequence base item
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        BaseTitleSequence GetBaseTitleSequence(string id);
+
+        void Vacuum();
 
         /// <summary>
         /// Gets the result.
@@ -29,11 +45,6 @@ namespace IntroSkip.Data
         /// <param name="id">The identifier.</param>
         /// <returns>TitleSequenceResult.</returns>
         TitleSequenceResult GetResult(string id);
-
-        BaseTitleSequence GetBaseTitleSequence(string id);
-
-        void Vacuum();
-
         /// <summary>
         /// Gets the results.
         /// </summary>
