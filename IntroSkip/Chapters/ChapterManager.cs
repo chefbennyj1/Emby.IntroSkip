@@ -14,11 +14,8 @@ namespace IntroSkip.Chapters
         public ILogger Log;
 
         public IItemRepository ItemRepository;
-<<<<<<< Updated upstream
-        public ChapterManager(ILogManager logManager, IItemRepository itemRepo)
-=======
-        public ChapterInsertion(ILogger log, IItemRepository itemRepo)
->>>>>>> Stashed changes
+
+        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
@@ -27,7 +24,7 @@ namespace IntroSkip.Chapters
 
         public void EditChapters(long id)
         {
-            Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
+            Log.Debug("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             
@@ -82,7 +79,7 @@ namespace IntroSkip.Chapters
 
                     ChapterInfo neededChapInfo = chapters[startIndex + 1];
                     string chapName = neededChapInfo.Name;
-                    Log.Info("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
+                    Log.Debug("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
                     string newVal = introEndString.Replace(introEndString, chapName);
 
                     int changeStart = startIndex + 1;
@@ -108,20 +105,5 @@ namespace IntroSkip.Chapters
         {
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
-
-        /*public void Dispose()
-        {
-            //Leave empty so we don't get the error in the log
-        }
-
-        public void Run()
-        {
-<<<<<<< Updated upstream
-            //Leave empty so we don't get the error in the log
-        }
-=======
-            throw new NotImplementedException();
-        }*/
->>>>>>> Stashed changes
     }
 }
