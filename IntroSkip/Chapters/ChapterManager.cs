@@ -71,8 +71,20 @@ namespace IntroSkip.Chapters
                     };
 
                     //add the entry and lets arrange the chapter list
-                    chapters.Add(introStart);
-                    chapters.Sort(CompareStartTimes);
+                    //if the Title sequence doesn't start at 0, insert it
+                    if (introStart.StartPositionTicks != 0)
+                    {
+                        chapters.Add(introStart);
+                        chapters.Sort(CompareStartTimes);
+                    }
+
+                    //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
+                    if (introStart.StartPositionTicks == 0)
+                    {
+                        chapters.RemoveAt(0);
+                        chapters.Add(introStart);
+                        chapters.Sort(CompareStartTimes);
+                    }
 
                     //create new chapter entry point for the End of the Intro
                     int startIndex = chapters.FindIndex(st => st.Name == introStartString);
