@@ -9,32 +9,35 @@ using System.Threading.Tasks;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using IntroSkip.Data;
+using MediaBrowser.Model.Logging;
 
 namespace IntroSkip.Chapters
 {
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         public ILibraryManager LibraryManager {get; set;}
-        public IItemRepository ItemRepository;
         private ITaskManager TaskManager { get;}
+        private ChapterInsertion ChapterInsertion { get; }
+        private ILogger Log { get; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, IItemRepository itemRepo, ITaskManager taskManager)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogger log, ChapterInsertion chapterInsertion)
         {
             LibraryManager = libraryManager;
-            ItemRepository = itemRepo;
             TaskManager = taskManager;
+            Log = log;
+            ChapterInsertion = chapterInsertion;
         }
         
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            Log.Info("INTROSKIP CHAPTER TASK IS STARTING");
             //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
             Task chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
             chapterExecute.Wait(cancellationToken);
 
             var config = Plugin.Instance.Configuration;
-
             // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
-            if (chapterExecute.IsCompleted && config.EnableChapterInsertion && config.EnableAutomaticImageExtraction)
+            if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction)
             {
                 ProcessChapterImageExtraction();
             }
@@ -44,15 +47,15 @@ namespace IntroSkip.Chapters
 
         public bool IsHidden => false;
 
-        public bool IsEnabled => false;
+        public bool IsEnabled => true;
 
         public bool IsLogged => true;
 
         public string Name => "IntroSkip Chapter Insertion";
 
-        public string Key => "Chapter Edit Options";
+        public string Key => "IntroSkip Chapter Edit Options";
 
-        public string Description => "Insert a Chapter Marker for Intro Start and End Times";
+        public string Description => "Insert a Title Sequence Marker in Chapters";
 
         public string Category => "Intro Skip";
 
@@ -72,17 +75,18 @@ namespace IntroSkip.Chapters
 
         public Task ProcessEpisodeChaptersPoints()
         {
-            
-            QueryResult<TitleSequenceResult> dbResults = null;
+            Log.Debug("INTROSKIP CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS METHOD");
+            var config = Plugin.Instance.Configuration;
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
             
-            foreach (var episode in dbResults.Items)
+            foreach (TitleSequenceResult episode in dbResults.Items)
             {
-                if(episode.HasSequence)
+                if (config.EnableChapterInsertion && episode.HasSequence)
                 {
-                    var id = episode.InternalId;
-                    ChapterManager.Instance.EditChapters(id);
+                    long id = episode.InternalId;
+                    Log.Debug("INTROSKIP CHAPTER TASK: EPISODE ID = {0}", id);
+                    ChapterInsertion.Instance.EditChapters(id);
                 }
             }
 

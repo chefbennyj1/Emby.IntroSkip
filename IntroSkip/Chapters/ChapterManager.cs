@@ -1,22 +1,21 @@
-﻿using MediaBrowser.Controller.Plugins;
-using System;
-using MediaBrowser.Model.Logging;
+﻿using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
-using System.Linq;
 using MediaBrowser.Model.Entities;
 using IntroSkip.Data;
+using IntroSkip.TitleSequence;
 
 namespace IntroSkip.Chapters
 {
-    public class ChapterManager : IServerEntryPoint
+    public class ChapterInsertion
     {
-       public static ChapterManager Instance {get; set; }
+       public ChapterInsertion Instance {get; set; }
 
         public ILogger Log;
 
         public IItemRepository ItemRepository;
-        public ChapterManager(ILogManager logManager, IItemRepository itemRepo)
+
+        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
@@ -25,18 +24,19 @@ namespace IntroSkip.Chapters
 
         public void EditChapters(long id)
         {
-            Log.Info("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
+            Log.Debug("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            TitleSequence.TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
-            var config = Plugin.Instance.Configuration;
-
+            TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
+            
             var item = ItemRepository.GetItemById(id);
             Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
+
+            var config = Plugin.Instance.Configuration;
 
             List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
             List<ChapterInfo> chapters = new List<ChapterInfo>();
 
-            if (titleSequence.HasSequence && config.EnableChapterInsertion)
+            if (config.EnableChapterInsertion)
             {
                 //Lets get the existing chapters and put them in a new list so we can insert the new Intro Chapter
                 foreach (var chap in getChapters)
@@ -79,7 +79,7 @@ namespace IntroSkip.Chapters
 
                     ChapterInfo neededChapInfo = chapters[startIndex + 1];
                     string chapName = neededChapInfo.Name;
-                    Log.Info("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
+                    Log.Debug("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
                     string newVal = introEndString.Replace(introEndString, chapName);
 
                     int changeStart = startIndex + 1;
@@ -104,16 +104,6 @@ namespace IntroSkip.Chapters
         public static int CompareStartTimes(ChapterInfo tick1, ChapterInfo tick2)
         {
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
-        }
-
-        public void Dispose()
-        {
-            //Leave empty so we don't get the error in the log
-        }
-
-        public void Run()
-        {
-            //Leave empty so we don't get the error in the log
         }
     }
 }

@@ -43,7 +43,13 @@ namespace IntroSkip.Api
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
         }
-               
+
+        //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
+        //public class RemoveTitleSequenceDataRequest : IReturn<string>
+        //{
+        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+        //    public long InternalId { get; set; }
+        //}
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
@@ -77,20 +83,17 @@ namespace IntroSkip.Api
         
         private IJsonSerializer JsonSerializer      { get; }
         private ILogger Log                         { get; }  
-       
-       
-        public TitleSequenceService(IJsonSerializer json, ILogManager logMan)
+        
+        private ILibraryManager LibraryManager { get; }
+
+        // ReSharper disable once TooManyDependencies
+        public TitleSequenceService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
         {
             JsonSerializer = json;
             Log            = logMan.GetLogger(Plugin.Instance.Name);
-           
+            LibraryManager = libraryManager;
         }
-         
-        public void Get(RemoveAllRequest request)
-        {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            repo.DeleteAll();
-        }
+                
        
         public string Get(UpdateTitleSequenceRequest request)
         {
@@ -125,7 +128,34 @@ namespace IntroSkip.Api
             TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, IntroSkipPluginEntryPoint.Instance.Repository);
         }
 
-       
+        //public string Delete(RemoveAllRequest request)
+        //{
+        //    try
+        //    {
+        //        var fingerprintFiles = FileSystem
+        //            .GetFiles(
+        //                $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}",
+        //                true).Where(file => file.Extension == ".json");
+        //        foreach (var file in fingerprintFiles)
+        //        {
+        //            FileSystem.DeleteFile(file.FullName);
+        //        }
+        //    }catch {}
+
+        //    try
+        //    {
+        //        var titleSequenceFiles = FileSystem
+        //            .GetFiles(
+        //                $"{TitleSequenceManager.Instance.GetTitleSequenceDirectory()}{FileSystem.DirectorySeparatorChar}",
+        //                true).Where(file => file.Extension == ".json");
+        //        foreach (var file in titleSequenceFiles)
+        //        {
+        //            FileSystem.DeleteFile(file.FullName);
+        //        }
+        //    }catch {}
+
+        //    return "OK";
+        //}
 
         public string Delete(RemoveSeasonDataRequest request)
         {
@@ -144,7 +174,56 @@ namespace IntroSkip.Api
 
         }
 
-        
+        //public string Delete(RemoveTitleSequenceDataRequest request)
+        //{
+        //    try
+        //    {
+        //        var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+        //        repo.Delete(request.InternalId.ToString());
+
+        //        Log.Info("Title sequence fingerprint file removed.");
+
+        //        return "OK";
+        //    }
+        //    catch
+        //    {
+        //        return "";
+        //    }
+        //}
+
+        //public string Delete(RemoveTitleSequenceRequest request)
+        //{
+        //    try
+        //    {
+        //        var episode        = LibraryManager.GetItemById(request.InternalId);
+        //        var season         = episode.Parent;
+        //        var series         = season.Parent;
+
+        //        var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
+
+        //        if (titleSequences.Seasons is null) return "";
+
+        //        if (!titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber)) return "";
+
+        //        if (titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
+        //            .Episodes.Exists(item => item.InternalId == episode.InternalId))
+        //        {
+        //            titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
+        //                .Episodes.RemoveAll(item => item.InternalId == request.InternalId);
+        //        }
+
+        //        TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
+
+        //        Log.Info("Title sequence saved intro data removed.");
+
+
+        //        return "OK";
+        //    }
+        //    catch
+        //    {
+        //        return "";
+        //    }
+        //}
 
         private class SeasonTitleSequenceResponse
         {

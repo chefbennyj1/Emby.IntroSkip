@@ -83,19 +83,7 @@ namespace IntroSkip.TitleSequence
             var currentProgress = 0.2;
             var step = 100.0 / seriesQuery.TotalRecordCount;
             
-            //Our database info
-            QueryResult<TitleSequenceResult> dbResults = null;
-            try
-            {
-                dbResults = repo.GetResults(new TitleSequenceResultQuery());
-            }
-            catch (Exception ex)
-            {
-                Log.Warn(ex.Message);
-                
-                progress.Report(100.0);
-                return;
-            }
+           
 
             Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
             {
@@ -124,7 +112,22 @@ namespace IntroSkip.TitleSequence
                     if (cancellationToken.IsCancellationRequested)
                     {
                         break;
-                    }                                        
+                    }
+
+
+                    //Our database info
+                    QueryResult<TitleSequenceResult> dbResults = null;
+                    try
+                    {
+                        dbResults = repo.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = season.InternalId });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn(ex.Message);
+
+                        return;
+                    }
+
 
                     var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {

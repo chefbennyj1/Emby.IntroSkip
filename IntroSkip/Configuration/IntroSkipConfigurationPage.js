@@ -388,14 +388,12 @@
         return function (view) {
             view.addEventListener('viewshow', () => {
                 loading.show();
-
                 document.querySelector('.pageTitle').innerText = "Title Sequences";
-                
                 var _seriesId, _seasonId;
 
-                var seriesSelect                    = view.querySelector('#selectEmbySeries');
-                var seasonSelect                    = view.querySelector('#selectEmbySeason');
-                var settingsButton                  = view.querySelector('#openSettingsDialog');
+                var seriesSelect = view.querySelector('#selectEmbySeries');
+                var seasonSelect = view.querySelector('#selectEmbySeason');
+                var settingsButton = view.querySelector('#openSettingsDialog');
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
 
                 getSeries().then(series => {
