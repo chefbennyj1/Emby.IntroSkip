@@ -14,11 +14,9 @@ namespace IntroSkip.Chapters
         public ILogger Log;
 
         public IItemRepository ItemRepository;
-<<<<<<< Updated upstream
-        public ChapterManager(ILogManager logManager, IItemRepository itemRepo)
-=======
-        public ChapterInsertion(ILogger log, IItemRepository itemRepo)
->>>>>>> Stashed changes
+
+        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
+
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
