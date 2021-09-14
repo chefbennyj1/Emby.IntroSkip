@@ -46,71 +46,7 @@
             return url;
         }
 
-        function openConfirmationDialog() {
-            var confirmDlg = dialogHelper.createDialog({
-                size: "medium-tall",
-                removeOnClose: !1,
-                scrollY: true
-            });
-
-            confirmDlg.classList.add("formDialog");
-            confirmDlg.classList.add("ui-body-a");
-            confirmDlg.classList.add("background-theme-a");
-            confirmDlg.style.maxWidth = "27%";
-            confirmDlg.style.maxHeight = "32%";
-
-            var html = "";
-            html += '<div class="formDialogHeader" style="display:flex">';
-            html += '<button is="paper-icon-button-light" class="btnCloseDialog autoSize paper-icon-button-light" tabindex="-1"><i class="md-icon">arrow_back</i></button><h3 class="formDialogHeaderTitle"></h3>';
-            html += '</div>';
-            html += '<div class="formDialogContent" style="margin:2em">';
-            html += '<div class="dialogContentInner" style="padding:0">';
-            html += '<div style="text-align:center"';
-
-            html += '<h1>You are about to remove all title sequence data.</h1>';
-            html += '<h1>Are you sure?</h1>';
-
-            html += '<div style="display:flex">';
-
-            html += '<button is="emby-button" type="submit" class="btnOk raised button-submit block emby-button" style="max-width:40%; margin-right:20%">';
-            html += '<span>OK</span>';
-            html += '</button>';
-
-            html += '<button is="emby-button" type="submit" class="btnCancel raised button-submit block emby-button" style="max-width:40%">';
-            html += '<span>Cancel</span>';
-            html += '</button>';
-
-            html += '</div>';
-
-            html += '</div>';
-            html += '</div>';
-
-            confirmDlg.innerHTML = html;
-            dialogHelper.open(confirmDlg);
-
-            confirmDlg.querySelector('.btnCloseDialog').addEventListener('click',
-                (e) => {
-                    e.preventDefault();
-                    dialogHelper.close(confirmDlg);
-                });
-
-            confirmDlg.querySelector('.btnCancel').addEventListener('click',
-                (e) => {
-                    e.preventDefault();
-                    dialogHelper.close(confirmDlg);
-                });
-
-            confirmDlg.querySelector('.btnOk').addEventListener('click',
-                (e) => {
-                    loading.show();
-                    ApiClient.deleteAll().then(result => {
-                        loading.hide();
-                        Dashboard.alert("All data removed.");
-                        dialogHelper.close(confirmDlg);
-                    })
-                });
-
-        }
+       
 
         function openSettingsDialog() {
             loading.show();
@@ -224,7 +160,19 @@
 
             removeAllButton.addEventListener('click', (e) => {
                 e.preventDefault();
-                openConfirmationDialog();
+                var message = 'Are you sure you wish to proceed?';
+                require(['confirm'], function (confirm) {
+                    confirm(message, 'Remove All Data').then(function () {
+                        ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
+                            if (result == "OK") {
+                                ApiClient.deleteAll().then(result => {
+                                    Dashboard.alert("All data removed.");
+                                    dialogHelper.close(confirmDlg);
+                                })
+                            }
+                        });
+                    });                     
+                });
             });
 
             //Chapter Insertion Option
@@ -313,7 +261,7 @@
                 url += '&HasSequence=' + row.cells[5].querySelector('select').value;
                 url += '&SeasonId=' + intro.SeasonId;
                 ApiClient.getJSON(ApiClient.getUrl(url)).then(result => {
-                    //reloadItems(result.TitleSequences, view);
+                    Dashboard.processPluginConfigurationUpdateResult(result); 
                 });
             });
 
@@ -349,7 +297,7 @@
                     html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
                     html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
 
-                    //html += '<div contenteditable>' + intro.HasSequence.toString() + '</div>';
+                    
                     html += '<div class="selectContainer" style="top:15px">';
                     html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
                     html += '<option value="true" ' + (intro.HasSequence ? 'selected' : "") + '>true</option>';
@@ -359,20 +307,12 @@
                     html += '</div>';
 
                     html += '</td>';
-                    //html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="color:' + (intro.HasSequence === true ? "#5EC157" : "") + '"><div contenteditable>' + intro.HasSequence.toString() + '</div></td>';
+                   
                     html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</div></td>';
                     html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '<div></td>';
-                    //html += '<td data-title="Remove" class="detailTableBodyCell fileCell">';
-                    //html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove Title Sequence</p>';
-                    //html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeIntroData emby-button"><i class="md-icon">clear</i></button>';
-                    //html += '</td>';
+                    
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
-                    //html += '<p style="margin: .6em 0; vertical-align: middle; display: inline-block;">Remove and Re-Scan</p>';
-                    //html += '<button style="margin-left: 1em;" id="' + episode.Id + '" class="fab removeFingerprint emby-button">';
-                    //html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
-                    //html += '<path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />';
-                    //html += '</svg>';
-                    //html += '</button>';
+                    
 
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
                     html += '<span>Save</span>';
@@ -596,13 +536,12 @@
                             ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
                                 if (result == "OK") {
                                     view.querySelector('.introResultBody').innerHTML = "";
-
+                                    Dashboard.processPluginConfigurationUpdateResult(result);  
                                 }
 
                             });
                         });
-                        loading.hide();
-                        reloadItems(page, false);
+                        loading.hide();                        
                     });
 
                 });
