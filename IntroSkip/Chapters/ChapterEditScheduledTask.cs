@@ -1,5 +1,4 @@
 ﻿using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
@@ -20,17 +19,17 @@ namespace IntroSkip.Chapters
         private ChapterInsertion ChapterInsertion { get; }
         private ILogger Log { get; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogger log, ChapterInsertion chapterInsertion)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager log, ChapterInsertion chapterInsertion)
         {
             LibraryManager = libraryManager;
             TaskManager = taskManager;
-            Log = log;
+            Log = log.GetLogger(Plugin.Instance.Name);
             ChapterInsertion = chapterInsertion;
         }
         
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            Log.Info("INTROSKIP CHAPTER TASK IS STARTING");
+            Log.Debug("CHAPTER TASK IS STARTING");
             //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
             Task chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
             chapterExecute.Wait(cancellationToken);
@@ -75,7 +74,7 @@ namespace IntroSkip.Chapters
 
         public Task ProcessEpisodeChaptersPoints()
         {
-            Log.Debug("INTROSKIP CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS METHOD");
+            Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS METHOD");
             var config = Plugin.Instance.Configuration;
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
@@ -85,7 +84,7 @@ namespace IntroSkip.Chapters
                 if (config.EnableChapterInsertion && episode.HasSequence)
                 {
                     long id = episode.InternalId;
-                    Log.Debug("INTROSKIP CHAPTER TASK: EPISODE ID = {0}", id);
+                    Log.Debug("CHAPTER TASK HAS FOUND: EPISODE ID = {0}", id);
                     ChapterInsertion.Instance.EditChapters(id);
                 }
             }

@@ -15,7 +15,7 @@ namespace IntroSkip.Chapters
 
         public IItemRepository ItemRepository;
 
-        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
+        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo) 
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
@@ -24,12 +24,12 @@ namespace IntroSkip.Chapters
 
         public void EditChapters(long id)
         {
-            Log.Debug("INTROSKIP CHAPTER EDIT: PASSED ID = {0}", id);
+            Log.Debug("CHAPTER EDIT: PASSED ID = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             
             var item = ItemRepository.GetItemById(id);
-            Log.Info("INTROSKIP CHAPTER EDIT: Name of Episode = {0}", item.Name);
+            Log.Info("CHAPTER EDIT: Name of Episode to process = {0}", item.Name);
 
             var config = Plugin.Instance.Configuration;
 
@@ -46,7 +46,7 @@ namespace IntroSkip.Chapters
                         Name = chap.Name,
                         StartPositionTicks = chap.StartPositionTicks,
                     });
-                    Log.Debug("INTROSKIP CHAPTER EDIT: ADDED.... NAME = {0} --- START TIME = {1}", chap.Name, chap.StartPositionTicks.ToString());
+                    Log.Debug("CHAPTER EDIT: ADDED.... NAME = {0} --- START TIME = {1}", chap.Name, chap.StartPositionTicks.ToString());
                 }
 
                 long insertStart = titleSequence.TitleSequenceStart.Ticks;
@@ -58,8 +58,7 @@ namespace IntroSkip.Chapters
                 //This wil check if the Introstart chapter point is already in the list
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
-                    Log.Info(
-                        "INTROSKIP CHAPTER EDIT: Title Sequence Chapter already Added - move along nothing to do here");
+                    Log.Info("CHAPTER EDIT: Title Sequence Chapter already Added for {0}", item.Name);
                 }
                 else
                 {
@@ -91,7 +90,7 @@ namespace IntroSkip.Chapters
 
                     ChapterInfo neededChapInfo = chapters[startIndex + 1];
                     string chapName = neededChapInfo.Name;
-                    Log.Debug("INTROSKIP CHAPTER EDIT: New Chapter name = {0}", chapName);
+                    Log.Debug("CHAPTER EDIT: New Chapter name = {0}", chapName);
                     string newVal = introEndString.Replace(introEndString, chapName);
 
                     int changeStart = startIndex + 1;
