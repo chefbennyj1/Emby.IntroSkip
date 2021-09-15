@@ -1,0 +1,41 @@
+﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs ChapterEditorConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/ChapterEditorConfigurationPageJS">
+    <div class="content-primary">
+        <div class="verticalSection verticalSection">
+            <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+                <div class="inputContainer">
+
+                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                        <input is="emby-toggle" type="checkbox" id="enableChapterInsertEvent" class="chkChapterInsertEvent" data-embytoggle="">
+                        <span class="toggleButtonLabel mdl-switch__label">Show Title Sequence in Chapters</span>
+                        <div class="mdl-switch__trackContainer">
+                            <div class="mdl-switch__track"></div>
+                            <div class="mdl-switch__thumb">
+                                <span class="mdl-switch__focus-helper"></span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="fieldDescription">
+                        This will create a Title Sequence Entry that will be shown in the Chapters Section of your Episodes
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                        <input is="emby-toggle" type="checkbox" id="enableAutoChpaterEvent" class="chkChapterExtractEvent" data-embytoggle="">
+                        <span class="toggleButtonLabel mdl-switch__label">Enable Auto Image Extraction</span>
+                        <div class="mdl-switch__trackContainer">
+                            <div class="mdl-switch__track"></div>
+                            <div class="mdl-switch__thumb">
+                                <span class="mdl-switch__focus-helper"></span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="fieldDescription">
+                        This will Automatically run the Thumbnail Image Extraction Process once the Intro Points have been inserted --
+                        This will only run if you Enable Show Title Sequence in Chapters
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

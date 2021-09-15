@@ -1,0 +1,22 @@
+﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs AdvancedSettingsConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/AdvancedSettingsConfigurationPageJS">
+    <div class="content-primary">
+        <div class="verticalSection verticalSection">
+            <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+                <div class="inputContainer">
+
+                    <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                        Title Sequence Detection
+                    </h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceMaxDegreeOfParallelism">Maximum parallel series to process at once:</label>
+                        <input type="number" id="txtTitleSequenceMaxDegreeOfParallelism" min="2" max="15" step="1" label="Maximum series to process at once:" class="emby-input">
+                        <div class="fieldDescription">
+                            The number of series to attempt title sequence processing, at once. Lower powered machines should keep the default of 2.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

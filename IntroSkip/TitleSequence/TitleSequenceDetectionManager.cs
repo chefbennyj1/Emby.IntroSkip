@@ -125,7 +125,7 @@ namespace IntroSkip.TitleSequence
                     {
                         Log.Warn(ex.Message);
 
-                        return;
+                        continue;
                     }
 
 
@@ -155,8 +155,7 @@ namespace IntroSkip.TitleSequence
 
                     //After processing, the DB entry is marked as 'processed'. if the item has been pocessed already, just move on.
                     if (dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
-                    { 
-                        
+                    {
                         Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
                         continue;
                     }

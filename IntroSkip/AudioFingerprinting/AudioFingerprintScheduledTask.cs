@@ -249,8 +249,8 @@ namespace IntroSkip.AudioFingerprinting
 
         }
                
-
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken, string titleSequenceStart = "00:00:00")
+        // in the future we can use "titleSequenceStart" to detect end title sequences of tv shows
+        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken, string titleSequenceStart = "00:00:00") 
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;

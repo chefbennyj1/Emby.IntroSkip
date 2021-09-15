@@ -24,12 +24,12 @@ namespace IntroSkip.Api
             public long[] InternalIds { get; set; }
         }
 
-        [Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
-        public class RemoveTitleSequenceRequest : IReturn<string>
-        {
-            [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long InternalId { get; set; }
-        }
+        //[Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
+        //public class RemoveTitleSequenceRequest : IReturn<string>
+        //{
+        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+        //    public long InternalId { get; set; }
+        //}
 
         [Route("/RemoveAll", "DELETE", Summary = "Remove All Episode Title Sequence Data")]
         public class RemoveAllRequest : IReturn<string>
@@ -104,6 +104,7 @@ namespace IntroSkip.Api
 
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
             
+            // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
             titleSequence.HasSequence        = request.HasSequence;

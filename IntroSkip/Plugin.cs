@@ -44,7 +44,28 @@ namespace IntroSkip
             {
                 Name = "IntroSkipConfigurationPageJS",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.js"
+            },
+            new PluginPageInfo
+            {
+                Name = "AdvancedSettingsConfigurationPage",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.AdvancedSettingsConfigurationPage.html",
+            },
+            new PluginPageInfo
+            {
+                Name = "AdvancedSettingsConfigurationPageJS",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.AdvancedSettingsConfigurationPage.js"
+            },
+            new PluginPageInfo
+            {
+                Name = "ChapterEditorConfigurationPage",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.html",
+            },
+            new PluginPageInfo
+            {
+                Name = "ChapterEditorConfigurationPageJS",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.js"
             }
+
         };
     }
 }
