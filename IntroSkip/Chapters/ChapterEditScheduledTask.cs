@@ -1,5 +1,4 @@
 ﻿using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
@@ -30,18 +29,23 @@ namespace IntroSkip.Chapters
         
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            Log.Info("INTROSKIP CHAPTER TASK IS STARTING");
-            //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
-            Task chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
-            chapterExecute.Wait(cancellationToken);
-
             var config = Plugin.Instance.Configuration;
-            // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
-            if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction)
+            Task chapterExecute = null;
+            if (config.EnableChapterInsertion)
             {
-                ProcessChapterImageExtraction();
+                Log.Info("INTROSKIP CHAPTER TASK IS STARTING");
+                //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
+                chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
+                chapterExecute.Wait(cancellationToken);
+
+                // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
+                if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction)
+                {
+                    ProcessChapterImageExtraction();
+                }
+                //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
             }
-            //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
+
             return chapterExecute;
         }
 
