@@ -1,9 +1,11 @@
-﻿using MediaBrowser.Model.Logging;
+﻿using System;
+using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
 using MediaBrowser.Model.Entities;
 using IntroSkip.Data;
 using IntroSkip.TitleSequence;
+using MediaBrowser.Controller.MediaEncoding;
 
 namespace IntroSkip.Chapters
 {
@@ -29,7 +31,11 @@ namespace IntroSkip.Chapters
             TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
             
             var item = ItemRepository.GetItemById(id);
-            Log.Info("CHAPTER EDIT: Name of Episode to process = {0}", item.Name);
+            var tvShow = item.Parent.Parent.Name;
+            var season = item.Parent.Name;
+            var episodeNo = item.IndexNumber;
+            Log.Info("CHAPTER EDIT: TV Show: {0}", tvShow);
+            Log.Info("CHAPTER EDIT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
             var config = Plugin.Instance.Configuration;
 
@@ -54,6 +60,7 @@ namespace IntroSkip.Chapters
 
                 string introStartString = "Title Sequence";
                 string introEndString = "Intro End";
+                int iCount = chapters.Count;
 
                 //This wil check if the Introstart chapter point is already in the list
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
@@ -62,51 +69,68 @@ namespace IntroSkip.Chapters
                 }
                 else
                 {
-                    //create new chapter entry point for the Start of the Intro
-                    ChapterInfo introStart = new ChapterInfo
+                    try
                     {
-                        Name = introStartString,
-                        StartPositionTicks = insertStart
-                    };
+                        //create new chapter entry point for the Start of the Intro
+                        ChapterInfo introStart = new ChapterInfo
+                        {
+                            Name = introStartString,
+                            StartPositionTicks = insertStart
+                        };
 
-                    //add the entry and lets arrange the chapter list
-                    //if the Title sequence doesn't start at 0, insert it
-                    if (introStart.StartPositionTicks != 0)
-                    {
-                        chapters.Add(introStart);
-                        chapters.Sort(CompareStartTimes);
+                        
+                        //add the entry and lets arrange the chapter list
+                        //if the Title sequence doesn't start at 0, insert it
+                        if (introStart.StartPositionTicks != 0 && chapters.Count >= 2)
+                        {
+                            chapters.Add(introStart);
+                            chapters.Sort(CompareStartTimes);
+                        }
+
+                        //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
+                        if (introStart.StartPositionTicks == 0)
+                        {
+                            chapters.RemoveAt(0);
+                            chapters.Add(introStart);
+                            chapters.Sort(CompareStartTimes);
+                        }
+
+                        //create new chapter entry point for the End of the Intro
+                        int startIndex = chapters.FindIndex(st => st.Name == introStartString);
+
+                        if (chapters.Count <= 2)
+                        {
+                            Log.Info("CHAPTER EDIT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
+                            Log.Info("CHAPTER EDIT: Please check this episode in your library");
+                        }
+                        if (chapters.Count >= 2)
+                        {
+                            ChapterInfo neededChapInfo = chapters[startIndex + 1];
+                            string chapName = neededChapInfo.Name;
+                            Log.Debug("CHAPTER EDIT: New Chapter name = {0}", chapName);
+                            string newVal = introEndString.Replace(introEndString, chapName);
+
+                            int changeStart = startIndex + 1;
+                            chapters.RemoveAt(changeStart);
+                            ChapterInfo edit = new ChapterInfo
+                            {
+                                Name = newVal,
+                                StartPositionTicks = insertEnd,
+
+                            };
+                            //add the entry and lets arrange the chapter list
+                            chapters.Add(edit);
+                            chapters.Sort(CompareStartTimes);
+
+                            //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
+                            ItemRepository.SaveChapters(id, chapters);
+                        }
                     }
-
-                    //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
-                    if (introStart.StartPositionTicks == 0)
+                    catch (Exception e)
                     {
-                        chapters.RemoveAt(0);
-                        chapters.Add(introStart);
-                        chapters.Sort(CompareStartTimes);
+                        Log.Error("########### CHAPTER EDIT ERROR ###########", e);
+                        throw;
                     }
-
-                    //create new chapter entry point for the End of the Intro
-                    int startIndex = chapters.FindIndex(st => st.Name == introStartString);
-
-                    ChapterInfo neededChapInfo = chapters[startIndex + 1];
-                    string chapName = neededChapInfo.Name;
-                    Log.Debug("CHAPTER EDIT: New Chapter name = {0}", chapName);
-                    string newVal = introEndString.Replace(introEndString, chapName);
-
-                    int changeStart = startIndex + 1;
-                    chapters.RemoveAt(changeStart);
-                    ChapterInfo edit = new ChapterInfo
-                    {
-                        Name = newVal,
-                        StartPositionTicks = insertEnd,
-
-                    };
-                    //add the entry and lets arrange the chapter list
-                    chapters.Add(edit);
-                    chapters.Sort(CompareStartTimes);
-
-                    //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
-                    ItemRepository.SaveChapters(id, chapters);
                 }
             }
         }
