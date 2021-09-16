@@ -99,8 +99,8 @@ namespace IntroSkip.Chapters
 
                         if (chapters.Count <= 2)
                         {
-                            Log.Info("CHAPTER EDIT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
-                            Log.Info("CHAPTER EDIT: Please check this episode in your library");
+                            Log.Warn("CHAPTER EDIT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
+                            Log.Warn("CHAPTER EDIT: Please check this episode in your library");
                         }
                         if (chapters.Count >= 2)
                         {
