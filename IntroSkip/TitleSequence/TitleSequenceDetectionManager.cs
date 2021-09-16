@@ -149,7 +149,7 @@ namespace IntroSkip.TitleSequence
                     // An entire season with no title sequence might be the case. However, something else might have caused an entire season to have no results. - Warn the log.
                     if (dbEpisodes.All(item => item.HasSequence == false) && dbEpisodes.All(item => item.Processed)) 
                     {
-                        Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
+                        //Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
                     }
 
 
@@ -182,7 +182,7 @@ namespace IntroSkip.TitleSequence
                             break;
                         }
                         
-                        //Compare the unmatched episode  with every other episode in the season untill there is a match.
+                        //Compare the unmatched episode  with every other episode in the season until there is a match.
                         for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
                         {
                             if (cancellationToken.IsCancellationRequested)
@@ -276,7 +276,7 @@ namespace IntroSkip.TitleSequence
 
             });
             
-
+            progress.Report(100.0);
         }
         
         private bool IsComplete(BaseItem season)

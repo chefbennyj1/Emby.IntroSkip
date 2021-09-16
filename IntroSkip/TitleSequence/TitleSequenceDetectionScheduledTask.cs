@@ -41,9 +41,9 @@ namespace IntroSkip.TitleSequence
                 TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, IntroSkipPluginEntryPoint.Instance.Repository);
                 await Task.FromResult(true);               
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Log.Warn(ex.Message);
             }
 
             progress.Report(100.0);
@@ -71,4 +71,3 @@ namespace IntroSkip.TitleSequence
 
     }
 }
-
