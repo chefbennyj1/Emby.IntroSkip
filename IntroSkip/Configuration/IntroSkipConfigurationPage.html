@@ -2,41 +2,46 @@
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-                <!--<h2>
-                    Title Sequences
-                </h2>-->
+                <!--<h2>Title Sequences</h2>-->
 
                 <!--<div class="detailSectionHeader">
                     <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Advanced Settings</h2>
                     <button is="emby-button" id="openSettingsDialog" class="fab emby-input-iconbutton paper-icon-button-light emby-button" style="margin-left: 1em;"><i class="md-icon">settings</i></button>
                 </div>-->
 
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">INTRO SKIP CONFIGURATION</h2>
+                    <a is="emby-linkbutton" class="raised button-alt headerHelpButton" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/" target="_blank" href="">SETUP INFO</a>
+                </div>
+
+                <br />
+
                 <div>
-                    
+
                     <form style="width: 50%;">
                         <div style="display: flex; align-items: center;">
                             <!-- Emby Series List -->
                             <div style="flex-grow: 1;" class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeries">Series:</label>
+                                <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
                                 <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
                                 <div class="selectArrowContainer">
                                     <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
                                 </div>
                                 <div class="fieldDescription">
-                                    Show saved intro data for this series.
+                                    Show Title Sequence (Intro) data for this TV Show.
                                 </div>
                             </div>
                         </div>
                         <div style="display: flex; align-items: center;">
                             <!-- Emby Season List -->
                             <div style="flex-grow: 1;" class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeason">Seasons:</label>
+                                <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
                                 <select is="emby-select" name="selectEmbySeries" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
                                 <div class="selectArrowContainer">
                                     <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
                                 </div>
                                 <div class="fieldDescription">
-                                    Show saved intro data for this season.
+                                    Show Title Sequence (Intro) data for this season.
                                 </div>
                             </div>
                         </div>

@@ -19,11 +19,11 @@ namespace IntroSkip.Chapters
         private ChapterInsertion ChapterInsertion { get; }
         private ILogger Log { get; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogger log, ChapterInsertion chapterInsertion)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion)
         {
             LibraryManager = libraryManager;
             TaskManager = taskManager;
-            Log = log;
+            Log = logManager.GetLogger(Plugin.Instance.Name);
             ChapterInsertion = chapterInsertion;
         }
         
@@ -33,7 +33,7 @@ namespace IntroSkip.Chapters
             Task chapterExecute = null;
             if (config.EnableChapterInsertion)
             {
-                Log.Info("INTROSKIP CHAPTER TASK IS STARTING");
+                Log.Debug("CHAPTER TASK IS STARTING");
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
                 chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
                 chapterExecute.Wait(cancellationToken);
@@ -79,7 +79,7 @@ namespace IntroSkip.Chapters
 
         public Task ProcessEpisodeChaptersPoints()
         {
-            Log.Debug("INTROSKIP CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS METHOD");
+            Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
             var config = Plugin.Instance.Configuration;
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
@@ -89,7 +89,7 @@ namespace IntroSkip.Chapters
                 if (config.EnableChapterInsertion && episode.HasSequence)
                 {
                     long id = episode.InternalId;
-                    Log.Debug("INTROSKIP CHAPTER TASK: EPISODE ID = {0}", id);
+                    Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
                     ChapterInsertion.Instance.EditChapters(id);
                 }
             }
