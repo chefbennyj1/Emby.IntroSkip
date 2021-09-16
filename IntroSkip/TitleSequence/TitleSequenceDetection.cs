@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
@@ -21,15 +20,15 @@ namespace IntroSkip.TitleSequence
     public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
     {             
         public static TitleSequenceDetection Instance  { get; private set; }
-        private ILogger Log { get; set; }
-        public TitleSequenceDetection(ILogManager logMan)
+        //private ILogger Log { get; set; }
+        public TitleSequenceDetection()
         {
-            Log = logMan.GetLogger(Plugin.Instance.Name);
+            //Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
         
         // Keep integer in specified range
-        private static int clip(int val, int min, int max)
+        private static int Clip(int val, int min, int max)
         {
             if (val < min)
             {
@@ -46,7 +45,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Calculate Hamming distance between to integers (bit difference)
-        private static uint getHammingDistance(uint n1, uint n2)
+        private static uint GetHammingDistance(uint n1, uint n2)
         {
             var x = n1 ^ n2;
             uint setBits = 0;
@@ -59,8 +58,19 @@ namespace IntroSkip.TitleSequence
             return setBits;
         }
 
+        private static uint GetHammingDistance2(uint x, uint y)
+        {
+            var i = x ^ y;
+            i -= ((i >> 1) & 0x55555555);
+            i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+            i = (i + (i >> 4)) & 0x0f0f0f0f;
+            i += (i >> 8);
+            i += (i >> 16);
+            return i & 0x3f;  
+        }
+
         // Calculate the similarity of two fingerprints
-        private static double compareFingerprints(List<uint> f1, List<uint> f2)
+        private static double CompareFingerprints(List<uint> f1, List<uint> f2)
         {
             double dist = 0.0;
             if (f1.Count != f2.Count)
@@ -70,8 +80,8 @@ namespace IntroSkip.TitleSequence
 
             foreach (var i in Enumerable.Range(0, f1.Count))
             {
-                var hammingDistance = getHammingDistance(f1[i], f2[i]);
-                dist = dist + hammingDistance;
+                var hammingDistance = GetHammingDistance2(f1[i], f2[i]);
+                dist += hammingDistance;
             }
 
             var score = 1 - dist / (f1.Count * 32);
@@ -79,7 +89,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Slide fingerprints to find best offset
-        private static int getBestOffset(List<uint> f1, List<uint> f2)
+        private static int GetBestOffset(List<uint> f1, List<uint> f2)
         {
             var length     = f1.Count;
             var iterations = length + 1;
@@ -97,20 +107,20 @@ namespace IntroSkip.TitleSequence
                 var upper = Math.Abs(a - b);
                 try
                 {
-                    output.Add(compareFingerprints(f1.GetRange(a, upper), f2.GetRange(x, upper)));
+                    output.Add(CompareFingerprints(f1.GetRange(a, upper), f2.GetRange(x, upper)));
                    
-                    a = clip(a - 1, 0, length - 1);
+                    a = Clip(a - 1, 0, length - 1);
                     if (diff < 0)
                     {
-                        b = clip(b - 1, 0, length - 1);
-                        x = clip(x + 1, 0, length - 1);
-                        y = clip(y, 0, length - 1);
+                        b = Clip(b - 1, 0, length - 1);
+                        x = Clip(x + 1, 0, length - 1);
+                        y = Clip(y, 0, length - 1);
                     }
                     else
                     {
-                        b = clip(b, 0, length - 1);
-                        x = clip(x, 0, length - 1);
-                        y = clip(y + 1, 0, length - 1);
+                        b = Clip(b, 0, length - 1);
+                        x = Clip(x, 0, length - 1);
+                        y = Clip(y + 1, 0, length - 1);
                     }
 
                     diff = diff - 1;
@@ -128,22 +138,22 @@ namespace IntroSkip.TitleSequence
         }
 
         // Align the fingerprints according to the calculated offset
-        private static Tuple<List<uint>, List<uint>> getAlignedFingerprints(int offset, List<uint> f1, List<uint> f2)
+        private static Tuple<List<uint>, List<uint>> GetAlignedFingerprints(int offset, List<uint> fingerprint1, List<uint> fingerprint2)
         {
             List<uint> offsetCorrectedF2 = new List<uint>();
             List<uint> offsetCorrectedF1 = new List<uint>();
             if (offset >= 0)
             {
                 //offset = offset * -1;
-                offsetCorrectedF1.AddRange(f1.GetRange(offset, f1.Count - offset));
-                offsetCorrectedF2.AddRange(f2.GetRange(0, f2.Count - offset));
+                offsetCorrectedF1.AddRange(fingerprint1.GetRange(offset, fingerprint1.Count - offset));
+                offsetCorrectedF2.AddRange(fingerprint2.GetRange(0, fingerprint2.Count - offset));
 
             }
             else
             {
                 offset = offset * -1;
-                offsetCorrectedF1.AddRange(f1.GetRange(0, f1.Count - Math.Abs(offset)));
-                offsetCorrectedF2.AddRange(f2.GetRange(offset, f2.Count - Math.Abs(offset)));
+                offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - Math.Abs(offset)));
+                offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - Math.Abs(offset)));
 
             }
 
@@ -151,17 +161,17 @@ namespace IntroSkip.TitleSequence
         }
 
         // Find the intro region based on Hamming distances
-        private static Tuple<int, int> findContiguousRegion(List<uint> arr, int upperLimit)
+        private static Tuple<int, int> FindContiguousRegion(List<uint> hammingDistances, int upperLimit)
         {
             var start = -1;
             var end = -1;
-            foreach (var i in Enumerable.Range(0, arr.Count()))
+            foreach (var i in Enumerable.Range(0, hammingDistances.Count()))
             {
                 // Stop the execution after we've been far enough past the found intro region
                 if (start != -1 && i - end >= 100) {
                     break;
                 }
-                if (arr[i] < upperLimit && nextOnesAreAlsoSmall(arr, i, upperLimit))
+                if (hammingDistances[i] < upperLimit && nextOnesAreAlsoSmall(hammingDistances, i, upperLimit))
                 {
                     if (start == -1)
                     {
@@ -176,20 +186,15 @@ namespace IntroSkip.TitleSequence
         }
 
         // Look at next elements in the array and determine if they also fall below the upper limit
-        private static bool nextOnesAreAlsoSmall(List<uint> arr, int index, int upperLimit)
+        private static bool nextOnesAreAlsoSmall(List<uint> hammingDistances, int index, int upperLimit)
         {
-            if (index + 3 < arr.Count())
+            if (index + 3 < hammingDistances.Count())
             {
-                var v1 = arr[index + 1];
-                var v2 = arr[index + 2];
-                var v3 = arr[index + 3];
+                var v1 = hammingDistances[index + 1];
+                var v2 = hammingDistances[index + 2];
+                var v3 = hammingDistances[index + 3];
                 var average = (v1 + v2 + v3) / 3;
-                if (average < upperLimit)
-                {
-                    return true;
-                }
-
-                return false;
+                return average < upperLimit;
             }
 
             return false;
@@ -221,28 +226,23 @@ namespace IntroSkip.TitleSequence
             }
 
             
-            var introDto =  compareFingerprint(episode1InputKey, episode2InputKey);
+            var introDto =  CompareFingerprint(episode1InputKey, episode2InputKey);
            
-            //introDto[0].InternalId  = episode1Input.InternalId;
-            //introDto[0].IndexNumber = episode1Input.IndexNumber;
-
-            //introDto[1].InternalId  = episode2Input.InternalId;
-            //introDto[1].IndexNumber = episode2Input.IndexNumber;
           
-            return introDto; //compareFingerprint(episode1InputKey, episode2InputKey);
+            return introDto; 
            
         }
 
        
-        private List<TitleSequenceResult> compareFingerprint(TitleSequenceResult Episode1, TitleSequenceResult Episode2)
+        private List<TitleSequenceResult> CompareFingerprint(TitleSequenceResult episode1, TitleSequenceResult episode2)
         {
             
-            var config       = Plugin.Instance.Configuration;
-            var duration     = Episode1.Duration * 60; //Both episodes should have the same encoding duration
+            
+            var duration     = episode1.Duration * 60; //Both episodes should have the same encoding duration
 
 
-            var fingerprint1 = Episode1.Fingerprint;
-            var fingerprint2 = Episode2.Fingerprint;
+            var fingerprint1 = episode1.Fingerprint;
+            var fingerprint2 = episode2.Fingerprint;
             
 
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
@@ -252,19 +252,19 @@ namespace IntroSkip.TitleSequence
                 fingerprint2 = fingerprint2.GetRange(0, fingerprint2.Count() - 1);  
             }
 
-            int offset = getBestOffset(fingerprint1, fingerprint2);
+            int offset = GetBestOffset(fingerprint1, fingerprint2);
 
             
-            var _tup_1 = getAlignedFingerprints(offset, fingerprint1, fingerprint2);
-            var f1     = _tup_1.Item1;
-            var f2     = _tup_1.Item2;
+            var tup1 = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
+            var f1     = tup1.Item1;
+            var f2     = tup1.Item2;
 
             // ReSharper disable once TooManyChainedReferences
-            var hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => getHammingDistance(f1[i], f2[i])).ToList();
+            var hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
             
-            var _tup_2 = findContiguousRegion(hammingDistances, 8);
-            var start  = _tup_2.Item1;
-            var end    = _tup_2.Item2;
+            var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
+            var start  = tup2.Item1;
+            var end    = tup2.Item2;
 
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
@@ -318,19 +318,19 @@ namespace IntroSkip.TitleSequence
             }
                        
             
-            Episode1.HasSequence = true;
-            Episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
-            Episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
+            episode1.HasSequence = true;
+            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
+            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
              
 
-            Episode2.HasSequence = true;
-            Episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
-            Episode2.TitleSequenceEnd   = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
+            episode2.HasSequence = true;
+            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
+            episode2.TitleSequenceEnd   = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
             
             return new List<TitleSequenceResult>()
             {
-                Episode1,
-                Episode2
+                episode1,
+                episode2
             };
 
             
