@@ -260,9 +260,17 @@ namespace IntroSkip.TitleSequence
             var f2     = tup1.Item2;
 
             // ReSharper disable once TooManyChainedReferences
-            var hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
+            List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
             
-            var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
+
+            //Original Code
+            /*var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
+            var start = tup2.Item1;
+            var end = tup2.Item2;*/
+
+            var config = Plugin.Instance.Configuration;
+            //Added for Sam to test upper threshold changes
+            var tup2 = FindContiguousRegion(hammingDistances, config.HammingDistanceThreshold); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
             var start  = tup2.Item1;
             var end    = tup2.Item2;
 
