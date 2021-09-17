@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
+using IntroSkip.Data;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
@@ -20,10 +21,11 @@ namespace IntroSkip.TitleSequence
     public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
     {             
         public static TitleSequenceDetection Instance  { get; private set; }
-        //private ILogger Log { get; set; }
-        public TitleSequenceDetection()
+        private static ILogger Log { get; set; }
+
+        public TitleSequenceDetection(ILogManager logMan)
         {
-            //Log = logMan.GetLogger(Plugin.Instance.Name);
+            Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
         
@@ -260,9 +262,19 @@ namespace IntroSkip.TitleSequence
             var f2     = tup1.Item2;
 
             // ReSharper disable once TooManyChainedReferences
-            var hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
+            List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
+            //var hammingAverage = hammingDistances.Average(x => x);
+           
+            //Log.Info("Hamming Average is {0}", hammingAverage.ToString());
             
-            var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
+            //Original Code
+            /*var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
+            var start = tup2.Item1;
+            var end = tup2.Item2;*/
+
+            //Added for Sam to test upper threshold changes
+            var config = Plugin.Instance.Configuration;
+            var tup2 = FindContiguousRegion(hammingDistances, config.HammingDistanceThreshold); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
             var start  = tup2.Item1;
             var end    = tup2.Item2;
 

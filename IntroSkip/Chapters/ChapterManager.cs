@@ -2,6 +2,7 @@
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using MediaBrowser.Model.Entities;
 using IntroSkip.Data;
 using IntroSkip.TitleSequence;
@@ -25,7 +26,7 @@ namespace IntroSkip.Chapters
 
         public void EditChapters(long id)
         {
-            Log.Debug("CHAPTER EDIT: PASSED ID = {0}", id);
+            Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
             ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             TitleSequenceResult titleSequence = repo.GetResult(id.ToString());
 
@@ -33,8 +34,8 @@ namespace IntroSkip.Chapters
             var tvShow = item.Parent.Parent.Name;
             var season = item.Parent.Name;
             var episodeNo = item.IndexNumber;
-            Log.Info("CHAPTER EDIT: TV Show: {0}", tvShow);
-            Log.Info("CHAPTER EDIT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
+            Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShow, season);
+            Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
             var config = Plugin.Instance.Configuration;
 
@@ -51,7 +52,7 @@ namespace IntroSkip.Chapters
                         Name = chap.Name,
                         StartPositionTicks = chap.StartPositionTicks,
                     });
-                    Log.Debug("CHAPTER EDIT: ADDED.... NAME = {0} --- START TIME = {1}", chap.Name, chap.StartPositionTicks.ToString());
+                    Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name, chap.StartPositionTicks.ToString());
                 }
 
                 long insertStart = titleSequence.TitleSequenceStart.Ticks;
@@ -59,54 +60,57 @@ namespace IntroSkip.Chapters
 
                 string introStartString = "Title Sequence";
                 string introEndString = "Intro End";
+
                 int iCount = chapters.Count;
+                int lastIndex = iCount - 1;
 
                 //This wil check if the Introstart chapter point is already in the list
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
-                    Log.Info("CHAPTER EDIT: Title Sequence Chapter already Added for {0}", item.Name);
+                    Log.Info("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
                 }
                 else
                 {
                     try
                     {
-                        //create new chapter entry point for the Start of the Intro
-                        ChapterInfo introStart = new ChapterInfo
-                        {
-                            Name = introStartString,
-                            StartPositionTicks = insertStart
-                        };
-
-
                         //add the entry and lets arrange the chapter list
                         //if the Title sequence doesn't start at 0, insert it
-                        if (introStart.StartPositionTicks != 0 && chapters.Count >= 2)
+                        if (insertStart != 0)
                         {
-                            chapters.Add(introStart);
+                            chapters.Add(new ChapterInfo
+                            {
+                                Name = introStartString,
+                                StartPositionTicks = insertStart
+                            });
                             chapters.Sort(CompareStartTimes);
                         }
 
                         //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
-                        if (introStart.StartPositionTicks == 0)
+                        if (insertStart == 0)
                         {
                             chapters.RemoveAt(0);
-                            chapters.Add(introStart);
+                            chapters.Add( new ChapterInfo
+                                {
+                                    Name = introStartString,
+                                    StartPositionTicks = insertStart
+                                });
                             chapters.Sort(CompareStartTimes);
                         }
 
                         //create new chapter entry point for the End of the Intro
                         int startIndex = chapters.FindIndex(st => st.Name == introStartString);
 
-                        if (chapters.Count <= 2)
+                        if (startIndex >= lastIndex)
                         {
-                            Log.Warn("CHAPTER EDIT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
-                            Log.Warn("CHAPTER EDIT: Please check this episode in your library");
+                            Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
+                            Log.Warn("CHAPTER INSERT: Please check this episode in your library");
                         }
-                        if (chapters.Count >= 2)
+
+                        if (startIndex < lastIndex)
                         {
                             ChapterInfo neededChapInfo = chapters[startIndex + 1];
                             string chapName = neededChapInfo.Name;
-                            Log.Debug("CHAPTER EDIT: New Chapter name = {0}", chapName);
+                            Log.Debug("CHAPTER INSERT: Organising..... New Chapter name after Insert = {0}", chapName);
                             string newVal = introEndString.Replace(introEndString, chapName);
 
                             int changeStart = startIndex + 1;
@@ -127,7 +131,8 @@ namespace IntroSkip.Chapters
                     }
                     catch (Exception e)
                     {
-                        Log.Error("########### CHAPTER EDIT ERROR ###########", e);
+                        Log.Error("########### CHAPTER INSERT ERROR ###########");
+                        Log.Error("######## GO GIVE CHEESE SOME STICK #########", e);
                         throw;
                     }
                 }

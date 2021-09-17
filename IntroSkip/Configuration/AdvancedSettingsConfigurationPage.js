@@ -67,6 +67,12 @@
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                 });
 
+                /*Hamming Distance Sensitivity Settings
+                var hammingDistanceSens = view.querySelector('#txtHammingDistanceThreshold');
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    hammingDistanceSens.value = config.HammingDistanceThreshold ? config.HammingDistanceThreshold : 8;
+                });*/
+
                 //Our ignore list
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 getSeries().then(series => {
@@ -132,6 +138,14 @@
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
+
+                /*hammingDistanceSens.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.HammingDistanceThreshold = hammingDistanceSens.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });*/
 
 
 
