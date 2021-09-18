@@ -1,28 +1,35 @@
-
-﻿using System;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Controller.Persistence;
+using System;
 using System.Collections.Generic;
- using MediaBrowser.Model.Entities;
- using IntroSkip.TitleSequence;
+using IntroSkip.TitleSequence;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Logging;
 
- namespace IntroSkip.Chapters
+namespace IntroSkip.Chapters
 {
     public class ChapterInsertion
     {
-        public ChapterInsertion Instance { get; set; }
+        public static ChapterInsertion Instance { get; set; }
 
-        private ILogger Log;
+        private ILogger Log { get; set; }
 
-        private IItemRepository ItemRepository;
+        private IItemRepository ItemRepository { get; set; }
 
-        public List<ProblemChapters> ProbChapterList = new List<ProblemChapters>();
+        public List<ChapterError> ChapterErrors = new List<ChapterError>();
 
         public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
             Instance = this;
+
+            /*Remove this eventually please :)
+            ChapterErrors.Add(new ChapterError() //<-- Unit Test
+            {
+                Date = DateTime.Now,
+                Id = 40,
+                ChapterCount = 8
+            });*/
         }
 
         public void EditChapters(long id)
@@ -40,9 +47,7 @@ using System.Collections.Generic;
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
-            var tvShowId = item.Parent.Parent.Id;
             var seasonName = item.Parent.Name;
-            var seasonId = item.Parent.Id;
             var episodeNo = item.IndexNumber;
             Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
@@ -100,11 +105,11 @@ using System.Collections.Generic;
                         {
                             chapters.RemoveAt(0);
 
-                            chapters.Add( new ChapterInfo
-                                {
-                                    Name = introStartString,
-                                    StartPositionTicks = insertStart
-                                });
+                            chapters.Add(new ChapterInfo
+                            {
+                                Name = introStartString,
+                                StartPositionTicks = insertStart
+                            });
 
                             chapters.Sort(CompareStartTimes);
                         }
@@ -114,18 +119,18 @@ using System.Collections.Generic;
 
                         if (startIndex >= lastIndex)
                         {
-                            //Lets add these to a list so that we can display them for the user on the Chapters page.
-                            ProbChapterList.Add( new ProblemChapters
-                                {
-                                    ShowId = tvShowId,
-                                    ShowName = tvShowName,
-                                    SeasonId = seasonId,
-                                    SeasonName = seasonName,
-                                    EpisodeIndex = episodeNo,
-                                    EpisodeId = item.Id,
-                                    EpisodeName = item.Name,
-                                    ChaptersNos = chapters.Count
-                                });
+                            //Create the new error - not really an error, but we'll call uit that for now.
+                            //The Error can consist of just one piece of data, the item InternalId. That is all we need to request further information about it later.
+                            //This will keep memory low, and also a list of long integers will be faster to send to the UI
+                            // We'll use the browsers engine (the UI) to request further data about the item if necessary.
+                            ChapterErrors.Add(new ChapterError()
+                            {
+                                Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
+                                Date = DateTime.Now,   //<-- Give them a date, so they know when this happened.
+                                ChapterCount = iCount
+                            });
+
+
 
                             Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                             Log.Warn("CHAPTER INSERT: Please check this episode in your library");
