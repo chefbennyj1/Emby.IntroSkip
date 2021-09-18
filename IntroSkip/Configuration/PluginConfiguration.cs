@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Model.Plugins;
+﻿using System.Collections.Generic;
+using MediaBrowser.Model.Plugins;
 
 namespace IntroSkip.Configuration
 {
@@ -12,6 +13,8 @@ namespace IntroSkip.Configuration
 
         public bool EnableChapterInsertion { get; set; }  //give the user the option to insert the chapter points into their library.
         public bool EnableAutomaticImageExtraction { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
+
+        public List<long> IgnoredList { get; set; }
 
         public int Version { get; set; } = 0;
         public int? Limit { get; set; } = null;

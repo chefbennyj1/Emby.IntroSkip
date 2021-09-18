@@ -34,12 +34,13 @@ namespace IntroSkip.TitleSequence
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, long[] seriesInternalIds, ITitleSequenceRepository repo)
         {
-
+            var config = Plugin.Instance.Configuration;
             var seriesInternalItemQuery = new InternalItemsQuery()
             {
                 Recursive = true,
                 ItemIds = seriesInternalIds,
                 IncludeItemTypes = new[] { "Series" },
+                ExcludeItemIds = config.IgnoredList.ToArray(),
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
             };
 
@@ -50,12 +51,13 @@ namespace IntroSkip.TitleSequence
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            var config = Plugin.Instance.Configuration;
             var seriesInternalItemQuery = new InternalItemsQuery()
             {
                 Recursive = true,
                 IncludeItemTypes = new[] { "Series" },
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-
+                ExcludeItemIds = config.IgnoredList.ToArray()
             };
 
             var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);

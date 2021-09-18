@@ -68,6 +68,7 @@ namespace IntroSkip.AudioFingerprinting
                     Recursive = true,
                     IncludeItemTypes = new[] { "Series" },
                     User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                    ExcludeItemIds = config.IgnoredList.ToArray(), 
                     OrderBy = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
                 };
 
