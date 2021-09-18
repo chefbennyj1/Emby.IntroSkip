@@ -1,15 +1,20 @@
-﻿using IntroSkip.TitleSequence;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Persistence;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
+
+﻿using MediaBrowser.Controller.Library;
+
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using IntroSkip.TitleSequence;
+using MediaBrowser.Model.Querying;
+using IntroSkip.Data;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Model.Logging;
+
 
 namespace IntroSkip.Chapters
 {
@@ -122,6 +127,19 @@ namespace IntroSkip.Chapters
             if (repo != null)
             {
                 repo.Dispose();
+            }
+
+            return null;
+        }
+
+        public Task RefreshChapters()
+        {
+            ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
+            foreach (TitleSequenceResult episode in dbResults.Items)
+            {
+                BaseItem item = ItemRepo.GetItemById(episode.InternalId);
+                item.RefreshMetadata(CancellationToken.None);
             }
 
             return null;
