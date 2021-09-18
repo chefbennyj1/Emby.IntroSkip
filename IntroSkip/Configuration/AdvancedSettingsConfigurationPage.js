@@ -73,7 +73,7 @@
                     var baseItem = result.Items[0];
                     element.innerHTML = '';
                     element.innerHTML += getListItemHtml(baseItem);
-                    var removeButtons = view.querySelectorAll('.removeItemBtn');
+                    var removeButtons = view.querySelectorAll('.removeItemBtn i');
                     removeButtons.forEach(btn => {
                         btn.addEventListener('click',
                             el => {

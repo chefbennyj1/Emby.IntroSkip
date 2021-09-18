@@ -76,7 +76,7 @@
                 //elements
                 var autoChapterExtract      = view.querySelector('.chkChapterExtractEvent');
                 var chapterInsert           = view.querySelector('.chkChapterInsertEvent');
-                var chapterErrorResultTable = view.querySelector('.tblEpisodeChapterErrorResults');
+                var chapterErrorResultTable = view.querySelector('.tblEpisodeChapterErrorResultBody');
                 
                 //config settings
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
