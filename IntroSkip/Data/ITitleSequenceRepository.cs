@@ -1,8 +1,6 @@
-﻿using IntroSkip.Configuration;
-using IntroSkip.TitleSequence;
+﻿using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace IntroSkip.Data
 {
@@ -22,7 +20,7 @@ namespace IntroSkip.Data
         /// <param name="id">The identifier.</param>
         /// <returns>Task.</returns>
         void Delete(string id);
-        
+
         /// <summary>
         /// Get TitleSequence Base Items
         /// </summary>
@@ -59,8 +57,8 @@ namespace IntroSkip.Data
         void DeleteAll();
 
         //void CreateColumn(string name, string type);
-      
-       
-                
+
+
+
     }
 }

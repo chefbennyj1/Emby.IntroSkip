@@ -27,7 +27,7 @@
             });
         }
 
-        function getItem(id) {
+        function getBaseItem(id) {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
                     resolve(result);
@@ -37,11 +37,11 @@
 
         function getListItemHtml(series) {
             var html = '';
-            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="true" data-action="link" style="transform: translate(0px, 0px);">';
+            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, 0px);">';
             html += '<div class="listItem-content listItemContent-touchzoom">';
             html += '<div class="listItemBody itemAction listItemBody-noleftpadding">';
             html += '<div class="listItemBodyText listItemBodyText-nowrap">' + series.Name + '</div>';
-            html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">EXTRA ITEM DATA</div>';
+            html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">Will be ignored during intro detection.</div>';
             html += '</div>';
             html += '<button title="Remove" aria-label="Remove" type="button" is="paper-icon-button-light" class="listItemButton itemAction paper-icon-button-light icon-button-conditionalfocuscolor removeItemBtn" id="' + series.Id + '">';
             html += '<i class="md-icon">delete</i>';
@@ -51,20 +51,59 @@
             return html;
         }
 
-        
+       
+
+        function handleRemoveItemClick(e, element, view) {
+            var id = e.target.closest('button').id;
+            ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                var filteredList = config.IgnoredList.filter(item => item != id);
+                config.IgnoredList = filteredList;
+                ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                    reloadList(filteredList, element, view);
+                    Dashboard.processPluginConfigurationUpdateResult(r); 
+                });
+                
+            });
+            
+        }
+
+        function reloadList(list, element, view) {
+            list.forEach(id => {
+                getBaseItem(id).then(result => {
+                    var baseItem = result.Items[0];
+                    element.innerHTML = '';
+                    element.innerHTML += getListItemHtml(baseItem);
+                    var removeButtons = view.querySelectorAll('.removeItemBtn');
+                    removeButtons.forEach(btn => {
+                        btn.addEventListener('click',
+                            el => {
+                                handleRemoveItemClick(el, element, view);
+                            });
+                    });
+                });
+            });
+        }
+
 
         return function (view) {
             view.addEventListener('viewshow', (e) => {
+
                 loading.show();
 
                 mainTabsManager.setTabs(this, 2, getTabs);
 
-                var ignoreList = view.querySelector('.ignore-list');
+                var ignoreListElement = view.querySelector('.ignore-list');
 
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
+                
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
+
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
+
+                    if (config.IgnoredList) {
+                        reloadList(config.IgnoredList, ignoreListElement, view);
+                    }
                 });
 
                 /*Hamming Distance Sensitivity Settings
@@ -89,25 +128,28 @@
 
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
                     
-                    getItem(seriesId).then(series => {
+                    getBaseItem(seriesId).then(result => {
 
-                        ignoreList.innerHTML += getListItemHtml(series);
-
+                        var series = result.Items[0];
+                           
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
-                            if (config.IgnoredSeries) {
+                            if (config.IgnoredList) {
 
-                                config.IgnoredSeries.push(seriesId);
+                                config.IgnoredList.push(seriesId);
 
                             } else {
 
-                                config.IgnoredSeries = [ seriesId ];
+                                config.IgnoredList = [ seriesId ];
 
                             }
-                            ApiClient.updatePluginConfiguration(pluginId, config).then((result) => {
-                                Dashboard.processPluginConfigurationUpdateResult(result); 
+
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r); 
                             });
+
                         });
+                        reloadList(cofnig.IgnoredList, ignoreListElement, view);
                         loading.hide();
                     });
                 });

@@ -1,10 +1,13 @@
+
 ﻿using MediaBrowser.Controller.Library;
+
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using IntroSkip.Data;
@@ -12,12 +15,13 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Logging;
 
+
 namespace IntroSkip.Chapters
 {
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
-        public ILibraryManager LibraryManager {get; set;}
-        private ITaskManager TaskManager { get;}
+        public ILibraryManager LibraryManager { get; set; }
+        private ITaskManager TaskManager { get; }
         private ChapterInsertion ChapterInsertion { get; }
         private IItemRepository ItemRepo { get; }
         private ILogger Log { get; }
@@ -30,7 +34,7 @@ namespace IntroSkip.Chapters
             ChapterInsertion = chapterInsertion;
             ItemRepo = itemRepo;
         }
-        
+
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var config = Plugin.Instance.Configuration;
@@ -67,7 +71,7 @@ namespace IntroSkip.Chapters
 
         public string Category => "Intro Skip";
 
-        
+
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
@@ -85,9 +89,10 @@ namespace IntroSkip.Chapters
         {
             Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
             var config = Plugin.Instance.Configuration;
-            ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
-            
+            //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
+
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
                 if (config.EnableChapterInsertion && episode.HasSequence)
@@ -96,6 +101,32 @@ namespace IntroSkip.Chapters
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
                     ChapterInsertion.Instance.EditChapters(id);
                 }
+            }
+
+            var repo = Repository as IDisposable;
+            if (repo != null)
+            {
+                repo.Dispose();
+            }
+
+            return null;
+        }
+
+        public Task RefreshChapters()
+        {
+            var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
+            foreach (TitleSequenceResult episode in dbResults.Items)
+            {
+                BaseItem item = ItemRepo.GetItemById(episode.InternalId);
+                item.RefreshMetadata(CancellationToken.None);
+            }
+
+            var repo = Repository as IDisposable;
+            if (repo != null)
+            {
+                repo.Dispose();
             }
 
             return null;
@@ -118,7 +149,7 @@ namespace IntroSkip.Chapters
         {
             //var chapterEdit = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "IntroSkip Chapter Insertion");
             var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
-            
+
             TaskManager.Execute(thumbnail, new TaskOptions());
 
             return null;

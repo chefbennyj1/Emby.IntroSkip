@@ -1,13 +1,10 @@
-﻿using System;
+﻿using MediaBrowser.Model.Logging;
+using SQLitePCL.pretty;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
-using MediaBrowser.Model.Logging;
-using SQLitePCL.pretty;
 using System.Linq;
-using SQLitePCL;
-using System.Text;
+using System.Threading;
 
 namespace IntroSkip.Data
 {
@@ -249,7 +246,7 @@ namespace IntroSkip.Data
                 "PRAGMA journal_mode=WAL",
                 "PRAGMA page_size=4096",
                 "PRAGMA synchronous=Normal"
-                
+
             };
 
             if (EnableTempStoreMemory)
@@ -268,7 +265,7 @@ namespace IntroSkip.Data
                 });
             }
 
-            
+
             db.ExecuteAll(string.Join(";", queries.ToArray()));
         }
 

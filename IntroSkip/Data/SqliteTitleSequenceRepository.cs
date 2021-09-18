@@ -1,33 +1,29 @@
-﻿using System;
+﻿using IntroSkip.Data;
+using IntroSkip.TitleSequence;
+using MediaBrowser.Controller;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Serialization;
+using SQLitePCL.pretty;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using IntroSkip;
-using IntroSkip.Configuration;
-using IntroSkip.Data;
-using IntroSkip.TitleSequence;
-using MediaBrowser.Controller;
-using MediaBrowser.Controller.Persistence;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
-using MediaBrowser.Model.Serialization;
-using SQLitePCL.pretty;
 
 namespace Emby.AutoOrganize.Data
 {
     public class SqliteTitleSequenceRepository : BaseSqliteRepository, ITitleSequenceRepository, IDisposable
     {
         private readonly IJsonSerializer _json;
-        
+
         public SqliteTitleSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json) : base(logger)
         {
             _json = json;
             DbFilePath = Path.Combine(appPaths.DataPath, "titlesequence.db");
         }
-          
+
 
         /// <summary>
         /// Opens the connection to the database
@@ -37,16 +33,16 @@ namespace Emby.AutoOrganize.Data
         {
             using (var connection = CreateConnection())
             {
-                RunDefaultInitialization(connection);                
-                
+                RunDefaultInitialization(connection);
+
                 string[] queries =
                 {
-                     "create table if not exists TitleSequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, HasSequence TEXT, Fingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",                                                                                              
+                     "create table if not exists TitleSequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, HasSequence TEXT, Fingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",
                      "create index if not exists idx_TitleSequenceResults on TitleSequenceResults(ResultId)"
                 };
 
                 connection.RunQueries(queries);
-                
+
             }
         }
 
@@ -96,7 +92,7 @@ namespace Emby.AutoOrganize.Data
                 {
                     //connection.RunInTransaction(db =>
                     //{
-                       connection.Vacuum();
+                    connection.Vacuum();
 
                     //}, TransactionMode);
 
@@ -145,7 +141,7 @@ namespace Emby.AutoOrganize.Data
                 }
             }
         }
-              
+
 
         //BaseTitleSequence
         public QueryResult<BaseTitleSequence> GetBaseTitleSequenceResults(TitleSequenceResultQuery query)
@@ -160,15 +156,15 @@ namespace Emby.AutoOrganize.Data
                 using (var connection = CreateConnection(true))
                 {
                     var commandText = string.Empty;
-                    if(query.SeasonInternalId.HasValue)
+                    if (query.SeasonInternalId.HasValue)
                     {
                         commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
-                    } 
+                    }
                     else
                     {
                         commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
-                    }   
-                       
+                    }
+
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
@@ -259,7 +255,7 @@ namespace Emby.AutoOrganize.Data
             {
                 result.HasSequence = reader.GetBoolean(index);
             }
-                       
+
 
             index++;
             if (!reader.IsDBNull(index))
@@ -271,19 +267,19 @@ namespace Emby.AutoOrganize.Data
             if (!reader.IsDBNull(index))
             {
                 result.SeasonId = reader.GetInt64(index);
-            }   
+            }
 
             index++;
             if (!reader.IsDBNull(index))
             {
                 result.IndexNumber = reader.GetInt(index);
-            } 
-                    
-            
+            }
+
+
 
             return result;
         }
-        
+
         //TitleSequenceResult - Full Result including FIngerprint and duration
         public QueryResult<TitleSequenceResult> GetResults(TitleSequenceResultQuery query)
         {
@@ -297,15 +293,15 @@ namespace Emby.AutoOrganize.Data
                 using (var connection = CreateConnection(true))
                 {
                     var commandText = string.Empty;
-                    if(query.SeasonInternalId.HasValue)
+                    if (query.SeasonInternalId.HasValue)
                     {
                         commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
-                    } 
+                    }
                     else
                     {
                         commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
-                    }   
-                       
+                    }
+
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
@@ -346,7 +342,7 @@ namespace Emby.AutoOrganize.Data
         }
         public TitleSequenceResult GetResult(string id)
         {
-            
+
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException("id");
@@ -419,40 +415,40 @@ namespace Emby.AutoOrganize.Data
             if (!reader.IsDBNull(index))
             {
                 result.SeasonId = reader.GetInt64(index);
-            }   
+            }
 
             index++;
             if (!reader.IsDBNull(index))
             {
                 result.IndexNumber = reader.GetInt(index);
-            } 
-            
+            }
+
             index++;
             if (!reader.IsDBNull(index))
             {
                 result.Confirmed = reader.GetBoolean(index);
 
-            } 
+            }
 
             index++;
             if (!reader.IsDBNull(index))
             {
                 result.Processed = reader.GetBoolean(index);
-            } 
-            
+            }
+
 
             return result;
         }
 
-       private List<uint> ToUintList(Array a)
-       {
+        private List<uint> ToUintList(Array a)
+        {
             var list = new List<uint>();
-            foreach(var item in a)
+            foreach (var item in a)
             {
                 list.Add(Convert.ToUInt32(item));
             }
             return list;
-       }
+        }
 
     }
 }

@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using IntroSkip.Data;
 using IntroSkip.TitleSequence;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -16,7 +15,7 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceService : IService
     {
-        
+
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -34,7 +33,7 @@ namespace IntroSkip.Api
         [Route("/RemoveAll", "DELETE", Summary = "Remove All Episode Title Sequence Data")]
         public class RemoveAllRequest : IReturn<string>
         {
-           
+
         }
 
         [Route("/RemoveSeasonDataRequest", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
@@ -63,70 +62,73 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long SeasonId { get; set; }
-            
+
         }
 
         [Route("/UpdateTitleSequence", "GET", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public long InternalId { get; set; }           
+            public long InternalId { get; set; }
             [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public TimeSpan TitleSequenceStart {get; set;}
+            public TimeSpan TitleSequenceStart { get; set; }
             [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public TimeSpan TitleSequenceEnd {get; set;}
+            public TimeSpan TitleSequenceEnd { get; set; }
             [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
             public bool HasSequence { get; set; }
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public long SeasonId { get; set; }                     
+            public long SeasonId { get; set; }
         }
-        
-        private IJsonSerializer JsonSerializer      { get; }
-        private ILogger Log                         { get; }  
-        
-        private ILibraryManager LibraryManager { get; }
+
+        private IJsonSerializer JsonSerializer { get; }
+        private ILogger Log { get; }
+
+        //private ILibraryManager LibraryManager { get; }
 
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceService(IJsonSerializer json, ILogManager logMan, IFileSystem fileSystem, ILibraryManager libraryManager)
+        public TitleSequenceService(IJsonSerializer json, ILogManager logMan)
         {
             JsonSerializer = json;
-            Log            = logMan.GetLogger(Plugin.Instance.Name);
-            LibraryManager = libraryManager;
+            Log = logMan.GetLogger(Plugin.Instance.Name);
+            //LibraryManager = libraryManager;
         }
-                
-       
+
+
         public string Get(UpdateTitleSequenceRequest request)
         {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            var dbResults = repo.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
 
 
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
-            
+
             // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
-            titleSequence.TitleSequenceEnd   = request.TitleSequenceEnd;
-            titleSequence.HasSequence        = request.HasSequence;
-            titleSequence.Fingerprint        = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-            
+            titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
+            titleSequence.HasSequence = request.HasSequence;
+            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+
             try
-            {                
-                repo.SaveResult(titleSequence, CancellationToken.None);
+            {
+                repository.SaveResult(titleSequence, CancellationToken.None);
             }
             catch (Exception ex)
             {
                 Log.Warn(ex.Message);
                 return "error";
             }
-                          
+
+            DisposeRepository(repository);
             return "OK";
 
         }
 
         public void Post(ScanSeriesRequest request)
         {
-            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, IntroSkipPluginEntryPoint.Instance.Repository);
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
+            DisposeRepository(repository);
         }
 
         //public string Delete(RemoveAllRequest request)
@@ -160,85 +162,38 @@ namespace IntroSkip.Api
 
         public string Delete(RemoveSeasonDataRequest request)
         {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            var seasonResult = repo.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             foreach (var item in seasonResult.Items)
             {
                 try
                 {
-                    repo.Delete(item.InternalId.ToString());
+                    repository.Delete(item.InternalId.ToString());
                 }
                 catch { }
             }
+
+            DisposeRepository(repository);
 
             return "OK";
 
         }
 
-        //public string Delete(RemoveTitleSequenceDataRequest request)
-        //{
-        //    try
-        //    {
-        //        var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-        //        repo.Delete(request.InternalId.ToString());
 
-        //        Log.Info("Title sequence fingerprint file removed.");
-
-        //        return "OK";
-        //    }
-        //    catch
-        //    {
-        //        return "";
-        //    }
-        //}
-
-        //public string Delete(RemoveTitleSequenceRequest request)
-        //{
-        //    try
-        //    {
-        //        var episode        = LibraryManager.GetItemById(request.InternalId);
-        //        var season         = episode.Parent;
-        //        var series         = season.Parent;
-
-        //        var titleSequences = TitleSequenceFileManager.Instance.GetTitleSequenceFromFile(series);
-
-        //        if (titleSequences.Seasons is null) return "";
-
-        //        if (!titleSequences.Seasons.Exists(item => item.IndexNumber == season.IndexNumber)) return "";
-
-        //        if (titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-        //            .Episodes.Exists(item => item.InternalId == episode.InternalId))
-        //        {
-        //            titleSequences.Seasons.FirstOrDefault(item => item.IndexNumber == season.IndexNumber)
-        //                .Episodes.RemoveAll(item => item.InternalId == request.InternalId);
-        //        }
-
-        //        TitleSequenceFileManager.Instance.SaveTitleSequenceJsonToFile(series, titleSequences);
-
-        //        Log.Info("Title sequence saved intro data removed.");
-
-
-        //        return "OK";
-        //    }
-        //    catch
-        //    {
-        //        return "";
-        //    }
-        //}
 
         private class SeasonTitleSequenceResponse
         {
             // ReSharper disable twice UnusedAutoPropertyAccessor.Local
-            public TimeSpan CommonEpisodeTitleSequenceLength  { get; set; }
-            public List<BaseTitleSequence> TitleSequences   { get; set; }
+            public TimeSpan CommonEpisodeTitleSequenceLength { get; set; }
+            public List<BaseTitleSequence> TitleSequences { get; set; }
         }
 
         public string Get(SeasonTitleSequenceRequest request)
         {
 
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
-            var dbResults = repo.GetBaseTitleSequenceResults(query);
+            var dbResults = repository.GetBaseTitleSequenceResults(query);
 
             var titleSequences = dbResults.Items.ToList();
 
@@ -252,6 +207,8 @@ namespace IntroSkip.Api
                 commonDuration = new TimeSpan(0, 0, 0);
             }
 
+            DisposeRepository(repository);
+
             return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
@@ -262,15 +219,18 @@ namespace IntroSkip.Api
 
         public string Get(EpisodeTitleSequenceRequest request)
         {
-            var repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+
             try
             {
-                return JsonSerializer.SerializeToString(repo.GetBaseTitleSequence(request.InternalId.ToString()));
+                var data = repository.GetBaseTitleSequence(request.InternalId.ToString());
+                DisposeRepository(repository);
+                return JsonSerializer.SerializeToString(data);
 
             }
             catch
             {
+                DisposeRepository(repository);
                 return JsonSerializer.SerializeToString(new BaseTitleSequence()); //Empty
             }
 
@@ -278,13 +238,19 @@ namespace IntroSkip.Api
 
         private TimeSpan CalculateCommonTitleSequenceLength(List<BaseTitleSequence> season)
         {
-            var titleSequences      = season.Where(intro => intro.HasSequence);
-            var groups              = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
+            var titleSequences = season.Where(intro => intro.HasSequence);
+            var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
-            int maxCount            = enumerableSequences.Max(g => g.Count());
-            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            int maxCount = enumerableSequences.Max(g => g.Count());
+            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
 
+        private void DisposeRepository(ITitleSequenceRepository repository)
+        {
+            // ReSharper disable once UsePatternMatching
+            var repo = repository as IDisposable;
+            repo?.Dispose();
+        }
     }
 }

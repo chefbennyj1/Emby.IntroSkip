@@ -2,8 +2,8 @@
 {
     public class TitleSequenceResultQuery
     {
-        public int? StartIndex        { get; set; }
-        public int? Limit             { get; set; }
+        public int? StartIndex { get; set; }
+        public int? Limit { get; set; }
         public long? SeasonInternalId { get; set; }
     }
 }
