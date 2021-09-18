@@ -26,7 +26,7 @@ namespace IntroSkip.TitleSequence
 
         public TitleSequenceDetection(ILogManager logMan)
         {
-            Log = logMan.GetLogger(Plugin.Instance.Name);
+            //Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
 
@@ -284,9 +284,7 @@ namespace IntroSkip.TitleSequence
             var config = Plugin.Instance.Configuration;
             var tup2 = FindContiguousRegion(hammingDistances, config.HammingDistanceThreshold); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
 
-            var start = tup2.Item1;
-            var end = tup2.Item2;
-
+            
             var start  = tup2.Item1;
             var end    = tup2.Item2;
 
