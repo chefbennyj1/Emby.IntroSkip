@@ -10,11 +10,13 @@ using System.Collections.Generic;
 {
     public class ChapterInsertion
     {
-        public ChapterInsertion Instance { get; private set; }
+        public ChapterInsertion Instance { get; set; }
 
-        private ILogger Log { get; set; }
+        private ILogger Log;
 
-        private IItemRepository ItemRepository { get; set; }
+        private IItemRepository ItemRepository;
+
+        public List<ProblemChapters> ProbChapterList = new List<ProblemChapters>();
 
         public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
         {
@@ -37,10 +39,12 @@ using System.Collections.Generic;
 
 
             var item = ItemRepository.GetItemById(id);
-            var tvShow = item.Parent.Parent.Name;
-            var season = item.Parent.Name;
+            var tvShowName = item.Parent.Parent.Name;
+            var tvShowId = item.Parent.Parent.Id;
+            var seasonName = item.Parent.Name;
+            var seasonId = item.Parent.Id;
             var episodeNo = item.IndexNumber;
-            Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShow, season);
+            Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
             var config = Plugin.Instance.Configuration;
@@ -110,7 +114,20 @@ using System.Collections.Generic;
 
                         if (startIndex >= lastIndex)
                         {
-                            Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShow, season, episodeNo, item.Name);
+                            //Lets add these to a list so that we can display them for the user on the Chapters page.
+                            ProbChapterList.Add( new ProblemChapters
+                                {
+                                    ShowId = tvShowId,
+                                    ShowName = tvShowName,
+                                    SeasonId = seasonId,
+                                    SeasonName = seasonName,
+                                    EpisodeIndex = episodeNo,
+                                    EpisodeId = item.Id,
+                                    EpisodeName = item.Name,
+                                    ChaptersNos = chapters.Count
+                                });
+
+                            Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                             Log.Warn("CHAPTER INSERT: Please check this episode in your library");
                         }
 
