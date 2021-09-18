@@ -53,6 +53,10 @@ namespace IntroSkip.Chapters
                 }
                 //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
             }
+            else
+            {
+                Log.Debug("CHAPTER TASK: FAILED - You may need to enable this in the Plugin Configuration");
+            }
 
             return chapterExecute;
         }
