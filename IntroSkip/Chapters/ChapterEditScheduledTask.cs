@@ -132,18 +132,7 @@ namespace IntroSkip.Chapters
             return null;
         }
 
-        public Task RefreshChapters()
-        {
-            ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            QueryResult<TitleSequenceResult> dbResults = repo.GetResults(new TitleSequenceResultQuery());
-            foreach (TitleSequenceResult episode in dbResults.Items)
-            {
-                BaseItem item = ItemRepo.GetItemById(episode.InternalId);
-                item.RefreshMetadata(CancellationToken.None);
-            }
-
-            return null;
-        }
+       
 
         public Task ProcessChapterImageExtraction()
         {

@@ -3,22 +3,18 @@
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
+ using MediaBrowser.Model.Entities;
+ using IntroSkip.TitleSequence;
 
-using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Logging;
-using System;
-using System.Collections.Generic;
-
-namespace IntroSkip.Chapters
+ namespace IntroSkip.Chapters
 {
     public class ChapterInsertion
     {
         public ChapterInsertion Instance { get; set; }
 
-        public ILogger Log;
+        private ILogger Log;
 
-        public IItemRepository ItemRepository;
+        private IItemRepository ItemRepository;
 
         public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
         {
