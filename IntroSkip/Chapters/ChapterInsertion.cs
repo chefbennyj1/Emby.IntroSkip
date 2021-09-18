@@ -3,7 +3,6 @@
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
- using IntroSkip.Api;
  using MediaBrowser.Model.Entities;
  using IntroSkip.TitleSequence;
 
