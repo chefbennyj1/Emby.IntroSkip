@@ -149,7 +149,7 @@
                             });
 
                         });
-                        reloadList(cofnig.IgnoredList, ignoreListElement, view);
+                        reloadList(config.IgnoredList, ignoreListElement, view);
                         loading.hide();
                     });
                 });
