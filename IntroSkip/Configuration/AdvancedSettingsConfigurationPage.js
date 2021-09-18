@@ -51,7 +51,7 @@
             return html;
         }
 
-       
+
 
         function handleRemoveItemClick(e, element, view) {
             var id = e.target.closest('button').id;
@@ -60,11 +60,11 @@
                 config.IgnoredList = filteredList;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     reloadList(filteredList, element, view);
-                    Dashboard.processPluginConfigurationUpdateResult(r); 
+                    Dashboard.processPluginConfigurationUpdateResult(r);
                 });
-                
+
             });
-            
+
         }
 
         function reloadList(list, element, view) {
@@ -73,7 +73,7 @@
                     var baseItem = result.Items[0];
                     element.innerHTML = '';
                     element.innerHTML += getListItemHtml(baseItem);
-                    var removeButtons = view.querySelectorAll('.removeItemBtn');
+                    var removeButtons = view.querySelectorAll('.removeItemBtn i');
                     removeButtons.forEach(btn => {
                         btn.addEventListener('click',
                             el => {
@@ -96,7 +96,7 @@
 
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-                
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -127,31 +127,27 @@
                     loading.show();
 
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                    
-                    getBaseItem(seriesId).then(result => {
 
-                        var series = result.Items[0];
-                           
-                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
-                            if (config.IgnoredList) {
+                        if (config.IgnoredList) {
 
-                                config.IgnoredList.push(seriesId);
+                            config.IgnoredList.push(seriesId);
 
-                            } else {
+                        } else {
 
-                                config.IgnoredList = [ seriesId ];
+                            config.IgnoredList = [seriesId];
 
-                            }
+                        }
 
-                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
-                                Dashboard.processPluginConfigurationUpdateResult(r); 
-                            });
-
+                        ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                            reloadList(config.IgnoredList, ignoreListElement, view);
+                            Dashboard.processPluginConfigurationUpdateResult(r);
                         });
-                        reloadList(config.IgnoredList, ignoreListElement, view);
-                        loading.hide();
+
                     });
+
+                    loading.hide();
                 });
 
                 //var removeAllButton = dlg.querySelector('.removeAllData');

@@ -10,7 +10,7 @@ namespace IntroSkip.Configuration
         public int HammingDistanceThreshold { get; set; } = 8; //Default
         public int MaxDegreeOfParallelism { get; set; } = 2; //Default
 
-       
+
 
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
         public bool EnableItemAddedTaskAutoRun { get; set; }
