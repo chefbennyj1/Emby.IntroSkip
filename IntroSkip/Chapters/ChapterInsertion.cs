@@ -1,4 +1,5 @@
 
+
 ﻿using System;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
@@ -23,14 +24,6 @@ using System.Collections.Generic;
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
             Instance = this;
-
-            //Remove this eventually please :)
-            ChapterErrors.Add(new ChapterError() //<-- Unit Test
-            {
-                Date = DateTime.Now,
-                Id = 40,
-                ChapterCount = 8
-            });
         }
 
         public void EditChapters(long id)
@@ -48,9 +41,9 @@ using System.Collections.Generic;
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
-            var tvShowId = item.Parent.Parent.Id;
+
             var seasonName = item.Parent.Name;
-            var seasonId = item.Parent.Id;
+
             var episodeNo = item.IndexNumber;
             Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
@@ -133,8 +126,7 @@ using System.Collections.Generic;
                                 ChapterCount = chapters.Count
                             });
 
-                            
-
+                          
                             Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                             Log.Warn("CHAPTER INSERT: Please check this episode in your library");
                         }
@@ -178,4 +170,6 @@ using System.Collections.Generic;
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
     }
+
 }
+

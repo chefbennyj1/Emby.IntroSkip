@@ -7,11 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
-using IntroSkip.TitleSequence;
+ using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
-using IntroSkip.Data;
-using MediaBrowser.Controller.Entities;
+ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Logging;
 
@@ -53,6 +51,10 @@ namespace IntroSkip.Chapters
                 }
                 //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
             }
+            else
+            {
+                Log.Debug("CHAPTER TASK: FAILED - You may need to enable this in the Plugin Configuration");
+            }
 
             return chapterExecute;
         }
@@ -85,13 +87,15 @@ namespace IntroSkip.Chapters
             };
         }
 
-        public Task ProcessEpisodeChaptersPoints()
+        private Task ProcessEpisodeChaptersPoints()
         {
             Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
             var config = Plugin.Instance.Configuration;
             //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+
             var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
+
 
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
@@ -114,25 +118,20 @@ namespace IntroSkip.Chapters
 
         public Task RefreshChapters()
         {
-            var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
-            QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            
+            QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery());
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
                 BaseItem item = ItemRepo.GetItemById(episode.InternalId);
                 item.RefreshMetadata(CancellationToken.None);
             }
 
-            var repo = Repository as IDisposable;
-            if (repo != null)
-            {
-                repo.Dispose();
-            }
+            var repo = repository as IDisposable;
+            repo?.Dispose();
 
             return null;
         }
-
-       
 
         public Task ProcessChapterImageExtraction()
         {

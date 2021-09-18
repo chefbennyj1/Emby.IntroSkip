@@ -51,7 +51,7 @@
             return html;
         }
 
-       
+
 
         function handleRemoveItemClick(e, element, view) {
             var id = e.target.closest('button').id;
@@ -60,11 +60,11 @@
                 config.IgnoredList = filteredList;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     reloadList(filteredList, element, view);
-                    Dashboard.processPluginConfigurationUpdateResult(r); 
+                    Dashboard.processPluginConfigurationUpdateResult(r);
                 });
-                
+
             });
-            
+
         }
 
         function reloadList(list, element, view) {
@@ -96,7 +96,7 @@
 
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-                
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -127,7 +127,7 @@
                     loading.show();
 
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                    
+
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                         if (config.IgnoredList) {
@@ -136,12 +136,15 @@
 
                         } else {
 
+
                             config.IgnoredList = [ seriesId ];
+
 
                         }
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
+
                             Dashboard.processPluginConfigurationUpdateResult(r); 
                         });
 
