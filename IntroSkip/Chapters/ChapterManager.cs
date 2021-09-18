@@ -1,5 +1,10 @@
-﻿using IntroSkip.TitleSequence;
+
+﻿using System;
+using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using System;
@@ -25,12 +30,14 @@ namespace IntroSkip.Chapters
         public void EditChapters(long id)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
+
             //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             TitleSequenceResult titleSequence = repository.GetResult(id.ToString());
 
             var repo = repository as IDisposable;
             repo?.Dispose();
+
 
 
             var item = ItemRepository.GetItemById(id);
@@ -92,11 +99,13 @@ namespace IntroSkip.Chapters
                         if (insertStart == 0)
                         {
                             chapters.RemoveAt(0);
-                            chapters.Add(new ChapterInfo
-                            {
-                                Name = introStartString,
-                                StartPositionTicks = insertStart
-                            });
+
+                            chapters.Add( new ChapterInfo
+                                {
+                                    Name = introStartString,
+                                    StartPositionTicks = insertStart
+                                });
+
                             chapters.Sort(CompareStartTimes);
                         }
 
