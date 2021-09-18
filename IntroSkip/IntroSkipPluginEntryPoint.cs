@@ -16,56 +16,53 @@ namespace IntroSkip
     public class IntroSkipPluginEntryPoint : IServerEntryPoint
     {
         public static IntroSkipPluginEntryPoint Instance { get; set; }
-        public ITitleSequenceRepository Repository       { get; set; }
-        private ILibraryManager LibraryManager           { get; set; }
-        private ITaskManager TaskManager                 { get; set; }
-        private IServerConfigurationManager _config      { get; set; }
-        private ILogger _logger                          { get; set; }
-        private IJsonSerializer _json                    { get; set; }
-               
+        private ITitleSequenceRepository Repository { get; set; }
+        private ILibraryManager LibraryManager { get; set; }
+        private ITaskManager TaskManager { get; set; }
+        private IServerConfigurationManager Config { get; set; }
+        private ILogger Logger { get; set; }
+        private IJsonSerializer _json { get; set; }
+
 
         public IntroSkipPluginEntryPoint(ILogger logger, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
         {
-            _logger        = logger;
-            _json          = json;
-            _config        = config;
+            Logger = logger;
+            _json = json;
+            Config = config;
             LibraryManager = libraryManager;
-            TaskManager    = taskManager;
-            Instance       = this;
+            TaskManager = taskManager;
+            Instance = this;
         }
 
         public void Dispose()
         {
             var repo = Repository as IDisposable;
-            if (repo != null)
-            {
-                repo.Dispose();
-            }
+            repo?.Dispose();
         }
 
         public void Run()
-        {                  
+        {
             try
             {
                 Repository = GetRepository();
             }
             catch (Exception ex)
             {
-                _logger.ErrorException("Error initializing title sequence database", ex);
-            }         
-             
-            _logger.Info("Database loaded Sucessfully...");
+                Logger.ErrorException("Error initializing title sequence database", ex);
+            }
 
-            LibraryManager.ItemAdded   += LibraryManager_ItemAdded;
+            Logger.Info("Database loaded Sucessfully...");
+
+            LibraryManager.ItemAdded += LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
 
-            
+
             Plugin.Instance.SaveConfiguration();
         }
 
-       
+
         private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
-        {            
+        {
             var item = e.Item;
             var removableItems = new List<long>();
             switch (item.GetType().Name)
@@ -77,17 +74,17 @@ namespace IntroSkip
                     }
                 case "Season":
                     {
-                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = e.Item.InternalId}).Items.Select(i => i.InternalId));                        
+                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = e.Item.InternalId }).Items.Select(i => i.InternalId));
                         break;
                     }
                 case "Series":
                     {
-                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery()).Items.Where(i => i.SeriesId == item.InternalId).Select(i => i.InternalId));                        
+                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery()).Items.Where(i => i.SeriesId == item.InternalId).Select(i => i.InternalId));
                         break;
-                    }                
+                    }
             }
 
-            foreach(var removableItem in removableItems)
+            foreach (var removableItem in removableItems)
             {
                 Repository.Delete(removableItem.ToString());
             }
@@ -108,16 +105,16 @@ namespace IntroSkip
                 {
                     await TaskManager.Execute(fingerprint, new TaskOptions());
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _logger.Warn(ex.Message);
+                    Logger.Warn(ex.Message);
                 }
             }
         }
 
-        private ITitleSequenceRepository GetRepository()
+        public ITitleSequenceRepository GetRepository()
         {
-            var repo = new SqliteTitleSequenceRepository(_logger, _config.ApplicationPaths, _json);
+            var repo = new SqliteTitleSequenceRepository(Logger, Config.ApplicationPaths, _json);
 
             repo.Initialize();
 

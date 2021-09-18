@@ -11,19 +11,19 @@ namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintFileManager : IServerEntryPoint
     {
-        private IFileSystem FileSystem                     { get; }
-        private IApplicationPaths ApplicationPaths         { get; }
-        private char Separator                             { get; }
-        private ILogger Log                                { get; }
+        private IFileSystem FileSystem { get; }
+        private IApplicationPaths ApplicationPaths { get; }
+        private char Separator { get; }
+        private ILogger Log { get; }
         public static AudioFingerprintFileManager Instance { get; private set; }
-                
-        public AudioFingerprintFileManager(IFileSystem file, IApplicationPaths applicationPaths,  ILogManager logMan)
+
+        public AudioFingerprintFileManager(IFileSystem file, IApplicationPaths applicationPaths, ILogManager logMan)
         {
-            Instance         = this;
-            FileSystem       = file;
+            Instance = this;
+            FileSystem = file;
             ApplicationPaths = applicationPaths;
-            Log              = logMan.GetLogger(Plugin.Instance.Name);
-            Separator        = FileSystem.DirectorySeparatorChar;
+            Log = logMan.GetLogger(Plugin.Instance.Name);
+            Separator = FileSystem.DirectorySeparatorChar;
         }
 
         public void RemoveEpisodeFingerprintBinFile(string path, BaseItem item)
@@ -36,8 +36,8 @@ namespace IntroSkip.AudioFingerprinting
             }
             catch { }
         }
-            
-       
+
+
         public string GetEncodingDirectory()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
@@ -46,16 +46,16 @@ namespace IntroSkip.AudioFingerprinting
 
         public void Dispose()
         {
-            
+
         }
 
         // ReSharper disable once MethodNameNotMeaningful
         public void Run()
-        {            
-            var encodingDir      = GetEncodingDirectory();
-            if (!FileSystem.DirectoryExists($"{encodingDir}")) FileSystem.CreateDirectory( $"{encodingDir}");            
+        {
+            var encodingDir = GetEncodingDirectory();
+            if (!FileSystem.DirectoryExists($"{encodingDir}")) FileSystem.CreateDirectory($"{encodingDir}");
         }
-        
+
 
     }
 }
