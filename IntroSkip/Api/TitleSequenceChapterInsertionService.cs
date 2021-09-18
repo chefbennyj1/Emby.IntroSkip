@@ -14,11 +14,11 @@ namespace IntroSkip.Api
             JsonSerializer = json;
         }
 
-
+        
         [Route("/ChapterErrors", "GET", Summary = "List of chapters that had issues during the ChapterEditScheduledTask. Available for the life of the Server only.")]
         public class ChapterErrorRequest : IReturn<string>
         {
-
+            
         }
 
         public string Get(ChapterErrorRequest request)

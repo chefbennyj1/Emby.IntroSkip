@@ -118,6 +118,13 @@
             });
         }
 
+        function imageLink(baseItem) {
+            return ApiClient._serverAddress +
+                "/web/index.html#!/item?id=" +
+                baseItem.Id +
+                "&serverId=" +
+                ApiClient._serverInfo.Id;
+        }
         function getTableRowHtml(intro) {
             return new Promise((resolve, reject) => {
                 getEpisode(intro.InternalId).then(result => {
@@ -133,7 +140,7 @@
                     html += '<path fill="currentColor" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
                     html += '</svg>';
                     html += '</td>';
-                    html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><img style="width:125px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></td>';
+                    html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank"><img style="width:125px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
                     html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
                     html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';

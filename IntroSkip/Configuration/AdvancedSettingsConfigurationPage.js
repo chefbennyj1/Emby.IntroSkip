@@ -136,17 +136,20 @@
 
                         } else {
 
-                            config.IgnoredList = [seriesId];
+
+                            config.IgnoredList = [ seriesId ];
+
 
                         }
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
-                            Dashboard.processPluginConfigurationUpdateResult(r);
+
+                            Dashboard.processPluginConfigurationUpdateResult(r); 
                         });
 
                     });
-
+                        
                     loading.hide();
                 });
 

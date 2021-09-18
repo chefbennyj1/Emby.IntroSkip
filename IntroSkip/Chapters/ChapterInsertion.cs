@@ -1,11 +1,13 @@
-using System;
-using System.Collections.Generic;
-using IntroSkip.TitleSequence;
-using MediaBrowser.Controller.Persistence;
-using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Logging;
 
-namespace IntroSkip.Chapters
+
+﻿using System;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Controller.Persistence;
+using System.Collections.Generic;
+ using MediaBrowser.Model.Entities;
+ using IntroSkip.TitleSequence;
+
+ namespace IntroSkip.Chapters
 {
     public class ChapterInsertion
     {
@@ -22,14 +24,6 @@ namespace IntroSkip.Chapters
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ItemRepository = itemRepo;
             Instance = this;
-
-            /*Remove this eventually please :)
-            ChapterErrors.Add(new ChapterError() //<-- Unit Test
-            {
-                Date = DateTime.Now,
-                Id = 40,
-                ChapterCount = 8
-            });*/
         }
 
         public void EditChapters(long id)
@@ -47,7 +41,9 @@ namespace IntroSkip.Chapters
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
+
             var seasonName = item.Parent.Name;
+
             var episodeNo = item.IndexNumber;
             Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
@@ -127,11 +123,10 @@ namespace IntroSkip.Chapters
                             {
                                 Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
                                 Date = DateTime.Now,   //<-- Give them a date, so they know when this happened.
-                                ChapterCount = iCount
+                                ChapterCount = chapters.Count
                             });
 
-
-
+                          
                             Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                             Log.Warn("CHAPTER INSERT: Please check this episode in your library");
                         }
@@ -175,4 +170,6 @@ namespace IntroSkip.Chapters
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
     }
+
 }
+
