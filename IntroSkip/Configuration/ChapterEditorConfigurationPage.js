@@ -72,12 +72,14 @@
             view.addEventListener('viewshow', (e) => {
                 loading.show();
                 mainTabsManager.setTabs(this, 1, getTabs);
+
                 
                 //elements
                 var autoChapterExtract      = view.querySelector('.chkChapterExtractEvent');
                 var chapterInsert           = view.querySelector('.chkChapterInsertEvent');
                 var chapterErrorResultTable = view.querySelector('.tblEpisodeChapterErrorResultBody');
                 
+
                 //config settings
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
                     //Chapter Insertion Option
@@ -115,8 +117,6 @@
                         });
                     });
                 });
-
-
                 loading.hide();
             });
 

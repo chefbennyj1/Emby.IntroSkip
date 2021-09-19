@@ -44,14 +44,14 @@
             html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">Will be ignored during intro detection.</div>';
             html += '</div>';
             html += '<button title="Remove" aria-label="Remove" type="button" is="paper-icon-button-light" class="listItemButton itemAction paper-icon-button-light icon-button-conditionalfocuscolor removeItemBtn" id="' + series.Id + '">';
-            html += '<i class="md-icon">delete</i>';
+            html += '<i class="md-icon removeItemBtn" style="pointer-events: none;">delete</i>';
             html += '</button> ';
             html += '</div>';
             html += '</div>';
             return html;
         }
 
-       
+
 
         function handleRemoveItemClick(e, element, view) {
             var id = e.target.closest('button').id;
@@ -60,28 +60,32 @@
                 config.IgnoredList = filteredList;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     reloadList(filteredList, element, view);
-                    Dashboard.processPluginConfigurationUpdateResult(r); 
+                    Dashboard.processPluginConfigurationUpdateResult(r);
                 });
-                
+
             });
-            
+
         }
 
         function reloadList(list, element, view) {
-            list.forEach(id => {
-                getBaseItem(id).then(result => {
-                    var baseItem = result.Items[0];
-                    element.innerHTML = '';
-                    element.innerHTML += getListItemHtml(baseItem);
-                    var removeButtons = view.querySelectorAll('.removeItemBtn i');
-                    removeButtons.forEach(btn => {
-                        btn.addEventListener('click',
-                            el => {
-                                handleRemoveItemClick(el, element, view);
-                            });
+            element.innerHTML = '';
+            if (list && list.length) {
+                list.forEach(id => {
+                    getBaseItem(id).then(result => {
+                        var baseItem = result.Items[0];
+
+                        element.innerHTML += getListItemHtml(baseItem);
+                        var removeButtons = view.querySelectorAll('.removeItemBtn');
+                        removeButtons.forEach(btn => {
+                            btn.addEventListener('click',
+                                el => {
+                                    el.preventDefault();
+                                    handleRemoveItemClick(el, element, view);
+                                });
+                        });
                     });
                 });
-            });
+            }
         }
 
 
@@ -96,7 +100,7 @@
 
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-                
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -127,7 +131,7 @@
                     loading.show();
 
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                    
+
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                         if (config.IgnoredList) {
@@ -136,12 +140,15 @@
 
                         } else {
 
+
                             config.IgnoredList = [ seriesId ];
+
 
                         }
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
+
                             Dashboard.processPluginConfigurationUpdateResult(r); 
                         });
 
