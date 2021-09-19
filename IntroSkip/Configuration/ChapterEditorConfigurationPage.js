@@ -68,55 +68,6 @@
 
         }
 
-        function getBaseItem(id) {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
-                    resolve(result);
-                });
-            });
-        }
-
-        function getChapterErrors() {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('ChapterErrors')).then(result => {
-                    resolve(result);
-                });
-            });
-        }
-
-        function renderTableRowHtml(errItem, baseItem) {
-            var html = '';
-
-
-
-            html += '<td class="detailTableBodyCell"></td>';
-
-            html += '<td class="detailTableBodyCell" data-title="Date">';
-            var date = datetime.parseISO8601Date(errItem.Date, true);
-            html += '<span>' + datetime.toLocaleDateString(date) + '</span>';
-            html += '</td>';
-
-            html += '<td class="detailTableBodyCell" data-title="TV Show">';
-            html += '<span>' + baseItem.SeriesName + '</span>';
-            html += '</td>';
-
-            html += '<td class="detailTableBodyCell" data-title="Season">';
-            html += '<span>' + baseItem.SeasonName + '</span>';
-            html += '</td>';
-
-            html += '<td class="detailTableBodyCell" data-title="Episode">';
-            html += '<span>Episode ' + baseItem.IndexNumber + '</span>';
-            html += '</td>';
-
-            html += '<td class="detailTableBodyCell" data-title="# of Chapters">';
-            html += '<span>' + errItem.ChapterCount + '</span>';
-            html += '</td>';
-
-            return html;
-
-
-        }
-
         return function (view) {
             view.addEventListener('viewshow', (e) => {
                 loading.show();
