@@ -1,3 +1,5 @@
+
+
 ﻿using System;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
@@ -61,8 +63,7 @@ using System.Collections.Generic;
                         Name = chap.Name,
                         StartPositionTicks = chap.StartPositionTicks,
                     });
-                    Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
-                        chap.StartPositionTicks.ToString());
+                    Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name, chap.StartPositionTicks.ToString());
                 }
 
                 long insertStart = titleSequence.TitleSequenceStart.Ticks;
@@ -83,90 +84,74 @@ using System.Collections.Generic;
                 {
                     try
                     {
-                        if (iCount == 0)
+                        //add the entry and lets arrange the chapter list
+                        //if the Title sequence doesn't start at 0, insert it
+                        if (insertStart != 0)
                         {
-                            Log.Warn("CHAPTER INSERT: {0} has NO chapters, so can't insert - Added To Bad Chapter List", item.Name);
+                            chapters.Add(new ChapterInfo
+                            {
+                                Name = introStartString,
+                                StartPositionTicks = insertStart
+                            });
+                            chapters.Sort(CompareStartTimes);
+                        }
+
+                        //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
+                        if (insertStart == 0)
+                        {
+                            chapters.RemoveAt(0);
+
+                            chapters.Add(new ChapterInfo
+                            {
+                                Name = introStartString,
+                                StartPositionTicks = insertStart
+                            });
+
+                            chapters.Sort(CompareStartTimes);
+                        }
+
+                        //create new chapter entry point for the End of the Intro
+                        int startIndex = chapters.FindIndex(st => st.Name == introStartString);
+
+                        if (startIndex >= lastIndex)
+                        {
+                            //Create the new error - not really an error, but we'll call uit that for now.
+                            //The Error can consist of just one piece of data, the item InternalId. That is all we need to request further information about it later.
+                            //This will keep memory low, and also a list of long integers will be faster to send to the UI
+                            // We'll use the browsers engine (the UI) to request further data about the item if necessary.
                             ChapterErrors.Add(new ChapterError()
                             {
                                 Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
-                                Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
-                                ChapterCount = iCount
+                                Date = DateTime.Now,   //<-- Give them a date, so they know when this happened.
+                                ChapterCount = chapters.Count
                             });
 
+                          
+                            Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
+                            Log.Warn("CHAPTER INSERT: Please check this episode in your library");
                         }
-                        else
+
+                        if (startIndex < lastIndex)
                         {
+                            ChapterInfo neededChapInfo = chapters[startIndex + 1];
+                            string chapName = neededChapInfo.Name;
+                            Log.Debug("CHAPTER INSERT: Organising..... New Chapter name after Insert = {0}", chapName);
+                            string newVal = introEndString.Replace(introEndString, chapName);
 
+                            int changeStart = startIndex + 1;
+                            chapters.RemoveAt(changeStart);
+                            ChapterInfo edit = new ChapterInfo
+                            {
+                                Name = newVal,
+                                StartPositionTicks = insertEnd,
+
+                            };
                             //add the entry and lets arrange the chapter list
-                            //if the Title sequence doesn't start at 0, insert it
-                            if (insertStart != 0)
-                            {
-                                chapters.Add(new ChapterInfo
-                                {
-                                    Name = introStartString,
-                                    StartPositionTicks = insertStart
-                                });
-                                chapters.Sort(CompareStartTimes);
-                            }
+                            chapters.Add(edit);
+                            chapters.Sort(CompareStartTimes);
 
-                            //if the Title Sequence does start at Zero then lets just remove chapter 1 and replace it with Title sequence.
-                            if (insertStart == 0)
-                            {
-                                chapters.RemoveAt(0);
-
-                                chapters.Add(new ChapterInfo
-                                {
-                                    Name = introStartString,
-                                    StartPositionTicks = insertStart
-                                });
-
-                                chapters.Sort(CompareStartTimes);
-                            }
-
-                            //create new chapter entry point for the End of the Intro
-                            int startIndex = chapters.FindIndex(st => st.Name == introStartString);
-
-                            if (startIndex >= lastIndex)
-                            {
-                                //Create the new error - not really an error, but we'll call uit that for now.
-                                //The Error can consist of just one piece of data, the item InternalId. That is all we need to request further information about it later.
-                                //This will keep memory low, and also a list of long integers will be faster to send to the UI
-                                // We'll use the browsers engine (the UI) to request further data about the item if necessary.
-                                ChapterErrors.Add(new ChapterError()
-                                {
-                                    Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
-                                    Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
-                                    ChapterCount = iCount
-                                });
-
-
-                                Log.Warn("CHAPTER INSERT: Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo.ToString(), item.Name);
-                                Log.Warn("CHAPTER INSERT: {0} has been added to Bad Chapter List", item.Name);
-                            }
-
-                            if (startIndex < lastIndex)
-                            {
-                                ChapterInfo neededChapInfo = chapters[startIndex + 1];
-                                string chapName = neededChapInfo.Name;
-                                Log.Debug("CHAPTER INSERT: Organising..... New Chapter name after Insert = {0}",
-                                    chapName);
-                                string newVal = introEndString.Replace(introEndString, chapName);
-
-                                int changeStart = startIndex + 1;
-                                chapters.RemoveAt(changeStart);
-                                ChapterInfo edit = new ChapterInfo
-                                {
-                                    Name = newVal,
-                                    StartPositionTicks = insertEnd,
-
-                                };
-                                //add the entry and lets arrange the chapter list
-                                chapters.Add(edit);
-                                chapters.Sort(CompareStartTimes);
-
-                                //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
-                                ItemRepository.SaveChapters(id, chapters);
-                            }
+                            //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
+                            ItemRepository.SaveChapters(id, chapters);
                         }
                     }
                     catch (Exception e)
@@ -180,8 +165,7 @@ using System.Collections.Generic;
         }
 
 
-
-            public static int CompareStartTimes(ChapterInfo tick1, ChapterInfo tick2)
+        public static int CompareStartTimes(ChapterInfo tick1, ChapterInfo tick2)
         {
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }

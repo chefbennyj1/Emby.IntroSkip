@@ -96,7 +96,6 @@ namespace IntroSkip.Chapters
             var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
 
-            ChapterInsertion.ChapterErrors.Clear();
 
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
