@@ -5,7 +5,6 @@
  */
 
 using IntroSkip.AudioFingerprinting;
-using IntroSkip.Data;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
@@ -78,7 +77,7 @@ namespace IntroSkip.TitleSequence
             double dist = 0.0;
             if (f1.Count != f2.Count)
             {
-                return 0;
+                return 0.0;
             }
 
             foreach (var i in Enumerable.Range(0, f1.Count))
@@ -96,7 +95,7 @@ namespace IntroSkip.TitleSequence
         {
             var length = f1.Count;
             var iterations = length + 1;
-            var diff = length / 2 - 1;
+            var diff = length / 2.0 - 1;
             var a = length / 2;
             var b = length - 1;
             var x = 0;
@@ -154,7 +153,7 @@ namespace IntroSkip.TitleSequence
             }
             else
             {
-                offset = offset * -1;
+                //offset = offset * -1; //<-- don't need this if we use Abs() below.
                 offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - Math.Abs(offset)));
                 offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - Math.Abs(offset)));
 
@@ -291,14 +290,14 @@ namespace IntroSkip.TitleSequence
 
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
-            var offsetInSeconds = offset * secondsPerSample;
+            var offsetInSeconds   = offset * secondsPerSample;
             var commonRegionStart = start * secondsPerSample;
-            var commonRegionEnd = (end * secondsPerSample);
+            var commonRegionEnd   = end * secondsPerSample;
 
-            var firstFileRegionStart = 0.0;
-            var firstFileRegionEnd = 0.0;
+            var firstFileRegionStart  = 0.0;
+            var firstFileRegionEnd    = 0.0;
             var secondFileRegionStart = 0.0;
-            var secondFileRegionEnd = 0.0;
+            var secondFileRegionEnd   = 0.0;
 
             if (offset >= 0)
             {
