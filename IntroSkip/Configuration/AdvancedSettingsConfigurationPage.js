@@ -44,7 +44,7 @@
             html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">Will be ignored during intro detection.</div>';
             html += '</div>';
             html += '<button title="Remove" aria-label="Remove" type="button" is="paper-icon-button-light" class="listItemButton itemAction paper-icon-button-light icon-button-conditionalfocuscolor removeItemBtn" id="' + series.Id + '">';
-            html += '<i class="md-icon">delete</i>';
+            html += '<i class="md-icon removeItemBtn" style="pointer-events: none;">delete</i>';
             html += '</button> ';
             html += '</div>';
             html += '</div>';
@@ -68,20 +68,24 @@
         }
 
         function reloadList(list, element, view) {
-            list.forEach(id => {
-                getBaseItem(id).then(result => {
-                    var baseItem = result.Items[0];
-                    element.innerHTML = '';
-                    element.innerHTML += getListItemHtml(baseItem);
-                    var removeButtons = view.querySelectorAll('.removeItemBtn i');
-                    removeButtons.forEach(btn => {
-                        btn.addEventListener('click',
-                            el => {
-                                handleRemoveItemClick(el, element, view);
-                            });
+            element.innerHTML = '';
+            if (list && list.length) {
+                list.forEach(id => {
+                    getBaseItem(id).then(result => {
+                        var baseItem = result.Items[0];
+
+                        element.innerHTML += getListItemHtml(baseItem);
+                        var removeButtons = view.querySelectorAll('.removeItemBtn');
+                        removeButtons.forEach(btn => {
+                            btn.addEventListener('click',
+                                el => {
+                                    el.preventDefault();
+                                    handleRemoveItemClick(el, element, view);
+                                });
+                        });
                     });
                 });
-            });
+            }
         }
 
 

@@ -319,19 +319,19 @@ namespace IntroSkip.TitleSequence
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
             {
-                firstFileRegionStart = 0.0;
-                firstFileRegionEnd = 0.0;
-                secondFileRegionStart = 0.0;
-                secondFileRegionEnd = 0.0;
+                //firstFileRegionStart = 0.0;
+                //firstFileRegionEnd = 0.0;
+                //secondFileRegionStart = 0.0;
+                //secondFileRegionEnd = 0.0;
                 throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
             if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
             {
                 // -1 means intro does not exists
-                firstFileRegionStart = -1.0;
-                firstFileRegionEnd = -1.0;
-                secondFileRegionStart = -1.0;
-                secondFileRegionEnd = -1.0;
+                //firstFileRegionStart = -1.0;
+                //firstFileRegionEnd = -1.0;
+                //secondFileRegionStart = -1.0;
+                //secondFileRegionEnd = -1.0;
                 throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
 
             }
@@ -342,13 +342,13 @@ namespace IntroSkip.TitleSequence
 
 
             episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
+            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart));
+            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd));
 
 
             episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
+            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart));
+            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd));
 
             return new List<TitleSequenceResult>()
             {
