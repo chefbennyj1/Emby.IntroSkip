@@ -140,7 +140,7 @@ using System.Collections.Generic;
                                 });
 
 
-                                Log.Warn("CHAPTER INSERT: Not enough Chapter Markers for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo.ToString(), item.Name);
+                                Log.Warn("CHAPTER INSERT: Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}", tvShowName, seasonName, episodeNo.ToString(), item.Name);
                                 Log.Warn("CHAPTER INSERT: {0} has been added to Bad Chapter List", item.Name);
                             }
 
