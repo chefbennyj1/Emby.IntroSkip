@@ -188,8 +188,8 @@ namespace IntroSkip.TitleSequence
                                 break;
                             }
 
-                                //Compare the unmatched episode  with every other episode in the season until there is a match.
-                                for (var episodeComparableIndex = 0;
+                            //Compare the unmatched episode  with every other episode in the season until there is a match.
+                            for (var episodeComparableIndex = 0;
                                 episodeComparableIndex <= episodeQuery.Items.Count() - 1;
                                 episodeComparableIndex++)
                             {
@@ -204,13 +204,13 @@ namespace IntroSkip.TitleSequence
                                 var comparableItem = episodeQuery.Items[episodeComparableIndex];
 
                                     //Don't compare the same episode with itself. The episodes must be different or we'll match the entire encoding.
-                                    if (comparableItem.InternalId == unmatchedItem.InternalId)
+                                if (comparableItem.InternalId == unmatchedItem.InternalId)
                                 {
                                     continue;
                                 }
 
-                                    // If we have valid title sequence data for both items move on
-                                    if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
+                                // If we have valid title sequence data for both items move on
+                                if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
                                     dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
                                 {
                                     if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId)
@@ -239,14 +239,19 @@ namespace IntroSkip.TitleSequence
                                             if (dbEpisodes.Exists(item =>
                                             item.IndexNumber == sequence.IndexNumber &&
                                             item.SeasonId == sequence.SeasonId))
-                                        {
-                                            dbEpisodes.RemoveAll(item =>
-                                                item.IndexNumber == sequence.IndexNumber &&
-                                                item.SeasonId == sequence.SeasonId);
-                                        }
+                                            {
+                                                dbEpisodes.RemoveAll(item =>
+                                                    item.IndexNumber == sequence.IndexNumber &&
+                                                    item.SeasonId == sequence.SeasonId);
+                                            }
 
-                                        sequence.Processed =
-                                            true; //<-- now we won't process episodes again over and over
+                                            //If this is the only episode don't mark it as processed.
+                                            //Wait until there are more episodes available for the season.
+                                            if (episodeQuery.TotalRecordCount > 1)
+                                            {
+                                                sequence.Processed =
+                                                    true; //<-- now we won't process episodes again over and over
+                                            }
 
                                             dbEpisodes.Add(sequence);
 
@@ -267,12 +272,12 @@ namespace IntroSkip.TitleSequence
 
                                         //We have exhausted all our episode comparing
                                         if (dbEpisodes.Exists(item => item.InternalId == unmatchedItem.InternalId))
-                                        continue;
+                                            continue;
 
-                                    Log.Info(
-                                        $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
+                                        Log.Info(
+                                            $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
 
-                                    }
+                                }
                                 catch (AudioFingerprintMissingException ex)
                                 {
                                     Log.Info(
@@ -302,7 +307,7 @@ namespace IntroSkip.TitleSequence
 
 
 
-                });
+                  });
 
             progress.Report(100.0);
         }
