@@ -48,7 +48,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Title Sequence Activity Log'
+                    name: 'Activity'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -56,11 +56,10 @@
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
-                    name: 'Advanced Settings'
+                    name: 'Advanced'
                 }];
         }
 
-        
 
 
         function titleSequenceStatusIcon(confirmed) {
