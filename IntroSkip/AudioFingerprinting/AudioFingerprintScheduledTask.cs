@@ -57,6 +57,7 @@ namespace IntroSkip.AudioFingerprinting
             }
             //var repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+
             try
             {
                 Log.Info("Starting episode fingerprint task.");
@@ -68,7 +69,7 @@ namespace IntroSkip.AudioFingerprinting
                     Recursive = true,
                     IncludeItemTypes = new[] { "Series" },
                     User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    ExcludeItemIds = config.IgnoredList.ToArray(), 
+                    ExcludeItemIds = config.IgnoredList.ToArray(),
                     OrderBy = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
                 };
 
@@ -124,8 +125,8 @@ namespace IntroSkip.AudioFingerprinting
                             break;
                         }
 
-                        // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
-                        var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                            // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
+                            var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
 
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
@@ -136,8 +137,8 @@ namespace IntroSkip.AudioFingerprinting
                             IsVirtualItem = false
                         });
 
-                        //The season has been processed and all episodes have a sequence - move on.                        
-                        if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
+                            //The season has been processed and all episodes have a sequence - move on.                        
+                            if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {
 
                             Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
@@ -155,15 +156,15 @@ namespace IntroSkip.AudioFingerprinting
                                 break;
                             }
 
-                            //The episode data exists in the database
-                            // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
-                            if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
+                                //The episode data exists in the database
+                                // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                                if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
                             {
                                 var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episodeQuery.Items[index].InternalId);
 
-                                // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
-                                
-                                if (titleSequenceResult.Duration == duration)
+                                    // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
+
+                                    if (titleSequenceResult.Duration == duration)
                                 {
                                     continue;
                                 }
@@ -184,8 +185,8 @@ namespace IntroSkip.AudioFingerprinting
                             var fingerprintBinFileName = $"{seasonQuery.Items[seasonIndex].InternalId} - {episodeQuery.Items[index].InternalId}.bin";
                             var fingerprintBinFilePath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
-                            //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
-                            var stopWatch = new Stopwatch();
+                                //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
+                                var stopWatch = new Stopwatch();
                             stopWatch.Start();
 
                             ExtractFingerprintBinaryData($"{episodeQuery.Items[index].Path}", fingerprintBinFilePath, duration, cancellationToken);
@@ -243,19 +244,18 @@ namespace IntroSkip.AudioFingerprinting
 
                 progress.Report(100.0);
             }
+            
             Log.Info("Chromaprint Task Complete");
+
             var repo = repository as IDisposable;
-            if (repo != null)
-            {
-                repo.Dispose();
-            }
+            repo?.Dispose();
             progress.Report(100.0);
 
 
         }
 
         // in the future we can use "titleSequenceStart" to detect end title sequences of tv shows
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancelationToken, string titleSequenceStart = "00:00:00")
+        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, string titleSequenceStart = "00:00:00")
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -302,7 +302,7 @@ namespace IntroSkip.AudioFingerprinting
 
                 while ((processOutput = process.StandardError.ReadLine()) != null)
                 {
-                    if (cancelationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
                     {
                         try
                         {

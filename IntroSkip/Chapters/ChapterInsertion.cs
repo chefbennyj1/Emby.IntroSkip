@@ -28,14 +28,11 @@ using System.Collections.Generic;
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
 
-            //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
+            TitleSequenceResult titleSequence = null;
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            TitleSequenceResult titleSequence = repository.GetResult(id.ToString());
-
+            titleSequence = repository.GetResult(id.ToString());
             var repo = repository as IDisposable;
             repo?.Dispose();
-
-
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
