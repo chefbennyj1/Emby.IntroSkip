@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace Emby.AutoOrganize.Data
 {
-    public class SqliteTitleSequenceRepository : BaseSqliteRepository, ITitleSequenceRepository, IDisposable
+    public class SqliteTitleSequenceRepository : BaseSqliteRepository, ITitleSequenceRepository
     {
         private readonly IJsonSerializer _json;
 

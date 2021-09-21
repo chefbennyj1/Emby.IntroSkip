@@ -1,10 +1,11 @@
-﻿using IntroSkip.TitleSequence;
+﻿using System;
+using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using System.Threading;
 
 namespace IntroSkip.Data
 {
-    public interface ITitleSequenceRepository
+    public interface ITitleSequenceRepository : IDisposable
     {
         /// <summary>
         /// Saves the result.

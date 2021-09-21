@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Data;
 
 // ReSharper disable once TooManyDependencies
 // ReSharper disable three TooManyChainedReferences
@@ -38,8 +39,12 @@ namespace IntroSkip.TitleSequence
             Log.Info("Beginning Title Sequence Task");
             try
             {
-                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress);
+                var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
+                var repo = repository as IDisposable;
+                repo?.Dispose();
+
             }
             catch (Exception ex)
             {
