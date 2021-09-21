@@ -56,7 +56,7 @@
             
             html += '<td class="detailTableBodyCell" data-title="Library Link"></td>';
             html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
-            html += '<img style="height:40px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
+            html += '<img style="width:100px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
             html += '</td>';
 
             html += '<td class="detailTableBodyCell"  data-title="Date" >';
