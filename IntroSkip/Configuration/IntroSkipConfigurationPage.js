@@ -135,11 +135,13 @@
                     var endTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
 
                     html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
+
                     html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
                     html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
                     html += '<path fill="currentColor" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
                     html += '</svg>';
                     html += '</td>';
+
                     html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank"><img style="width:125px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
                     html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
