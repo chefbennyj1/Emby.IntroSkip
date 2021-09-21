@@ -276,7 +276,7 @@
                                     }
 
                                     removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                        "Rescan " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                        "Reset " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
@@ -316,7 +316,7 @@
                                 }
 
                                 removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                    "Rescan data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                    "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                 view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                 var titleSequences = result.TitleSequences;
@@ -359,7 +359,7 @@
                                     }
 
                                     removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                        "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                     var titleSequences = result.TitleSequences;
@@ -385,7 +385,7 @@
 
                     require(['confirm'], function (confirm) {
 
-                        confirm(message, 'Remove Season Data').then(function () {
+                        confirm(message, 'Reset Season Data').then(function () {
 
                             ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
                                 if (result == "OK") {
