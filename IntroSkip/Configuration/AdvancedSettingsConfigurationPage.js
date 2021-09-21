@@ -7,7 +7,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Title Sequence Activity Log'
+                    name: 'Activity'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -15,11 +15,19 @@
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
-                    name: 'Advanced Settings'
+                    name: 'Advanced'
                 }];
         }
 
         function getSeries() {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
+                    resolve(result);
+                });
+            });
+        }
+
+        function getLibrarySeries() {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
                     resolve(result);

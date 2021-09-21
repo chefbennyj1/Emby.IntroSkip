@@ -48,7 +48,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Title Sequence Activity Log'
+                    name: 'Activity'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -56,11 +56,10 @@
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
-                    name: 'Advanced Settings'
+                    name: 'Advanced'
                 }];
         }
 
-        
 
 
         function titleSequenceStatusIcon(confirmed) {
@@ -135,11 +134,13 @@
                     var endTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
 
                     html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
+
                     html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
                     html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
                     html += '<path fill="currentColor" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
                     html += '</svg>';
                     html += '</td>';
+
                     html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank"><img style="width:125px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
                     html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
@@ -275,7 +276,7 @@
                                     }
 
                                     removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                        "Rescan " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                        "Reset " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
 
@@ -315,7 +316,7 @@
                                 }
 
                                 removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                    "Rescan data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                    "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                 view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                 var titleSequences = result.TitleSequences;
@@ -358,7 +359,7 @@
                                     }
 
                                     removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                        "Remove data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
+                                        "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                     var titleSequences = result.TitleSequences;
@@ -384,7 +385,7 @@
 
                     require(['confirm'], function (confirm) {
 
-                        confirm(message, 'Remove Season Data').then(function () {
+                        confirm(message, 'Reset Season Data').then(function () {
 
                             ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
                                 if (result == "OK") {

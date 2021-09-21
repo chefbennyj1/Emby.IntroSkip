@@ -4,7 +4,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Title Sequence Activity Log'
+                    name: 'Activity'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -12,14 +12,22 @@
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
-                    name: 'Advanced Settings'
-                }
-            ];
+                    name: 'Advanced'
+                }];
         }
+        
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
-        
+
         function getBaseItem(id) {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
+                    resolve(result);
+                });
+            });
+        }
+
+        function getPrimaryImage(id) {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
                     resolve(result);
@@ -35,14 +43,23 @@
             });
         }
 
+        function imageLink(baseItem) {
+            return ApiClient._serverAddress +
+                "/web/index.html#!/item?id=" +
+                baseItem.Id +
+                "&serverId=" +
+                ApiClient._serverInfo.Id;
+        }
+
         function renderTableRowHtml(errItem, baseItem) {
             var html = '';
+            
+            html += '<td class="detailTableBodyCell" data-title="Library Link"></td>';
+            html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
+            html += '<img style="height:40px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
+            html += '</td>';
 
-
-
-            html += '<td class="detailTableBodyCell"></td>';
-
-            html += '<td class="detailTableBodyCell" data-title="Date">';
+            html += '<td class="detailTableBodyCell"  data-title="Date" >';
             var date = datetime.parseISO8601Date(errItem.Date, true);
             html += '<span>' + datetime.toLocaleDateString(date) + '</span>';
             html += '</td>';
@@ -115,6 +132,7 @@
                             var baseItem = result.Items[0];
                             chapterErrorResultTable.innerHTML += renderTableRowHtml(errItem, baseItem);
                         });
+                        
                     });
                 });
                 loading.hide();
