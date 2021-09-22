@@ -51,8 +51,6 @@
             return html;
         }
 
-
-
         function handleRemoveItemClick(e, element, view) {
             var id = e.target.closest('button').id;
             ApiClient.getPluginConfiguration(pluginId).then((config) => {
