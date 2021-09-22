@@ -41,6 +41,7 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
+            public bool RemoveAll { get; set; }
         }
 
         //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
@@ -107,7 +108,7 @@ namespace IntroSkip.Api
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
             titleSequence.HasSequence = request.HasSequence;
-            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed from the DB, but we have to have something here.
 
             try
             {
@@ -164,18 +165,31 @@ namespace IntroSkip.Api
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
+
                 try
                 {
-                    repository.Delete(item.InternalId.ToString());
+                    if (request.RemoveAll)
+                    {
+                        repository.Delete(item.InternalId.ToString());
+                    }
+                    else
+                    {
+                        if (!item.Confirmed) //Keep user confirmed items (items which the user has edited)
+                        {
+                            repository.Delete(item.InternalId.ToString());
+                            titleSequences.Remove(item);
+                        }
+                    }
                 }
                 catch { }
             }
 
             DisposeRepository(repository);
 
-            return "OK";
+            return request.RemoveAll ? "" : JsonSerializer.SerializeToString(titleSequences);
 
         }
 

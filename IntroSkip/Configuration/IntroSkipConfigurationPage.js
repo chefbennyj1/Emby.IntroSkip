@@ -201,8 +201,8 @@
 
 
         function sortTable(view) {
-            var table, rows, switching, i, x, y, shouldSwitch;
-            table = view.querySelector('.tblEpisodeIntroResults')
+            var rows, switching, i, x, y, shouldSwitch;
+            var table = view.querySelector('.tblEpisodeIntroResults');
             switching = true;
             /* Make a loop that will continue until
             no switching has been done: */
@@ -236,7 +236,7 @@
         }
 
         return function (view) {
-            view.addEventListener('viewshow', (e) => {
+            view.addEventListener('viewshow', () => {
                 loading.show();
 
                 mainTabsManager.setTabs(this, 0, getTabs);
@@ -363,7 +363,7 @@
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                     var titleSequences = result.TitleSequences;
-                                    reloadItems(titleSequences, view)
+                                    reloadItems(titleSequences, view);
                                 } else {
                                     view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                     if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -388,9 +388,8 @@
                         confirm(message, 'Reset Season Data').then(function () {
 
                             ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                                if (result == "OK") {
-                                    view.querySelector('.introResultBody').innerHTML = "";
-                                    Dashboard.processPluginConfigurationUpdateResult(result);  
+                                if (result) {
+                                    reloadItems(result);
                                 }
 
                             });
@@ -399,11 +398,6 @@
                     });
 
                 });
-
-                //settingsButton.addEventListener('click', (e) => {
-                //    e.preventDefault();
-                //    openSettingsDialog();
-                //});
             });
         }
     });

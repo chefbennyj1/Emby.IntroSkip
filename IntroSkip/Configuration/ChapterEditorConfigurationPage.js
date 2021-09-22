@@ -61,23 +61,23 @@
 
             html += '<td class="detailTableBodyCell"  data-title="Date" >';
             var date = datetime.parseISO8601Date(errItem.Date, true);
-            html += '<span>' + datetime.toLocaleDateString(date) + '</span>';
+            html +=  datetime.toLocaleDateString(date);
             html += '</td>';
 
             html += '<td class="detailTableBodyCell" data-title="TV Show">';
-            html += '<span>' + baseItem.SeriesName + '</span>';
+            html +=  baseItem.SeriesName;
             html += '</td>';
 
             html += '<td class="detailTableBodyCell" data-title="Season">';
-            html += '<span>' + baseItem.SeasonName + '</span>';
+            html +=  baseItem.SeasonName;
             html += '</td>';
 
             html += '<td class="detailTableBodyCell" data-title="Episode">';
-            html += '<span>Episode ' + baseItem.IndexNumber + '</span>';
+            html += 'Episode ' + baseItem.IndexNumber;
             html += '</td>';
 
             html += '<td class="detailTableBodyCell" data-title="# of Chapters">';
-            html += '<span>' + errItem.ChapterCount + '</span>';
+            html += errItem.ChapterCount;
             html += '</td>';
 
             return html;
