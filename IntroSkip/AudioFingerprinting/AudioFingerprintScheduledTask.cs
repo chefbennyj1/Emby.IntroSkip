@@ -125,8 +125,8 @@ namespace IntroSkip.AudioFingerprinting
                             break;
                         }
 
-                            // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
-                            var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                        // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
+                        var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
 
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
@@ -137,10 +137,9 @@ namespace IntroSkip.AudioFingerprinting
                             IsVirtualItem = false
                         });
 
-                            //The season has been processed and all episodes have a sequence - move on.                        
-                            if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
+                        //The season has been processed and all episodes have a sequence - move on.                        
+                        if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {
-
                             Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
                             continue;
                         }
@@ -156,15 +155,14 @@ namespace IntroSkip.AudioFingerprinting
                                 break;
                             }
 
-                                //The episode data exists in the database
-                                // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
-                                if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
+                            //The episode data exists in the database
+                            // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                            if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
                             {
                                 var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episodeQuery.Items[index].InternalId);
 
-                                    // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
-
-                                    if (titleSequenceResult.Duration == duration)
+                                // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
+                                if (titleSequenceResult.Duration == duration)
                                 {
                                     continue;
                                 }
@@ -185,8 +183,8 @@ namespace IntroSkip.AudioFingerprinting
                             var fingerprintBinFileName = $"{seasonQuery.Items[seasonIndex].InternalId} - {episodeQuery.Items[index].InternalId}.bin";
                             var fingerprintBinFilePath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
-                                //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
-                                var stopWatch = new Stopwatch();
+                            //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
+                            var stopWatch = new Stopwatch();
                             stopWatch.Start();
 
                             ExtractFingerprintBinaryData($"{episodeQuery.Items[index].Path}", fingerprintBinFilePath, duration, cancellationToken);
