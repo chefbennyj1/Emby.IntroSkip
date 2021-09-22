@@ -22,6 +22,6 @@ namespace IntroSkip.Configuration
 
         public int Version { get; set; } = 0;
         public int? Limit { get; set; } = null;
-
+        public bool EnableEndCreditChapterInsertion { get; set; }
     }
 }
