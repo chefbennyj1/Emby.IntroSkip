@@ -48,7 +48,7 @@ namespace IntroSkip.Chapters
                 stream = new FileStream(filePath, FileMode.OpenOrCreate);
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    writer.WriteLineAsync("INTROSKIP CHAPTERS: FilePaths for Episodes with Bad/Incorrect Chapters");
+                    //writer.WriteLineAsync("INTROSKIP CHAPTERS: FilePaths for Episodes with Bad/Incorrect Chapters");
 
                     foreach (var error in errors)
                     {
