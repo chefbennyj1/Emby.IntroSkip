@@ -111,12 +111,7 @@
                     }
                 });
 
-                /*Hamming Distance Sensitivity Settings
-                var hammingDistanceSens = view.querySelector('#txtHammingDistanceThreshold');
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    hammingDistanceSens.value = config.HammingDistanceThreshold ? config.HammingDistanceThreshold : 8;
-                });*/
-
+                
                 //Our ignore list
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 getSeries().then(series => {
