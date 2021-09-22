@@ -26,15 +26,7 @@
                 });
             });
         }
-
-        function getLibrarySeries() {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
-                    resolve(result);
-                });
-            });
-        }
-
+        
         function getBaseItem(id) {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
@@ -43,9 +35,9 @@
             });
         }
 
-        function getListItemHtml(series) {
+        function getListItemHtml(series, padding) {
             var html = '';
-            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, 0px);">';
+            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, ' + padding + 'px);">';
             html += '<div class="listItem-content listItemContent-touchzoom">';
             html += '<div class="listItemBody itemAction listItemBody-noleftpadding">';
             html += '<div class="listItemBodyText listItemBodyText-nowrap">' + series.Name + '</div>';
@@ -58,8 +50,6 @@
             html += '</div>';
             return html;
         }
-
-
 
         function handleRemoveItemClick(e, element, view) {
             var id = e.target.closest('button').id;
@@ -78,11 +68,12 @@
         function reloadList(list, element, view) {
             element.innerHTML = '';
             if (list && list.length) {
+                var padding = 0;
                 list.forEach(id => {
                     getBaseItem(id).then(result => {
                         var baseItem = result.Items[0];
-
-                        element.innerHTML += getListItemHtml(baseItem);
+                        element.innerHTML += getListItemHtml(baseItem, padding);
+                        padding += 77; //Why is this padding necessary
                         var removeButtons = view.querySelectorAll('.removeItemBtn');
                         removeButtons.forEach(btn => {
                             btn.addEventListener('click',
@@ -96,6 +87,7 @@
             }
         }
 
+       
 
         return function (view) {
             view.addEventListener('viewshow', (e) => {
@@ -118,12 +110,7 @@
                     }
                 });
 
-                /*Hamming Distance Sensitivity Settings
-                var hammingDistanceSens = view.querySelector('#txtHammingDistanceThreshold');
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    hammingDistanceSens.value = config.HammingDistanceThreshold ? config.HammingDistanceThreshold : 8;
-                });*/
-
+                
                 //Our ignore list
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 getSeries().then(series => {
@@ -148,12 +135,9 @@
 
                         } else {
 
-
                             config.IgnoredList = [ seriesId ];
 
-
                         }
-
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
 
@@ -164,24 +148,7 @@
                         
                     loading.hide();
                 });
-
-                //var removeAllButton = dlg.querySelector('.removeAllData');
-                //removeAllButton.addEventListener('click', (e) => {
-                //    e.preventDefault();
-                //    var message = 'Are you sure you wish to proceed?';
-                //    require(['confirm'], function (confirm) {
-                //        confirm(message, 'Remove All Data').then(function () {
-                //            ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                //                if (result == "OK") {
-                //                    ApiClient.deleteAll().then(result => {
-                //                        Dashboard.alert("All data removed.");
-                //                        dialogHelper.close(confirmDlg);
-                //                    });
-                //                }
-                //            });
-                //        });
-                //    });
-                //});
+                       
 
                 titleSequenceMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
@@ -192,18 +159,9 @@
                     });
                 });
 
-                /*hammingDistanceSens.addEventListener('change', (elem) => {
-                    elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.HammingDistanceThreshold = hammingDistanceSens.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
-                });*/
-
-
-
-
                 loading.hide();
             });
+
+
         }
     });

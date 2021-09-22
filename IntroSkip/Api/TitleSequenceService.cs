@@ -41,6 +41,7 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
+            public bool RemoveAll { get; set; }
         }
 
         //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
@@ -164,18 +165,29 @@ namespace IntroSkip.Api
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
                 try
                 {
-                    repository.Delete(item.InternalId.ToString());
+                    if (request.RemoveAll)
+                    {
+                        repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
+                    }
+                    else
+                    {
+                        if (item.Confirmed) continue;
+                        repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
+                    }
                 }
                 catch { }
             }
 
             DisposeRepository(repository);
 
-            return "OK";
+            return JsonSerializer.SerializeToString(titleSequences);
 
         }
 

@@ -22,8 +22,8 @@
         };
 
 
-        ApiClient.deleteSeasonData = function (seasonId) {
-            var url = this.getUrl('RemoveSeasonDataRequest?SeasonId=' + seasonId);
+        ApiClient.deleteSeasonData = function (seasonId, removeAll) {
+            var url = this.getUrl('RemoveSeasonDataRequest?SeasonId=' + seasonId + '&RemoveAll=' + removeAll);
             return this.ajax({
                 type: "DELETE",
                 url: url
@@ -199,6 +199,74 @@
             });
         }
 
+         function confirm_dlg(view) {
+            var dlg = dialogHelper.createDialog({
+                removeOnClose: true,
+                size: 'small'
+            });
+
+            dlg.classList.add('ui-body-a');
+            dlg.classList.add('background-theme-a');
+
+            dlg.classList.add('formDialog');
+            dlg.style.maxWidth = '30%';
+            dlg.style.maxHeight = '20%';
+            
+            var html = '';
+            html += '<div class="formDialogHeader">';
+            html += '<button is="paper-icon-button-light" class="btnCancel autoSize" tabindex="-1"><i class="md-icon">&#xE5C4;</i></button>';
+            html += '<h3 class="formDialogHeaderTitle">Reset Season</h3>';
+            html += '</div>';
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
+           
+            //Submit - remove all season data
+            html += '<button is="emby-button" type="button" class="btnClearAll submit raised button-cancel">';
+            html += '<span>Remove All</span>';
+            html += '</button>';
+
+            //Keep confirmed user data (the data the user edited in the table)
+            html += '<button is="emby-button" type="button" class="btnKeepConfirmed submit raised button-cancel">';
+            html += '<span>Keep Edited Content</span>';
+            html += '</button>';
+
+            //Cancel
+            html += '<button is="emby-button" type="button" class="btnCancel submit raised button-cancel">';
+            html += '<span>Cancel</span>';
+            html += '</button>';
+
+            html += '</div>';
+            html += '</div>';
+
+            dlg.innerHTML = html;
+
+            dlg.querySelectorAll('.btnCancel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    dialogHelper.close(dlg);
+                });
+            });
+
+            dlg.querySelector('.btnKeepConfirmed').addEventListener('click', () => {
+                clear(false);
+            });
+
+            dlg.querySelector('.btnClearAll').addEventListener('click', () => {
+                clear(true);
+            });
+
+            function clear(removeAll) {
+                ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value, removeAll).then(result => {
+                    if (result) {
+                        loading.show();
+                        reloadList(result, view);
+                        loading.hide();
+                        dialogHelper.close(dlg);
+                    }
+                });
+            }
+
+            dialogHelper.open(dlg);
+         }
 
         function sortTable(view) {
             var table, rows, switching, i, x, y, shouldSwitch;
@@ -379,25 +447,7 @@
 
                 removeSeasonalFingerprintButton.addEventListener('click', (e) => {
                     e.preventDefault();
-                    loading.show();
-
-                    var message = 'Are you sure you wish to proceed?';
-
-                    require(['confirm'], function (confirm) {
-
-                        confirm(message, 'Reset Season Data').then(function () {
-
-                            ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                                if (result == "OK") {
-                                    view.querySelector('.introResultBody').innerHTML = "";
-                                    Dashboard.processPluginConfigurationUpdateResult(result);  
-                                }
-
-                            });
-                        });
-                        loading.hide();                        
-                    });
-
+                    confirm_dlg(view);
                 });
 
                 //settingsButton.addEventListener('click', (e) => {
