@@ -43,9 +43,9 @@
             });
         }
 
-        function getListItemHtml(series) {
+        function getListItemHtml(series, padding) {
             var html = '';
-            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, 0px);">';
+            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, ' + padding + 'px);">';
             html += '<div class="listItem-content listItemContent-touchzoom">';
             html += '<div class="listItemBody itemAction listItemBody-noleftpadding">';
             html += '<div class="listItemBodyText listItemBodyText-nowrap">' + series.Name + '</div>';
@@ -78,11 +78,12 @@
         function reloadList(list, element, view) {
             element.innerHTML = '';
             if (list && list.length) {
+                var padding = 0;
                 list.forEach(id => {
                     getBaseItem(id).then(result => {
                         var baseItem = result.Items[0];
-
-                        element.innerHTML += getListItemHtml(baseItem);
+                        element.innerHTML += getListItemHtml(baseItem, padding);
+                        padding += 77; //Why is this padding necessary
                         var removeButtons = view.querySelectorAll('.removeItemBtn');
                         removeButtons.forEach(btn => {
                             btn.addEventListener('click',
