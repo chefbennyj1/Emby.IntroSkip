@@ -149,9 +149,7 @@
 
                         } else {
 
-
                             config.IgnoredList = [ seriesId ];
-
 
                         }
 
@@ -165,24 +163,7 @@
                         
                     loading.hide();
                 });
-
-                //var removeAllButton = dlg.querySelector('.removeAllData');
-                //removeAllButton.addEventListener('click', (e) => {
-                //    e.preventDefault();
-                //    var message = 'Are you sure you wish to proceed?';
-                //    require(['confirm'], function (confirm) {
-                //        confirm(message, 'Remove All Data').then(function () {
-                //            ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
-                //                if (result == "OK") {
-                //                    ApiClient.deleteAll().then(result => {
-                //                        Dashboard.alert("All data removed.");
-                //                        dialogHelper.close(confirmDlg);
-                //                    });
-                //                }
-                //            });
-                //        });
-                //    });
-                //});
+                       
 
                 titleSequenceMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
@@ -193,16 +174,7 @@
                     });
                 });
 
-                /*hammingDistanceSens.addEventListener('change', (elem) => {
-                    elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.HammingDistanceThreshold = hammingDistanceSens.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
-                });*/
-
-
-
+                
 
                 loading.hide();
             });
