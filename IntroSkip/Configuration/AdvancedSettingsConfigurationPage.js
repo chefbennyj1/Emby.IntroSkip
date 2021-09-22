@@ -87,6 +87,7 @@
             }
         }
 
+       
 
         return function (view) {
             view.addEventListener('viewshow', (e) => {
@@ -137,7 +138,6 @@
                             config.IgnoredList = [ seriesId ];
 
                         }
-
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
 
@@ -159,9 +159,9 @@
                     });
                 });
 
-                
-
                 loading.hide();
             });
+
+
         }
     });

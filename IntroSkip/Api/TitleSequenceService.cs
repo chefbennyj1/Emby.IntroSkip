@@ -168,20 +168,18 @@ namespace IntroSkip.Api
             var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
-
                 try
                 {
                     if (request.RemoveAll)
                     {
                         repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
                     }
                     else
                     {
-                        if (!item.Confirmed) //Keep user confirmed items (items which the user has edited)
-                        {
-                            repository.Delete(item.InternalId.ToString());
-                            titleSequences.Remove(item);
-                        }
+                        if (item.Confirmed) continue;
+                        repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
                     }
                 }
                 catch { }
@@ -189,7 +187,7 @@ namespace IntroSkip.Api
 
             DisposeRepository(repository);
 
-            return request.RemoveAll ? "" : JsonSerializer.SerializeToString(titleSequences);
+            return JsonSerializer.SerializeToString(titleSequences);
 
         }
 
