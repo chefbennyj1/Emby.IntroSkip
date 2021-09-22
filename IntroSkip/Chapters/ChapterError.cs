@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 
 namespace IntroSkip.Chapters
@@ -8,6 +9,7 @@ namespace IntroSkip.Chapters
         public long Id { get; set; }
         public int ChapterCount { get; set; }
         public DateTime Date { get; set; }
+        public string FilePathString { get; set; }
 
     }
 }

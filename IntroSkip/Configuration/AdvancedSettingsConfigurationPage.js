@@ -26,7 +26,15 @@
                 });
             });
         }
-         
+
+        function getLibrarySeries() {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
+                    resolve(result);
+                });
+            });
+        }
+
         function getBaseItem(id) {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
@@ -141,7 +149,10 @@
 
                         } else {
 
+
                             config.IgnoredList = [ seriesId ];
+
+
                         }
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
@@ -155,6 +166,24 @@
                     loading.hide();
                 });
 
+                //var removeAllButton = dlg.querySelector('.removeAllData');
+                //removeAllButton.addEventListener('click', (e) => {
+                //    e.preventDefault();
+                //    var message = 'Are you sure you wish to proceed?';
+                //    require(['confirm'], function (confirm) {
+                //        confirm(message, 'Remove All Data').then(function () {
+                //            ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value).then(result => {
+                //                if (result == "OK") {
+                //                    ApiClient.deleteAll().then(result => {
+                //                        Dashboard.alert("All data removed.");
+                //                        dialogHelper.close(confirmDlg);
+                //                    });
+                //                }
+                //            });
+                //        });
+                //    });
+                //});
+
                 titleSequenceMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
@@ -163,7 +192,18 @@
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
-                
+
+                /*hammingDistanceSens.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.HammingDistanceThreshold = hammingDistanceSens.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });*/
+
+
+
+
                 loading.hide();
             });
         }
