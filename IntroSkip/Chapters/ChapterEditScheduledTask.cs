@@ -21,15 +21,17 @@ namespace IntroSkip.Chapters
         public ILibraryManager LibraryManager { get; set; }
         private ITaskManager TaskManager { get; }
         private ChapterInsertion ChapterInsertion { get; }
+        private ChapterErrorTextFileCreator ErrorTextFile { get; }
         private IItemRepository ItemRepo { get; }
         private ILogger Log { get; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, IItemRepository itemRepo)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, IItemRepository itemRepo, ChapterErrorTextFileCreator textFile)
         {
             LibraryManager = libraryManager;
             TaskManager = taskManager;
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ChapterInsertion = chapterInsertion;
+            ErrorTextFile = textFile;
             ItemRepo = itemRepo;
         }
 
@@ -43,6 +45,11 @@ namespace IntroSkip.Chapters
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
                 chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
                 chapterExecute.Wait(cancellationToken);
+
+                if (chapterExecute.IsCompleted && ChapterInsertion.ChapterErrors != null)
+                {
+                    ErrorTextFile.JotErrorFilePaths();
+                }
 
                 // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
                 if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction)

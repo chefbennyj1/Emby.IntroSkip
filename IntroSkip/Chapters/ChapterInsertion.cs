@@ -87,7 +87,8 @@ using System.Collections.Generic;
                             {
                                 Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
                                 Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
-                                ChapterCount = iCount
+                                ChapterCount = iCount,
+                                FilePathString = item.Path
                             });
 
                         }
@@ -133,7 +134,8 @@ using System.Collections.Generic;
                                 {
                                     Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
                                     Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
-                                    ChapterCount = iCount
+                                    ChapterCount = iCount,
+                                    FilePathString = item.Path
                                 });
 
 

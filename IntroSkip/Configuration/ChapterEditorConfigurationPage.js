@@ -53,18 +53,19 @@
 
         function renderTableRowHtml(errItem, baseItem) {
             var html = '';
-            
-            html += '<td class="detailTableBodyCell" data-title="Library Link"></td>';
+            var date = datetime.parseISO8601Date(errItem.Date, true);
+
+
+            html += '<td data-title="Library Link" class="detailTableBodyCell" >';
             html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
-            html += '<img style="height:40px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
+            html += '<img style="width:100px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
             html += '</td>';
 
-            html += '<td class="detailTableBodyCell"  data-title="Date" >';
-            var date = datetime.parseISO8601Date(errItem.Date, true);
+            html += '<td data-title="Date" class="detailTableBodyCell">';
             html += '<span>' + datetime.toLocaleDateString(date) + '</span>';
             html += '</td>';
 
-            html += '<td class="detailTableBodyCell" data-title="TV Show">';
+            html += '<td data-title="TV Show" class="detailTableBodyCell" display="" >';
             html += '<span>' + baseItem.SeriesName + '</span>';
             html += '</td>';
 
@@ -79,6 +80,7 @@
             html += '<td class="detailTableBodyCell" data-title="# of Chapters">';
             html += '<span>' + errItem.ChapterCount + '</span>';
             html += '</td>';
+
 
             return html;
 
