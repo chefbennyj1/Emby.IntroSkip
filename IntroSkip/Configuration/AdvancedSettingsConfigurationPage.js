@@ -26,15 +26,7 @@
                 });
             });
         }
-
-        function getLibrarySeries() {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
-                    resolve(result);
-                });
-            });
-        }
-
+        
         function getBaseItem(id) {
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
