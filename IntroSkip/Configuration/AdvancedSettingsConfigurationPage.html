@@ -16,13 +16,21 @@
                         </div>
                     </div>
 
-                    <!--<div class="inputContainer">
-        <label class="inputLabel inputLabelUnfocused" for="txtHammingDistanceThreshold">Hamming Distance Threshold</label>
-        <input type="number" id="txtHammingDistanceThreshold" min="2" max="15" step="1" label="Set the Sensitivity of the Audio Threshold" class="emby-input">
-        <div class="fieldDescription">
-            The Sensitivity of the Hamming Distance Detection Threshold, Higher numbers increase sensitivity
-        </div>
-    </div>-->
+                    <div class="inputContainer">
+                        <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                            <input is="emby-toggle" type="checkbox" id="enableEnableItemAddedTaskAutoRun" class="chkEnableItemAddedTaskAutoRun" data-embytoggle="">
+                            <span class="toggleButtonLabel mdl-switch__label">Run tasks when new episodes are added</span>
+                            <div class="mdl-switch__trackContainer">
+                                <div class="mdl-switch__track"></div>
+                                <div class="mdl-switch__thumb">
+                                    <span class="mdl-switch__focus-helper"></span>
+                                </div>
+                            </div>
+                        </label>
+                        <div class="fieldDescription">
+                            This will trigger the chromaprinting, and detection task automatically when a new items are added to the library.
+                        </div>
+                    </div>
 
                     <hr />
 

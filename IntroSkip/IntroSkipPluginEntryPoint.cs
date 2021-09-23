@@ -41,6 +41,8 @@ namespace IntroSkip
 
         public void Dispose()
         {
+            LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
+            LibraryManager.ItemRemoved -= LibraryManager_ItemRemoved;
             var repo = Repository as IDisposable;
             repo?.Dispose();
         }
@@ -67,9 +69,13 @@ namespace IntroSkip
             ItemsRemoved.Add(e.Item.InternalId); //Add the removed Item to the list of items being removed.
         }
 
-        
         private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
         {
+            if (!Plugin.Instance.Configuration.EnableItemAddedTaskAutoRun)
+            {
+                return;
+            }
+
             if (e.Item.GetType().Name != "Episode")
             {
                 return;
@@ -90,8 +96,13 @@ namespace IntroSkip
             {
                 try
                 {
+                    //This item may not exist in the database is if the user removes a items from their library
+                    //They have opted out of auto scanning
+                    //They have not manually run the fingerprinting task
+                    
                     repository.Delete(item.ToString());
-                }catch{}
+
+                } catch {}
             }
             ItemsRemoved.Clear();
             repository.Vacuum();

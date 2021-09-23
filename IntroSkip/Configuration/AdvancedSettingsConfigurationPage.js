@@ -101,9 +101,15 @@
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
 
+                //enable ItemAdded Event Listeners
+                var chkEnableItemAddedTaskAutoRun = view.querySelector('#chkEnableItemAddedTaskAutoRun');
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
+                    
+                    chkEnableItemAddedTaskAutoRun.value =
+                        config.EnableItemAddedTaskAutoRun ? config.EnableItemAddedTaskAutoRun : false;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
@@ -155,6 +161,15 @@
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
                         config.FingerprintingMaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                chkEnableItemAddedTaskAutoRun.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.EnableItemAddedTaskAutoRun = titleSequenceMaxDegreeOfParallelism.value;
+                        config.FingerprintingMaxDegreeOfParallelism = chkEnableItemAddedTaskAutoRun.value;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
