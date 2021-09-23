@@ -21,6 +21,14 @@
             });
         };
 
+        //ApiClient.refreshSeasonMetadata = function(seasonId) {
+        //    return new Promise((resolve, reject) => {
+        //        ApiClient.getJSON(ApiClient.getUrl('Items?' + id +'Refresh?MetadataRefreshMode=FullRefresh&ImageRefreshMode=ValidationOnly&ReplaceAllMetadata=true&ReplaceAllImages=false')).then(result => {
+        //            resolve(result);
+        //        });
+        //    });
+        //}
+        // http://localhost:8096/emby/Items/12056/Refresh?MetadataRefreshMode=FullRefresh&ImageRefreshMode=ValidationOnly&ReplaceAllMetadata=true&ReplaceAllImages=false
 
         ApiClient.deleteSeasonData = function (seasonId, removeAll) {
             var url = this.getUrl('RemoveSeasonDataRequest?SeasonId=' + seasonId + '&RemoveAll=' + removeAll);
