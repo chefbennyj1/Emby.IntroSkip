@@ -1,10 +1,12 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Serialization;
 
 namespace IntroSkip.Chapters
 {
@@ -13,15 +15,17 @@ namespace IntroSkip.Chapters
         private IFileSystem FileSystem { get; }
         private IApplicationPaths ApplicationPaths { get; }
         private char Separator { get; }
+        private IXmlSerializer Serializer { get; }
         private ILogger Log { get; }
         public static ChapterErrorTextFileCreator Instance { get; set; }
-        public ChapterErrorTextFileCreator(IFileSystem file, IApplicationPaths applicationPaths, ILogManager logMan)
+        public ChapterErrorTextFileCreator(IFileSystem file, IApplicationPaths applicationPaths, ILogManager logMan, IXmlSerializer serializer)
         {
             Instance = this;
             FileSystem = file;
             ApplicationPaths = applicationPaths;
             Log = logMan.GetLogger(Plugin.Instance.Name);
             Separator = FileSystem.DirectorySeparatorChar;
+            Serializer = serializer;
         }
 
         public string GetChapterErrorDir()
@@ -34,8 +38,9 @@ namespace IntroSkip.Chapters
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("CHAPTER ERRORS TEXT FILE: Writing each episode to xml file");
-            var errors = ChapterInsertion.Instance.ChapterErrors;
-            var filePath = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
+            List<ChapterError> errors = ChapterInsertion.Instance.ChapterErrors;
+            var filePathText = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
+            var filePathXml = $"{configDir}/ChapterError{Separator}ChapterErrorList.xml";
 
             FileStream stream;
 
@@ -45,16 +50,19 @@ namespace IntroSkip.Chapters
             }
             else
             {
-                stream = new FileStream(filePath, FileMode.OpenOrCreate);
+
+                stream = new FileStream(filePathText, FileMode.OpenOrCreate);
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    //writer.WriteLineAsync("INTROSKIP CHAPTERS: FilePaths for Episodes with Bad/Incorrect Chapters");
+                    writer.WriteLineAsync("INTROSKIP CHAPTERS: FilePaths for Episodes with Bad/Incorrect Chapters");
 
                     foreach (var error in errors)
                     {
                         var path = error.FilePathString;
                         Log.Debug("CHAPTER ERRORS TEXT FILE: FilePath = {0}", path);
                         writer.WriteLineAsync(path);
+                        
+
                     }
                 }
             }

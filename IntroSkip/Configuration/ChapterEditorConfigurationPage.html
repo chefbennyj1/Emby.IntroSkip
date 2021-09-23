@@ -22,6 +22,22 @@
 
                 <div class="inputContainer">
                     <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                        <input is="emby-toggle" type="checkbox" id="enableChapterEndCreditEvent" class="chkChapterEndCreditEvent" data-embytoggle="">
+                        <span class="toggleButtonLabel mdl-switch__label">Show End Credits in Chapters</span>
+                        <div class="mdl-switch__trackContainer">
+                            <div class="mdl-switch__track"></div>
+                            <div class="mdl-switch__thumb">
+                                <span class="mdl-switch__focus-helper"></span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="fieldDescription">
+                        This will create a End Credits Entry that will be shown in the Chapters Section of your Episodes
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
                         <input is="emby-toggle" type="checkbox" id="enableAutoChpaterEvent" class="chkChapterExtractEvent" data-embytoggle="">
                         <span class="toggleButtonLabel mdl-switch__label">Enable Auto Image Extraction</span>
                         <div class="mdl-switch__trackContainer">
@@ -32,8 +48,8 @@
                         </div>
                     </label>
                     <div class="fieldDescription">
-                        This will Automatically run the Thumbnail Image Extraction Process once the Intro Points have been inserted --
-                        This will only run if you Enable Show Title Sequence in Chapters
+                        This will Automatically run the Thumbnail Image Extraction Process once the Intro and End Credit Points have been inserted --
+                        This will only run the Chapter Entry Points that are selected Above
                     </div>
                 </div>
 
@@ -47,25 +63,27 @@
                 <div>
                     <div class="detailSectionHeader" style="padding-bottom: .5em;">
                         <h2 style="margin: .4em 0; vertical-align: middle;">
-                            Unprocessed Episode Chapters: Bad/Incorrect Chapters, needs user attention </h2>
+                            Unprocessed Episode Intro Chapters: Bad/Incorrect Intro Chapters, needs user attention
+                        </h2>
                     </div>
-                        <a is="emby-linkbutton" class="button-link" style="padding-bottom: 1em" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/&do=findComment&comment=1070247" target="_blank">Information on how to remove Bad/Incorrect Chapters</a>
+                    <a is="emby-linkbutton" class="button-link" style="padding-bottom: 1em" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/&do=findComment&comment=1070247" target="_blank">Information on how to remove Bad/Incorrect Chapters</a>
                 </div>
                 <hr />
 
                 <div class="chapterResults scrollY" style="max-height: 34em; margin:0 2em 2em 2em">
                     <table class="tblEpisodeChapterResults table detailTable" style="width: 100%;">
                         <thead>
-                        <tr style="text-align: left; padding-bottom: 2em;">
-                            <th class="detailTableHeaderCell" data-priority="2">Library Link</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Date</th>
-                            <th class="detailTableHeaderCell" data-priority="2">TV Show</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Season</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Episode</th>
-                            <th class="detailTableHeaderCell" data-priority="3"># of Chapters</th>
-                            <th class="detailTableHeaderCell" data-priority="1"></th>
-                        </tr>
+                            <tr style="text-align: left; padding-bottom: 2em;">
+                                <th class="detailTableHeaderCell" data-priority="2">Library Link</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Date</th>
+                                <th class="detailTableHeaderCell" data-priority="2">TV Show</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Season</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Episode</th>
+                                <th class="detailTableHeaderCell" data-priority="3"># of Chapters</th>
+                                <th class="detailTableHeaderCell" data-priority="1"></th>
+                            </tr>
                         </thead>
+
                         <tbody class="tblEpisodeChapterErrorResultBody"></tbody>
                     </table>
                 </div>
