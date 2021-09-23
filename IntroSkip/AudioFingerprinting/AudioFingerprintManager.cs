@@ -22,6 +22,7 @@ namespace IntroSkip.AudioFingerprinting
         private IFfmpegManager FfmpegManager           { get; }
         private ILogger Log                            { get; }
 
+        
         public AudioFingerprintManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager, IApplicationPaths applicationPaths)
         {
             Instance         = this;
