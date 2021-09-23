@@ -24,6 +24,7 @@ namespace IntroSkip
         private static ILogger Logger { get; set; }
         private static IJsonSerializer _json { get; set; }
 
+        
         //Handling new items added to the library
         private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
         private static readonly Timer ItemsRemovedTimer = new Timer(AllItemsRemoved);
@@ -53,8 +54,31 @@ namespace IntroSkip
             ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
             LibraryManager.ItemAdded += LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
+            TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
 
             Plugin.Instance.SaveConfiguration();
+        }
+
+        private void TaskManagerOnTaskCompleted(object sender, TaskCompletionEventArgs e)
+        {
+            switch (e.Task.Name)
+            {
+                //Run the Detection task after fingerprinting
+                case "Episode Audio Fingerprinting":
+                    TaskManager.Execute(
+                        TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection"),
+                        new TaskOptions());
+                    break;
+
+                //Run the Chapters after detection
+                case "Episode Title Sequence Detection":
+                    if (!Plugin.Instance.Configuration.EnableChapterInsertion) return;
+                    TaskManager.Execute(
+                        TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "IntroSkip Chapter Insertion"),
+                        new TaskOptions());
+                    break;
+            }
+            
         }
 
 
