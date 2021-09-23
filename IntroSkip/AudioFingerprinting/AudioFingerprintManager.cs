@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Plugins;
@@ -16,14 +17,18 @@ namespace IntroSkip.AudioFingerprinting
     {
         public static AudioFingerprintManager Instance { get; set; }
         private IFileSystem FileSystem { get; }
+        private IApplicationPaths ApplicationPaths { get; }
+        private char Separator { get; }
         private IFfmpegManager FfmpegManager { get; }
         private ILogger Log { get; }
 
-        public AudioFingerprintManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager)
+        public AudioFingerprintManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager, IApplicationPaths applicationPaths)
         {
             Instance = this;
             FileSystem = file;
             FfmpegManager = ffmpeg;
+            ApplicationPaths = applicationPaths;
+            Separator = FileSystem.DirectorySeparatorChar;
             Log = logManager.GetLogger(Plugin.Instance.Name);
         }
 
@@ -31,7 +36,7 @@ namespace IntroSkip.AudioFingerprinting
         {
             var separator = FileSystem.DirectorySeparatorChar;
             var fingerprintBinFileName = $"{episode.Parent.InternalId} - {episode.InternalId}.bin";
-            var fingerprintBinFilePath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
+            var fingerprintBinFilePath = $"{GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
             ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken);
 
@@ -120,8 +125,25 @@ namespace IntroSkip.AudioFingerprinting
                     fingerprint.Add(b.ReadUInt32());
                 }
             }
-            AudioFingerprintFileManager.Instance.RemoveEpisodeFingerprintBinFile(bin, item);
+            RemoveEpisodeFingerprintBinFile(bin, item);
             return fingerprint;
+        }
+
+        private void RemoveEpisodeFingerprintBinFile(string path, BaseItem item)
+        {
+            if (!FileSystem.FileExists(path)) return;
+            try
+            {
+                FileSystem.DeleteFile(path);
+                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: .bin file removed.");
+            }
+            catch { }
+        }
+
+        private string GetEncodingDirectory()
+        {
+            var configDir = ApplicationPaths.PluginConfigurationsPath;
+            return $"{configDir}{Separator}introEncoding";
         }
 
         public void Dispose()
@@ -131,7 +153,8 @@ namespace IntroSkip.AudioFingerprinting
 
         public void Run()
         {
-            
+            var encodingDir = GetEncodingDirectory();
+            if (!FileSystem.DirectoryExists($"{encodingDir}")) FileSystem.CreateDirectory($"{encodingDir}");
         }
     }
 }
