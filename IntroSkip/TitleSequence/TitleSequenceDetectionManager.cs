@@ -81,8 +81,10 @@ namespace IntroSkip.TitleSequence
             var step = 100.0 / seriesQuery.TotalRecordCount;
             
             Parallel.ForEach(seriesQuery.Items,
+                //Set the number to Shows to be processed at the same time
                 new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
                   {
+                      //If we click the stop button in Scheduled tasks for the Detection Task, lets stop processing any further and report the task complete.
                     if (cancellationToken.IsCancellationRequested)
                     {
 
@@ -93,17 +95,19 @@ namespace IntroSkip.TitleSequence
                     progress?.Report((currentProgress += step) - 1);
 
 
-
-                    var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+                    //Lets interrogate Emby API for a list of Seasons  
+                    QueryResult<BaseItem> seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent = series,
                         Recursive = true,
                         IncludeItemTypes = new[] { "Season" },
                         User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
                         IsVirtualItem = false
+                        
 
                     });
 
+                    //Lets check every result (returns a BaseItem) for what we need
                     foreach (var season in seasonQuery.Items)
                     {
                         if (cancellationToken.IsCancellationRequested)
@@ -112,13 +116,16 @@ namespace IntroSkip.TitleSequence
                         }
 
 
-                            //Our database info
-                            QueryResult<TitleSequenceResult> dbResults = null;
+                        //Our database info
+                        QueryResult<TitleSequenceResult> dbResults = null;
+
                         try
                         {
-
-                            dbResults = repository.GetResults(new TitleSequenceResultQuery()
-                            { SeasonInternalId = season.InternalId });
+                            //Get Season Results from the database using the Season Id from Library BaseItem (not our Repo)
+                            dbResults = repository.GetResults(new TitleSequenceResultQuery
+                            {
+                                SeasonInternalId = season.InternalId
+                            });
 
                         }
                         catch (Exception ex)
@@ -128,8 +135,8 @@ namespace IntroSkip.TitleSequence
                             continue;
                         }
 
-
-                        var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
+                        //So now we have a list of Season Id's lets get all the episode info in the Season for a count comparison later 
+                          var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
                             Parent = season,
                             Recursive = true,
@@ -138,107 +145,122 @@ namespace IntroSkip.TitleSequence
                             IsVirtualItem = false
                         });
 
-
+                        //Check our database for fingerprints that match our Season Id's and store them so we can use them for detection later.
                         var dbEpisodes = dbResults.Items.Where(t => t.SeasonId == season.InternalId).ToList();
 
-                        if (!dbEpisodes.Any()
-                        ) //<-- this should not happen unless the fingerprint task was never run on this season. 
-                            {
+                        if (!dbEpisodes.Any()) //<-- this should not happen unless the fingerprint task was never run on this season. 
+                        {
+                            //if there is nothing in the database at all, lets create a new one;
                             dbEpisodes = new List<TitleSequenceResult>();
                         }
 
                             // An entire season with no title sequence might be the case. However, something else might have caused an entire season to have no results. - Warn the log.
-                            if (dbEpisodes.All(item => item.HasSequence == false) &&
-                            dbEpisodes.All(item => item.Processed))
+                            if (dbEpisodes.All(item => item.HasSequence == false) && dbEpisodes.All(item => item.Processed))
                         {
                                 //Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
-                            }
+                        }
 
 
                             //After processing, the DB entry is marked as 'processed'. if the item has been processed already, just move on.
-                            if (dbEpisodes.Count() == episodeQuery.TotalRecordCount &&
-                            dbEpisodes.All(item => item.Processed))
-                        {
-                            Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
-                            continue;
-                        }
+                            if (dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
+                            {
+                                Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
+                                continue;
+                            }
 
 
                             // All our processed episodes with sequences, or user confirmed information
                             var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasSequence || e.Confirmed)
-                            .Select(y => y.InternalId).Distinct());
+                                .Select(y => y.InternalId).Distinct());
                             // A list of episodes with all our episodes containing sequence data removed from it. All that is left is what we need to process.
                             var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
 
-                        if (!unmatched.Any()
-                        ) //<-- this is redundant because we checked for 'processed' above. keep it here just in case something slips past.
+                            if (!unmatched.Any()
+                            ) //<-- this is redundant because we checked for 'processed' above. keep it here just in case something slips past.
                             {
-                            continue;
-                        }
-
-                        Log.Info(
-                            $" will process {unmatched.Count()} episodes for {season.Parent.Name} - {season.Name}.");
-
-                        for (var index = 0; index <= unmatched.Count() - 1; index++)
-                        {
-
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                break;
+                                continue;
                             }
 
-                            //Compare the unmatched episode  with every other episode in the season until there is a match.
-                            for (var episodeComparableIndex = 0;
-                                episodeComparableIndex <= episodeQuery.Items.Count() - 1;
-                                episodeComparableIndex++)
+                            Log.Info(
+                                $" will process {unmatched.Count()} episodes for {season.Parent.Name} - {season.Name}.");
+
+                            for (var index = 0; index <= unmatched.Count() - 1; index++)
                             {
+
                                 if (cancellationToken.IsCancellationRequested)
                                 {
                                     break;
                                 }
 
+                                //Compare the unmatched episode  with every other episode in the season until there is a match.
+                                for (var episodeComparableIndex = 0;
+                                    episodeComparableIndex <= episodeQuery.Items.Count() - 1;
+                                    episodeComparableIndex++)
+                                {
+                                    if (cancellationToken.IsCancellationRequested)
+                                    {
+                                        break;
+                                    }
 
 
-                                var unmatchedItem = unmatched[index];
-                                var comparableItem = episodeQuery.Items[episodeComparableIndex];
+
+                                    var unmatchedItem = unmatched[index];
+                                    var comparableItem = episodeQuery.Items[episodeComparableIndex];
 
                                     //Don't compare the same episode with itself. The episodes must be different or we'll match the entire encoding.
-                                if (comparableItem.InternalId == unmatchedItem.InternalId)
-                                {
-                                    continue;
-                                }
-
-                                // If we have valid title sequence data for both items move on
-                                if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
-                                    dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
-                                {
-                                    if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId)
-                                        .HasSequence && dbEpisodes
-                                        .FirstOrDefault(i => i.InternalId == comparableItem.InternalId).HasSequence)
+                                    if (comparableItem.InternalId == unmatchedItem.InternalId)
                                     {
                                         continue;
                                     }
-                                }
 
-                                try
-                                {
+                                    // If we have valid title sequence data for both items move on
+                                    if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
+                                        dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
+                                    {
+                                        TitleSequenceResult first = null;
+                                        foreach (var i in dbEpisodes)
+                                        {
+                                            if (i.InternalId == unmatchedItem.InternalId)
+                                            {
+                                                first = i;
+                                                break;
+                                            }
+                                        }
+
+                                        TitleSequenceResult first1 = null;
+                                        foreach (var i in dbEpisodes)
+                                        {
+                                            if (i.InternalId == comparableItem.InternalId)
+                                            {
+                                                first1 = i;
+                                                break;
+                                            }
+                                        }
+
+                                        if (first.HasSequence && first1.HasSequence)
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    try
+                                    {
 
                                         // The magic!
                                         var titleSequenceDetection = TitleSequenceDetection.Instance;
 
-                                    var stopWatch = new Stopwatch();
-                                    stopWatch.Start();
+                                        var stopWatch = new Stopwatch();
+                                        stopWatch.Start();
 
-                                    var sequences = titleSequenceDetection.DetectTitleSequence(
-                                        episodeQuery.Items[episodeComparableIndex], unmatched[index], dbResults);
+                                        var sequences = titleSequenceDetection.DetectTitleSequence(
+                                            episodeQuery.Items[episodeComparableIndex], unmatched[index], dbResults);
 
-                                    foreach (var sequence in sequences)
-                                    {
+                                        foreach (var sequence in sequences)
+                                        {
                                             //Just remove these entries in the episode list (if they exist) and add the new result back. Easier!
-                                            if (dbEpisodes.Exists(item =>
-                                            item.IndexNumber == sequence.IndexNumber &&
-                                            item.SeasonId == sequence.SeasonId))
+                                            if (dbEpisodes.Exists(item => item.IndexNumber == sequence.IndexNumber &&
+                                                                          item.SeasonId == sequence.SeasonId))
                                             {
                                                 dbEpisodes.RemoveAll(item =>
                                                     item.IndexNumber == sequence.IndexNumber &&
@@ -255,18 +277,18 @@ namespace IntroSkip.TitleSequence
 
                                             dbEpisodes.Add(sequence);
 
-                                    }
+                                        }
 
-                                    stopWatch.Stop();
+                                        stopWatch.Stop();
 
                                         // ReSharper disable once AccessToModifiedClosure
 
                                         Log.Info(
-                                        $"{series.Name} - {season.Name} - E: {unmatchedItem.IndexNumber} matched E: {comparableItem.IndexNumber} - detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
+                                            $"{series.Name} - {season.Name} - E: {unmatchedItem.IndexNumber} matched E: {comparableItem.IndexNumber} - detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
 
-                                }
-                                catch (TitleSequenceInvalidDetectionException)
-                                {
+                                    }
+                                    catch (TitleSequenceInvalidDetectionException)
+                                    {
                                         //Keep going!
                                         if (episodeComparableIndex != episodeQuery.Items.Count() - 1) continue;
 
@@ -277,32 +299,31 @@ namespace IntroSkip.TitleSequence
                                         Log.Info(
                                             $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
 
-                                }
-                                catch (AudioFingerprintMissingException ex)
-                                {
-                                    Log.Info(
-                                        $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex.Message}");
-                                }
+                                    }
+                                    catch (AudioFingerprintMissingException ex)
+                                    {
+                                        Log.Info(
+                                            $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex.Message}");
+                                    }
 
+                                }
                             }
-                        }
 
-                        foreach (var episode in dbEpisodes)
-                        {
+                            foreach (var episode in dbEpisodes)
+                            {
                                 //episode.Processed = true; //<-- Don't mark as processed here. This is a mistake. It will be ignored even if something went wrong during the detection.
 
                                 repository.SaveResult(episode, cancellationToken);
 
-                            var found = LibraryManager.GetItemById(episode
-                                .InternalId); //<-- This will take up time, and could be removed later
+                                var found = LibraryManager.GetItemById(episode.InternalId); //<-- This will take up time, and could be removed later
                                 Log.Info(
-                                $"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence successful.");
+                                    $"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence successful.");
 
-                            dbResults = repository.GetResults(new TitleSequenceResultQuery()
-                            { SeasonInternalId = season.InternalId });
-                            Clean(dbResults.Items.ToList(), season, repository, cancellationToken);
+                                dbResults = repository.GetResults(new TitleSequenceResultQuery()
+                                    { SeasonInternalId = season.InternalId });
+                                Clean(dbResults.Items.ToList(), season, repository, cancellationToken);
 
-                        }
+                            }
                     }
 
 
