@@ -101,9 +101,14 @@
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
 
+                //enable ItemAdded Event Listeners
+                var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
+                    
+                    chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
@@ -155,6 +160,14 @@
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
                         config.FingerprintingMaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                chkEnableItemAddedTaskAutoRun.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.EnableItemAddedTaskAutoRun = chkEnableItemAddedTaskAutoRun.checked; 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });

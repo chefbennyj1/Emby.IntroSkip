@@ -10,6 +10,7 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace IntroSkip
 {
@@ -18,44 +19,40 @@ namespace IntroSkip
         public static IntroSkipPluginEntryPoint Instance { get; set; }
         private ITitleSequenceRepository Repository { get; set; }
         private ILibraryManager LibraryManager { get; set; }
-        private ITaskManager TaskManager { get; set; }
-        private IServerConfigurationManager Config { get; set; }
-        private ILogger Logger { get; set; }
-        private IJsonSerializer _json { get; set; }
+        private static ITaskManager TaskManager { get; set; }
+        private static IServerConfigurationManager Config { get; set; }
+        private static ILogger Logger { get; set; }
+        private static IJsonSerializer _json { get; set; }
 
-
-        public IntroSkipPluginEntryPoint(ILogger logger, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
+        //Handling new items added to the library
+        private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
+        private static readonly Timer ItemsRemovedTimer = new Timer(AllItemsRemoved);
+        private static readonly List<long> ItemsRemoved = new List<long>();
+    
+        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
         {
-            Logger = logger;
-            _json = json;
-            Config = config;
+            _json          = json;
+            Config         = config;
             LibraryManager = libraryManager;
-            TaskManager = taskManager;
-            Instance = this;
+            TaskManager    = taskManager;
+            Instance       = this;
+            Logger         = logManager.GetLogger(Plugin.Instance.Name);
         }
 
         public void Dispose()
         {
+            LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
+            LibraryManager.ItemRemoved -= LibraryManager_ItemRemoved;
             var repo = Repository as IDisposable;
             repo?.Dispose();
         }
 
         public void Run()
         {
-            try
-            {
-                Repository = GetRepository();
-            }
-            catch (Exception ex)
-            {
-                Logger.ErrorException("Error initializing title sequence database", ex);
-            }
-
-            Logger.Info("Database loaded Sucessfully...");
-
+            ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
             LibraryManager.ItemAdded += LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
-
 
             Plugin.Instance.SaveConfiguration();
         }
@@ -63,52 +60,71 @@ namespace IntroSkip
 
         private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
         {
+            ItemsRemovedTimer.Change(2000, 2000);
             var item = e.Item;
-            var removableItems = new List<long>();
-            switch (item.GetType().Name)
+            if (item.GetType().Name != "Episode")
             {
-                case "Episode":
-                    {
-                        removableItems.Add(e.Item.InternalId);
-                        break;
-                    }
-                case "Season":
-                    {
-                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = e.Item.InternalId }).Items.Select(i => i.InternalId));
-                        break;
-                    }
-                case "Series":
-                    {
-                        removableItems.AddRange(Repository.GetResults(new TitleSequenceResultQuery()).Items.Where(i => i.SeriesId == item.InternalId).Select(i => i.InternalId));
-                        break;
-                    }
+                return;
             }
-
-            foreach (var removableItem in removableItems)
-            {
-                Repository.Delete(removableItem.ToString());
-            }
-            Repository.Vacuum();
+            ItemsRemoved.Add(e.Item.InternalId); //Add the removed Item to the list of items being removed.
         }
 
-        private async void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
+        private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
         {
-            if (e.UpdateReason != ItemUpdateType.MetadataDownload || e.UpdateReason != ItemUpdateType.None)
+            if (!Plugin.Instance.Configuration.EnableItemAddedTaskAutoRun)
             {
                 return;
             }
 
-            var fingerprint = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting");
-            if (fingerprint.State != TaskState.Running)
+            if (e.Item.GetType().Name != "Episode")
+            {
+                return;
+            }
+
+            //if the timer is reset then a new item has been added
+            //if the timer goes off, then no new items have been added
+            ItemsAddedTimer.Change(2000, 2000); //Reset the timer because we just got a new episode item.
+
+        }
+
+        private static void AllItemsRemoved(object state)
+        {
+            Logger.Info("Items removed from library... syncing database.");
+            ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            var repository = Instance.GetRepository();
+            foreach (var item in ItemsRemoved)
             {
                 try
                 {
-                    await TaskManager.Execute(fingerprint, new TaskOptions());
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn(ex.Message);
-                }
+                    //This item may not exist in the database is if the user removes a items from their library
+                    //They have opted out of auto scanning
+                    //They have not manually run the fingerprinting task
+                    
+                    repository.Delete(item.ToString());
+
+                } catch {}
+            }
+            ItemsRemoved.Clear();
+            repository.Vacuum();
+            var repo = repository as IDisposable;
+            repo?.Dispose();
+        }
+
+        private static async void AllItemsAdded(object state)
+        {
+            ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            Logger.Info("New Items are ready to fingerprint scan...");
+            var fingerprint = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting");
+
+            if (fingerprint?.State == TaskState.Running) return;
+
+            try
+            {
+                await TaskManager.Execute(fingerprint, new TaskOptions());
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex.Message);
             }
         }
 

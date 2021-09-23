@@ -51,6 +51,7 @@ namespace IntroSkip.AudioFingerprinting
                 progress.Report(100.0);
                 return;
             }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 progress.Report(100.0);
@@ -125,8 +126,8 @@ namespace IntroSkip.AudioFingerprinting
                             break;
                         }
 
-                            // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
-                            var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                        // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
+                        var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
 
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
@@ -137,10 +138,9 @@ namespace IntroSkip.AudioFingerprinting
                             IsVirtualItem = false
                         });
 
-                            //The season has been processed and all episodes have a sequence - move on.                        
-                            if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
+                        //The season has been processed and all episodes have a sequence - move on.                        
+                        if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {
-
                             Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
                             continue;
                         }
@@ -156,15 +156,14 @@ namespace IntroSkip.AudioFingerprinting
                                 break;
                             }
 
-                                //The episode data exists in the database
-                                // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
-                                if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
+                            //The episode data exists in the database
+                            // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                            if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
                             {
                                 var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episodeQuery.Items[index].InternalId);
 
-                                    // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
-
-                                    if (titleSequenceResult.Duration == duration)
+                                // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
+                                if (titleSequenceResult.Duration == duration)
                                 {
                                     continue;
                                 }
@@ -181,24 +180,18 @@ namespace IntroSkip.AudioFingerprinting
                             }
 
 
-                            var separator = FileSystem.DirectorySeparatorChar;
-                            var fingerprintBinFileName = $"{seasonQuery.Items[seasonIndex].InternalId} - {episodeQuery.Items[index].InternalId}.bin";
-                            var fingerprintBinFilePath = $"{AudioFingerprintFileManager.Instance.GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
-
-                                //Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: encoding chromaprint.");
-                                var stopWatch = new Stopwatch();
+                            
+                            var stopWatch = new Stopwatch();
                             stopWatch.Start();
-
-                            ExtractFingerprintBinaryData($"{episodeQuery.Items[index].Path}", fingerprintBinFilePath, duration, cancellationToken);
-
-                            Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
-
-
+                            
                             List<uint> fingerPrintData = null;
 
                             try
                             {
-                                fingerPrintData = SplitByteData($"{fingerprintBinFilePath}", episodeQuery.Items[index]);
+                                fingerPrintData =
+                                    AudioFingerprintManager.Instance.GetAudioFingerprint(episodeQuery.Items[index],
+                                        cancellationToken,
+                                        duration); 
                             }
                             catch (Exception ex)
                             {
@@ -212,17 +205,18 @@ namespace IntroSkip.AudioFingerprinting
                                 Log.Info($"{series.Name} - S:{seasonQuery.Items[seasonIndex].IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: Saving.");
                                 repository.SaveResult(new TitleSequenceResult()
                                 {
-                                    Duration = duration,
-                                    Fingerprint = fingerPrintData,
-                                    HasSequence = false, //Set this to true when we scan the fingerprint data in the other scheduled task
-                                    IndexNumber = episodeQuery.Items[index].IndexNumber,
-                                    InternalId = episodeQuery.Items[index].InternalId,
-                                    SeasonId = seasonQuery.Items[seasonIndex].InternalId,
-                                    SeriesId = series.InternalId,
+                                    Duration           = duration,
+                                    Fingerprint        = fingerPrintData,
+                                    HasSequence        = false, //Set this to true when we scan the fingerprint data in the other scheduled task
+                                    IndexNumber        = episodeQuery.Items[index].IndexNumber,
+                                    InternalId         = episodeQuery.Items[index].InternalId,
+                                    SeasonId           = seasonQuery.Items[seasonIndex].InternalId,
+                                    SeriesId           = series.InternalId,
                                     TitleSequenceStart = new TimeSpan(),
-                                    TitleSequenceEnd = new TimeSpan(),
-                                    Confirmed = false,
-                                    Processed = false
+                                    TitleSequenceEnd   = new TimeSpan(),
+                                    Confirmed          = false,
+                                    Processed          = false
+
                                 }, cancellationToken);
                             }
                             catch (Exception ex)
@@ -241,7 +235,6 @@ namespace IntroSkip.AudioFingerprinting
             }
             catch (TaskCanceledException)
             {
-
                 progress.Report(100.0);
             }
             
@@ -254,90 +247,7 @@ namespace IntroSkip.AudioFingerprinting
 
         }
 
-        // in the future we can use "titleSequenceStart" to detect end title sequences of tv shows
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, string titleSequenceStart = "00:00:00")
-        {
-            var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
-            var ffmpegPath = ffmpegConfiguration.EncoderPath;
-
-            var args = new[]
-            {
-                $"-ss {titleSequenceStart}",
-                $"-t 00:{duration}:00",
-                $"-i \"{input}\"",
-                "-ac 1",
-                "-acodec pcm_s16le", //What happens if we encode mono AAC?
-                "-ar 16000", //11025
-                "-c:v nul",
-                "-f chromaprint",
-                "-fp_format raw",
-                $"\"{output}\""
-            };
-
-            var procStartInfo = new ProcessStartInfo(ffmpegPath, string.Join(" ", args))
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-
-            using (var process = new Process { StartInfo = procStartInfo })
-            {
-                process.Start();
-
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                //
-                // Very Important!
-                // Leave the standardError.ReadLine in place for this process,
-                // do not remove it,
-                // or the process will kickoff, and the task will apparently complete before any of the encodings are finished,
-                // resulting in no fingerprinted audio!!
-                //
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-                // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
-                string processOutput = null;
-
-                while ((processOutput = process.StandardError.ReadLine()) != null)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            process.Kill(); //At least try and kill ffmpeg.
-                        }
-                        catch { }
-                    }
-                    //Log.Info(processOutput);
-                }
-
-                //Log.Info($"Chroma-print binary extraction successful: { input }");
-
-            }
-        }
-
-        private List<uint> SplitByteData(string bin, BaseItem item)
-        {
-            Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
-            if (!FileSystem.FileExists(bin))
-            {
-                Log.Warn($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");
-                throw new Exception("bin file doesn't exist");
-            }
-            var fingerprint = new List<uint>();
-            using (BinaryReader b = new BinaryReader(File.Open(bin, FileMode.Open)))
-            {
-                int length = (int)b.BaseStream.Length / sizeof(uint);
-                for (int i = 0; i < length; i++)
-                {
-                    fingerprint.Add(b.ReadUInt32());
-                }
-            }
-            AudioFingerprintFileManager.Instance.RemoveEpisodeFingerprintBinFile(bin, item);
-            return fingerprint;
-        }
+       
 
 
         private int GetEncodingDuration(TimeSpan? averageRuntime)
