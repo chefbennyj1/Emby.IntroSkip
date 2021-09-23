@@ -318,7 +318,7 @@
                 mainTabsManager.setTabs(this, 0, getTabs);
 
 
-                document.querySelector('.pageTitle').innerText = "Title Sequences";
+                document.querySelector('.pageTitle').innerText = "Intro Skip";
                 var _seriesId, _seasonId;
 
                 var seriesSelect = view.querySelector('#selectEmbySeries');
