@@ -5,7 +5,6 @@
  */
 
 using IntroSkip.AudioFingerprinting;
-using IntroSkip.Data;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
@@ -241,7 +240,6 @@ namespace IntroSkip.TitleSequence
         private List<TitleSequenceResult> CompareFingerprint(TitleSequenceResult episode1, TitleSequenceResult episode2)
         {
 
-
             var duration = episode1.Duration * 60; //Both episodes should have the same encoding duration
 
 
@@ -265,20 +263,7 @@ namespace IntroSkip.TitleSequence
 
             // ReSharper disable once TooManyChainedReferences
             List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
-            //var hammingAverage = hammingDistances.Average(x => x);
-
-
-            //Log.Info("Hamming Average is {0}", hammingAverage.ToString());
-
-
            
-            //Log.Info("Hamming Average is {0}", hammingAverage.ToString());
-            
-
-            //Original Code
-            /*var tup2 = FindContiguousRegion(hammingDistances, 8); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
-            var start = tup2.Item1;
-            var end = tup2.Item2;*/
 
             //Added for Sam to test upper threshold changes
             var config = Plugin.Instance.Configuration;
@@ -319,19 +304,12 @@ namespace IntroSkip.TitleSequence
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
             {
-                //firstFileRegionStart = 0.0;
-                //firstFileRegionEnd = 0.0;
-                //secondFileRegionStart = 0.0;
-                //secondFileRegionEnd = 0.0;
+                
                 throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
             if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
             {
-                // -1 means intro does not exists
-                //firstFileRegionStart = -1.0;
-                //firstFileRegionEnd = -1.0;
-                //secondFileRegionStart = -1.0;
-                //secondFileRegionEnd = -1.0;
+                
                 throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
 
             }
