@@ -15,26 +15,26 @@ namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintManager : IServerEntryPoint
     {
-        public static AudioFingerprintManager Instance { get; set; }
-        private IFileSystem FileSystem { get; }
-        private IApplicationPaths ApplicationPaths { get; }
-        private char Separator { get; }
-        private IFfmpegManager FfmpegManager { get; }
-        private ILogger Log { get; }
+        public static AudioFingerprintManager Instance { get; private set; }
+        private IFileSystem FileSystem                 { get; }
+        private IApplicationPaths ApplicationPaths     { get; }
+        private char Separator                         { get; }
+        private IFfmpegManager FfmpegManager           { get; }
+        private ILogger Log                            { get; }
 
         public AudioFingerprintManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager, IApplicationPaths applicationPaths)
         {
-            Instance = this;
-            FileSystem = file;
-            FfmpegManager = ffmpeg;
+            Instance         = this;
+            FileSystem       = file;
+            FfmpegManager    = ffmpeg;
             ApplicationPaths = applicationPaths;
-            Separator = FileSystem.DirectorySeparatorChar;
-            Log = logManager.GetLogger(Plugin.Instance.Name);
+            Separator        = FileSystem.DirectorySeparatorChar;
+            Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
         public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration)
         {
-            var separator = FileSystem.DirectorySeparatorChar;
+            var separator              = FileSystem.DirectorySeparatorChar;
             var fingerprintBinFileName = $"{episode.Parent.InternalId} - {episode.InternalId}.bin";
             var fingerprintBinFilePath = $"{GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
@@ -42,7 +42,17 @@ namespace IntroSkip.AudioFingerprinting
 
             Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
-            return SplitByteData($"{fingerprintBinFilePath}", episode);
+            List<uint> fingerprints = null;
+            try
+            {
+                fingerprints = SplitByteData($"{fingerprintBinFilePath}", episode);
+            }
+            catch (Exception) //<--it's logged already
+            {
+                
+            }
+
+            return fingerprints;
         }
 
         private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, string titleSequenceStart = "00:00:00")
@@ -117,7 +127,7 @@ namespace IntroSkip.AudioFingerprinting
                 throw new Exception("bin file doesn't exist");
             }
             var fingerprint = new List<uint>();
-            using (BinaryReader b = new BinaryReader(File.Open(bin, FileMode.Open)))
+            using (var b = new BinaryReader(File.Open(bin, FileMode.Open)))
             {
                 int length = (int)b.BaseStream.Length / sizeof(uint);
                 for (int i = 0; i < length; i++)
