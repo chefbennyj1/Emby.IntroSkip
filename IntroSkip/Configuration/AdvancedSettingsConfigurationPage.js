@@ -102,14 +102,13 @@
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
 
                 //enable ItemAdded Event Listeners
-                var chkEnableItemAddedTaskAutoRun = view.querySelector('#chkEnableItemAddedTaskAutoRun');
+                var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
 
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                     
-                    chkEnableItemAddedTaskAutoRun.value =
-                        config.EnableItemAddedTaskAutoRun ? config.EnableItemAddedTaskAutoRun : false;
+                    chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
@@ -168,8 +167,7 @@
                 chkEnableItemAddedTaskAutoRun.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.EnableItemAddedTaskAutoRun = titleSequenceMaxDegreeOfParallelism.value;
-                        config.FingerprintingMaxDegreeOfParallelism = chkEnableItemAddedTaskAutoRun.value;
+                        config.EnableItemAddedTaskAutoRun = chkEnableItemAddedTaskAutoRun.checked; 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
