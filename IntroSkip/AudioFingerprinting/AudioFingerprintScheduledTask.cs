@@ -68,12 +68,14 @@ namespace IntroSkip.AudioFingerprinting
                 {
                     Recursive = true,
                     IncludeItemTypes = new[] { "Series" },
-                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                    ExcludeItemIds = config.IgnoredList.ToArray(),
-                    OrderBy = new[] { ItemSortBy.SortName }.Select(i => new ValueTuple<string, SortOrder>(i, SortOrder.Descending)).ToArray()
+                    User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
                 };
 
-
+                if (config.IgnoredList.Count > 0)
+                {
+                    seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
+                }
+                
 
                 var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 
@@ -140,7 +142,7 @@ namespace IntroSkip.AudioFingerprinting
                         //The season has been processed and all episodes have a sequence - move on.                        
                         if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {
-                            Log.Info($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
+                            Log.Debug($"{series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
                             continue;
                         }
 

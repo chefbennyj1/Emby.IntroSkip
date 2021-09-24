@@ -52,6 +52,7 @@ namespace IntroSkip
         {
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
             ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
+
             LibraryManager.ItemAdded += LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
@@ -84,12 +85,13 @@ namespace IntroSkip
 
         private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
         {
-            ItemsRemovedTimer.Change(2000, 2000);
+            ItemsRemovedTimer.Change(10000, Timeout.Infinite);
             var item = e.Item;
             if (item.GetType().Name != "Episode")
             {
                 return;
             }
+
             ItemsRemoved.Add(e.Item.InternalId); //Add the removed Item to the list of items being removed.
         }
 
@@ -107,7 +109,7 @@ namespace IntroSkip
 
             //if the timer is reset then a new item has been added
             //if the timer goes off, then no new items have been added
-            ItemsAddedTimer.Change(2000, 2000); //Reset the timer because we just got a new episode item.
+            ItemsAddedTimer.Change(10000, Timeout.Infinite); //Reset the timer because we just got a new episode item. 10 secs
 
         }
 
