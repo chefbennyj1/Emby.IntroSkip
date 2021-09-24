@@ -57,8 +57,12 @@ namespace IntroSkip.TitleSequence
                 Recursive = true,
                 IncludeItemTypes = new[] { "Series" },
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                ExcludeItemIds = config.IgnoredList.ToArray()
             };
+
+            if (config.IgnoredList.Count > 0)
+            {
+                seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
+            }
 
             var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 
@@ -82,7 +86,7 @@ namespace IntroSkip.TitleSequence
             
             Parallel.ForEach(seriesQuery.Items,
                 new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
-                  {
+                {
                     if (cancellationToken.IsCancellationRequested)
                     {
 
@@ -92,8 +96,6 @@ namespace IntroSkip.TitleSequence
 
                     progress?.Report((currentProgress += step) - 1);
 
-
-
                     var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent = series,
@@ -101,7 +103,6 @@ namespace IntroSkip.TitleSequence
                         IncludeItemTypes = new[] { "Season" },
                         User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
                         IsVirtualItem = false
-
                     });
 
                     foreach (var season in seasonQuery.Items)
@@ -112,8 +113,8 @@ namespace IntroSkip.TitleSequence
                         }
 
 
-                            //Our database info
-                            QueryResult<TitleSequenceResult> dbResults = null;
+                        //Our database info
+                        QueryResult<TitleSequenceResult> dbResults = null;
                         try
                         {
 
@@ -171,8 +172,7 @@ namespace IntroSkip.TitleSequence
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
 
-                        if (!unmatched.Any()
-                        ) //<-- this is redundant because we checked for 'processed' above. keep it here just in case something slips past.
+                        if (!unmatched.Any()) //<-- this is redundant because we checked for 'processed' above. 
                         {
                             continue;
                         }
@@ -213,9 +213,8 @@ namespace IntroSkip.TitleSequence
                                 if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
                                     dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
                                 {
-                                    if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId)
-                                        .HasSequence && dbEpisodes
-                                        .FirstOrDefault(i => i.InternalId == comparableItem.InternalId).HasSequence)
+                                    if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId).HasSequence && 
+                                        dbEpisodes.FirstOrDefault(i => i.InternalId == comparableItem.InternalId).HasSequence)
                                     {
                                         continue;
                                     }
@@ -312,7 +311,7 @@ namespace IntroSkip.TitleSequence
 
 
 
-                  });
+                });
 
             progress.Report(100.0);
         }
