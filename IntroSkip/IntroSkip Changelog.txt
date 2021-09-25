@@ -1,0 +1,17 @@
+2.1.x.x
+
+2.1.1.0
+1. Fix Exlude list UI issues
+2. Button fixes - Large hit detection for intros
+3. Sequence Detection fixes
+4. sqlite error fix
+5. Enhance Chapter UI
+6. Processed flag fix for internal database
+7. 'Rescan'button changed to 'Reset'in Activity UI
+8. UI big Tidy up and upgrades to user experience
+9. Bad/Incorrect Chapters are now output to a file to facilite shell/batch file commands for auto fixing large numbers
+10. Keep user edited data when clearing season data (See No.7)
+11. Syncronise with library for added/removed items
+12. Added Advanced settings button to opt into ItemAdded events
+13. Advanced setting fixes ItemAdded Event
+14. Auto Start FingerPrint, Detect and Chapters task on newly added item, if the associated settings are enabled in the config UI

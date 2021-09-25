@@ -55,6 +55,8 @@
             var html = '';
             var date = datetime.parseISO8601Date(errItem.Date, true);
 
+            //html += '<td data-title="bluffer1" class="detailTableBodyCell" >';
+            html += '<br/>';
 
             html += '<td data-title="Library Link" class="detailTableBodyCell" >';
             html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
