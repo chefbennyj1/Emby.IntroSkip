@@ -207,6 +207,8 @@
             });
         }
 
+        
+
          function confirm_dlg(view) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
@@ -323,7 +325,7 @@
 
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 var seasonSelect = view.querySelector('#selectEmbySeason');
-                //var settingsButton = view.querySelector('#openSettingsDialog');
+                
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
 
                 getSeries().then(series => {
@@ -331,6 +333,7 @@
                     for (let i = 0; i <= series.Items.length - 1; i++) {
                         seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
                     }
+
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
                     getSeasons(_seriesId).then(seasons => {

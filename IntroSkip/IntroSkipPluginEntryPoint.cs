@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using MediaBrowser.Controller.Entities;
 
 namespace IntroSkip
 {
@@ -18,7 +19,7 @@ namespace IntroSkip
     {
         public static IntroSkipPluginEntryPoint Instance { get; set; }
         private ITitleSequenceRepository Repository { get; set; }
-        private ILibraryManager LibraryManager { get; set; }
+        private static ILibraryManager LibraryManager { get; set; }
         private static ITaskManager TaskManager { get; set; }
         private static IServerConfigurationManager Config { get; set; }
         private static ILogger Logger { get; set; }
@@ -28,8 +29,7 @@ namespace IntroSkip
         //Handling new items added to the library
         private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
         private static readonly Timer ItemsRemovedTimer = new Timer(AllItemsRemoved);
-        private static readonly List<long> ItemsRemoved = new List<long>();
-    
+        
         public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
         {
             _json          = json;
@@ -44,8 +44,11 @@ namespace IntroSkip
         {
             LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
             LibraryManager.ItemRemoved -= LibraryManager_ItemRemoved;
+            TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
             var repo = Repository as IDisposable;
             repo?.Dispose();
+            ItemsAddedTimer.Dispose();
+            ItemsRemovedTimer.Dispose();
         }
 
         public void Run()
@@ -85,14 +88,7 @@ namespace IntroSkip
 
         private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
         {
-            ItemsRemovedTimer.Change(10000, Timeout.Infinite);
-            var item = e.Item;
-            if (item.GetType().Name != "Episode")
-            {
-                return;
-            }
-
-            ItemsRemoved.Add(e.Item.InternalId); //Add the removed Item to the list of items being removed.
+            ItemsRemovedTimer.Change(10000, Timeout.Infinite); //wait ten seconds to see if anything is about to be removed.
         }
 
         private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
@@ -106,10 +102,10 @@ namespace IntroSkip
             {
                 return;
             }
-
+            
             //if the timer is reset then a new item has been added
             //if the timer goes off, then no new items have been added
-            ItemsAddedTimer.Change(10000, Timeout.Infinite); //Reset the timer because we just got a new episode item. 10 secs
+            ItemsAddedTimer.Change(10000, Timeout.Infinite); //Wait ten seconds to see if anything else is about to be added
 
         }
 
@@ -117,27 +113,33 @@ namespace IntroSkip
         {
             Logger.Info("Items removed from library... syncing database.");
             ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            var repository = Instance.GetRepository();
-            foreach (var item in ItemsRemoved)
-            {
-                try
-                {
-                    //This item may not exist in the database is if the user removes a items from their library
-                    //They have opted out of auto scanning
-                    //They have not manually run the fingerprinting task
-                    
-                    repository.Delete(item.ToString());
 
-                } catch {}
+            var repository          = Instance.GetRepository();
+            var titleSequencesQuery = repository.GetResults(new TitleSequenceResultQuery());
+            var titleSequences      = titleSequencesQuery.Items.ToList();
+
+            var libraryQuery = LibraryManager.GetItemsResult(new InternalItemsQuery() { Recursive = true, IsVirtualItem = false });
+            var libraryItems = libraryQuery.Items.ToList();
+            foreach (var item in titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId)))
+            {
+                repository.Delete(item.InternalId.ToString());
             }
-            ItemsRemoved.Clear();
             repository.Vacuum();
+
             var repo = repository as IDisposable;
             repo?.Dispose();
         }
 
         private static async void AllItemsAdded(object state)
         {
+            var libraryTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
+            if (libraryTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
+            {
+                ItemsAddedTimer.Change(10000, Timeout.Infinite); //Check back in 10 seconds
+                return;
+            }
+
+            //Okay, we're ready for fingerprinting now - go ahead.
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
             Logger.Info("New Items are ready to fingerprint scan...");
             var fingerprint = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting");

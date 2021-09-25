@@ -38,11 +38,16 @@ namespace IntroSkip.Chapters
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("CHAPTER ERRORS TEXT FILE: Writing each episode to xml file");
+
+            var errors = ChapterInsertion.Instance.ChapterErrors;
+            var filePath = $"{configDir}{Separator}ChapterError{Separator}ChapterErrorList.txt";
+
             List<ChapterError> errors = ChapterInsertion.Instance.ChapterErrors;
             var filePathText = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
             var filePathXml = $"{configDir}/ChapterError{Separator}ChapterErrorList.xml";
 
-            FileStream stream;
+
+            //FileStream stream;
 
             if (errors == null)
             {
@@ -51,17 +56,15 @@ namespace IntroSkip.Chapters
             else
             {
 
-                stream = new FileStream(filePathText, FileMode.OpenOrCreate);
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+                foreach (var error in errors)
                 {
-                    writer.WriteLineAsync("INTROSKIP CHAPTERS: FilePaths for Episodes with Bad/Incorrect Chapters");
+                    var path = error.FilePathString;
+                    using (StreamWriter writer = new StreamWriter(filePath, true))
 
-                    foreach (var error in errors)
                     {
-                        var path = error.FilePathString;
                         Log.Debug("CHAPTER ERRORS TEXT FILE: FilePath = {0}", path);
-                        writer.WriteLineAsync(path);
-                        
+
+                        writer.WriteLine(path);
 
                     }
                 }
