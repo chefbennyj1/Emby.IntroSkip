@@ -100,9 +100,12 @@
 
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-
+                 
                 //enable ItemAdded Event Listeners
                 var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
+
+                //enable detection task auto run when fingerprinting is complete
+                var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
 
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
@@ -168,6 +171,14 @@
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.EnableItemAddedTaskAutoRun = chkEnableItemAddedTaskAutoRun.checked; 
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                chkEnableDetectionTaskAutoRun.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.EnableIntroDetectionAutoRun = chkEnableDetectionTaskAutoRun.checked; 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });

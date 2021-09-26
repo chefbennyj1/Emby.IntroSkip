@@ -12,7 +12,7 @@ namespace IntroSkip.Configuration
         
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
         public bool EnableItemAddedTaskAutoRun          { get; set; } = false;
-
+        public bool EnableIntroDetectionAutoRun         { get; set; } 
         public bool EnableChapterInsertion              { get; set; }  //give the user the option to insert the chapter points into their library.
         public bool EnableAutomaticImageExtraction      { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
 
