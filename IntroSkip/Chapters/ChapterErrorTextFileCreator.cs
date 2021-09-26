@@ -42,7 +42,7 @@ namespace IntroSkip.Chapters
             var errors = ChapterInsertion.Instance.ChapterErrors;
             var filePath = $"{configDir}{Separator}ChapterError{Separator}ChapterErrorList.txt";
 
-            List<ChapterError> errors = ChapterInsertion.Instance.ChapterErrors;
+            
             var filePathText = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
             var filePathXml = $"{configDir}/ChapterError{Separator}ChapterErrorList.xml";
 

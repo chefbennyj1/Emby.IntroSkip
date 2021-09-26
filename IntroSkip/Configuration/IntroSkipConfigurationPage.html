@@ -2,60 +2,46 @@
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+                <form>
 
+                    <div class="infoBanner flex align-items-center">
+                        Must have a minimum of 2 Episodes in the same Season for detection to run. <br/>
+                        You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
+                    </div>
 
-                <!--<h2>Title Sequences</h2>-->
-                <!--<div class="detailSectionHeader">
-        <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Advanced Settings</h2>
-        <button is="emby-button" id="openSettingsDialog" class="fab emby-input-iconbutton paper-icon-button-light emby-button" style="margin-left: 1em;"><i class="md-icon">settings</i></button>
-    </div>-->
+                    <br/>
+                    <div style="display: flex; align-items: center;">
 
-                <div class="sectionTitleContainer flex align-items-center">
-                    <h2 class="sectionTitle">INTRO SKIP CONFIGURATION</h2>
-                    <a is="emby-linkbutton" class="raised button-alt headerHelpButton" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/" target="_blank" href="">SETUP INFO</a>
-                </div>
-
-                <div class="detailSectionHeader" style="padding-bottom: 2em">
-                    <label style="margin: .6em 0; vertical-align: middle; display: inline-block;">
-                        Must have a <strong>minimum of 2 Episodes</strong> in the same Season for detection to run <span class="adviceLabel"></span>
-                    </label>
-                    <div class="fieldDescription">If a new Season has started and only 1 episode is available - You can edit the start/end points & when episode 2 arrives, detection will proceed as normal</div>
-                </div>
-                <hr />
-
-                <div>
-                    <form style="width: 50%;">
-                        <div style="display: flex; align-items: center;">
-
-                            <!-- Emby Series List -->
-                            <div style="flex-grow: 1;" class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
-                                <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                                <div class="selectArrowContainer">
-                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                                </div>
-                                <div class="fieldDescription">
-                                    Show Title Sequence (Intro) data for this TV Show.
-                                </div>
+                        <!-- Emby Series List -->
+                        <div style="flex-grow: 1;" class="selectContainer">
+                            <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
+                            <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                            <div class="selectArrowContainer">
+                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                            </div>
+                            <div class="fieldDescription">
+                                Show Title Sequence (Intro) data for this TV Show.
                             </div>
                         </div>
+                    </div>
 
-                        <div style="display: flex; align-items: center;">
-                            <!-- Emby Season List -->
-                            <div style="flex-grow: 1;" class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
-                                <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                                <div class="selectArrowContainer">
-                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                                </div>
-                                <div class="fieldDescription">
-                                    Show Title Sequence (Intro) data for this season.
-                                </div>
+                    <div style="display: flex; align-items: center;">
+                        <!-- Emby Season List -->
+                        <div style="flex-grow: 1;" class="selectContainer">
+                            <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
+                            <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                            <div class="selectArrowContainer">
+                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                            </div>
+                            <div class="fieldDescription">
+                                Show Title Sequence (Intro) data for this season.
                             </div>
                         </div>
-                    </form>
+                    </div>
 
-                </div>
+                </form>
+
+
 
                 <hr />
 
@@ -89,8 +75,8 @@
                 </button>
                 <hr />
                 <!--<button is="emby-button" type="submit" class="hide RefreshSeasonalMetaData raised button-submit block emby-button">
-                    <span>Refresh Metadata</span>
-                </button>-->
+        <span>Refresh Metadata</span>
+    </button>-->
             </div>
         </div>
     </div>
