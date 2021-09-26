@@ -1,4 +1,4 @@
-﻿using Emby.AutoOrganize.Data;
+﻿
 using IntroSkip.Data;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
@@ -89,7 +89,23 @@ namespace IntroSkip
 
         private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
         {
-            ItemsRemovedTimer.Change(10000, Timeout.Infinite); //wait ten seconds to see if anything is about to be removed.
+            //The library task removes library items (stops watching them) for the task.
+            //This seems to raise the ItemsRemoved Event.
+            //Therefore, we have to check if it is the library scan raising this event, and if so just return.
+
+            var libraryTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
+            if (libraryTask?.State == TaskState.Running)
+            {
+                ItemsRemovedTimer.Change(10000, Timeout.Infinite); //wait ten seconds for the library scan to end and start watching folders again.
+                return;
+            }
+
+            if (e.Item.GetType().Name != "Episode")
+            {
+                return;
+            }
+
+            ItemsRemovedTimer.Change(20000, Timeout.Infinite); //wait twenty seconds to see if anything is about to be removed.
         }
 
         private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
@@ -121,11 +137,21 @@ namespace IntroSkip
 
             var libraryQuery = LibraryManager.GetItemsResult(new InternalItemsQuery() { Recursive = true, IsVirtualItem = false });
             var libraryItems = libraryQuery.Items.ToList();
+
             foreach (var item in titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId)))
             {
-                repository.Delete(item.InternalId.ToString());
+                try
+                {
+                    repository.Delete(item.InternalId.ToString());
+                }
+                catch { }
             }
-            repository.Vacuum();
+
+            try
+            {
+                repository.Vacuum();
+            }
+            catch {}
 
             var repo = repository as IDisposable;
             repo?.Dispose();
