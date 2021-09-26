@@ -322,7 +322,8 @@
                 mainTabsManager.setTabs(this, 0, getTabs);
 
 
-                document.querySelector('.pageTitle').innerText = "Intro Skip";
+                document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
+                    '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
                 var _seriesId, _seasonId;
 
                 var seriesSelect = view.querySelector('#selectEmbySeries');
