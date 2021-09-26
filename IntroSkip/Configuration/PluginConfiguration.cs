@@ -18,6 +18,8 @@ namespace IntroSkip.Configuration
 
         public List<long> IgnoredList                   { get; set; }
 
+        public bool EnableEndCreditChapterInsertion { get; set; }
+
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;
 
