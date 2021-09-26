@@ -257,13 +257,15 @@
             });
 
             function clear(removeAll) {
-                ApiClient.deleteSeasonData(seasonSelect[seasonSelect.selectedIndex].value, removeAll).then(result => {
+                var seasonSelect = view.querySelector('#selectEmbySeason');
+                var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                ApiClient.deleteSeasonData(seasonId, removeAll).then((result) => {
+                    loading.show();
                     if (result) {
-                        loading.show();
-                        reloadList(result, view);
-                        loading.hide();
-                        dialogHelper.close(dlg);
+                        reloadItems(titleSequences, view);
                     }
+                    loading.hide();
+                    dialogHelper.close(dlg);
                 });
             }
 
@@ -452,11 +454,7 @@
                     e.preventDefault();
                     confirm_dlg(view);
                 });
-
-                //settingsButton.addEventListener('click', (e) => {
-                //    e.preventDefault();
-                //    openSettingsDialog();
-                //});
+                 
             });
         }
     });

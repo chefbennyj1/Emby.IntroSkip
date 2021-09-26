@@ -69,6 +69,7 @@ namespace IntroSkip
             {
                 //Run the Detection task after fingerprinting
                 case "Episode Audio Fingerprinting":
+                    if (!Plugin.Instance.Configuration.EnableIntroDetectionAutoRun) return;
                     TaskManager.Execute(
                         TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection"),
                         new TaskOptions());
