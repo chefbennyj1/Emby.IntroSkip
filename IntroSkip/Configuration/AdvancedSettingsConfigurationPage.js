@@ -90,7 +90,7 @@
        
 
         return function (view) {
-            view.addEventListener('viewshow', (e) => {
+            view.addEventListener('viewshow', () => {
 
                 loading.show();
 
@@ -112,6 +112,8 @@
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                     
                     chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
+
+                    chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);

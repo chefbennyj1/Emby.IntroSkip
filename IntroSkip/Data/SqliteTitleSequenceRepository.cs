@@ -1,18 +1,17 @@
-﻿using IntroSkip.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Serialization;
 using SQLitePCL.pretty;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Threading;
 
-namespace Emby.AutoOrganize.Data
+namespace IntroSkip.Data
 {
     public class SqliteTitleSequenceRepository : BaseSqliteRepository, ITitleSequenceRepository
     {

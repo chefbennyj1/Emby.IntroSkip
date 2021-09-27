@@ -1,4 +1,4 @@
-﻿using Emby.AutoOrganize.Data;
+﻿
 using IntroSkip.Data;
 using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
@@ -8,10 +8,10 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.TV;
 
 namespace IntroSkip
 {
@@ -25,11 +25,9 @@ namespace IntroSkip
         private static ILogger Logger { get; set; }
         private static IJsonSerializer _json { get; set; }
 
-        
         //Handling new items added to the library
         private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
-        private static readonly Timer ItemsRemovedTimer = new Timer(AllItemsRemoved);
-        
+       
         public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
         {
             _json          = json;
@@ -43,21 +41,20 @@ namespace IntroSkip
         public void Dispose()
         {
             LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
-            LibraryManager.ItemRemoved -= LibraryManager_ItemRemoved;
+            
             TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
             var repo = Repository as IDisposable;
             repo?.Dispose();
             ItemsAddedTimer.Dispose();
-            ItemsRemovedTimer.Dispose();
+            
         }
 
         public void Run()
         {
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-
+            
             LibraryManager.ItemAdded += LibraryManager_ItemAdded;
-            LibraryManager.ItemRemoved += LibraryManager_ItemRemoved;
+            
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
 
             Plugin.Instance.SaveConfiguration();
@@ -86,12 +83,7 @@ namespace IntroSkip
             
         }
 
-
-        private void LibraryManager_ItemRemoved(object sender, ItemChangeEventArgs e)
-        {
-            ItemsRemovedTimer.Change(10000, Timeout.Infinite); //wait ten seconds to see if anything is about to be removed.
-        }
-
+        
         private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
         {
             if (!Plugin.Instance.Configuration.EnableItemAddedTaskAutoRun)
@@ -109,27 +101,7 @@ namespace IntroSkip
             ItemsAddedTimer.Change(10000, Timeout.Infinite); //Wait ten seconds to see if anything else is about to be added
 
         }
-
-        private static void AllItemsRemoved(object state)
-        {
-            Logger.Info("Items removed from library... syncing database.");
-            ItemsRemovedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-
-            var repository          = Instance.GetRepository();
-            var titleSequencesQuery = repository.GetResults(new TitleSequenceResultQuery());
-            var titleSequences      = titleSequencesQuery.Items.ToList();
-
-            var libraryQuery = LibraryManager.GetItemsResult(new InternalItemsQuery() { Recursive = true, IsVirtualItem = false });
-            var libraryItems = libraryQuery.Items.ToList();
-            foreach (var item in titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId)))
-            {
-                repository.Delete(item.InternalId.ToString());
-            }
-            repository.Vacuum();
-
-            var repo = repository as IDisposable;
-            repo?.Dispose();
-        }
+        
 
         private static async void AllItemsAdded(object state)
         {
