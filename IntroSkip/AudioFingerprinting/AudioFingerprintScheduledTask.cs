@@ -61,13 +61,22 @@ namespace IntroSkip.AudioFingerprinting
 
 
             //Sync repository Items
-            progress.Report(1.0);
-            var syncStopWatch = new Stopwatch();
-            syncStopWatch.Start();
-            Log.Info("Syncing Repository Items...");
-            RepositoryItemSync(repository);
-            syncStopWatch.Stop();
-            Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
+            try
+            {
+                progress.Report(1.0);
+                var syncStopWatch = new Stopwatch();
+                syncStopWatch.Start();
+                Log.Info("Syncing Repository Items...");
+                RepositoryItemSync(repository);
+                syncStopWatch.Stop();
+                Log.Info(
+                    $"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+            }
+
 
             try
             {
