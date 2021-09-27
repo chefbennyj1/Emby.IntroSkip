@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Data;
 
 // ReSharper disable ComplexConditionExpression
 // ReSharper disable TooManyChainedReferences
@@ -57,6 +58,16 @@ namespace IntroSkip.AudioFingerprinting
             }
             //var repo = IntroSkipPluginEntryPoint.Instance.Repository;
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+
+
+            //Sync repository Items
+            progress.Report(1.0);
+            var syncStopWatch = new Stopwatch();
+            syncStopWatch.Start();
+            Log.Info("Syncing Repository Items...");
+            RepositoryItemSync(repository);
+            syncStopWatch.Stop();
+            Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
 
             try
             {
@@ -247,9 +258,7 @@ namespace IntroSkip.AudioFingerprinting
 
 
         }
-
-       
-
+        
 
         private int GetEncodingDuration(TimeSpan? averageRuntime)
         {
@@ -307,6 +316,28 @@ namespace IntroSkip.AudioFingerprinting
             };
         }
 
+        private void RepositoryItemSync(ITitleSequenceRepository repository)
+        {
+            var titleSequencesQuery = repository.GetResults(new TitleSequenceResultQuery());
+            var titleSequences      = titleSequencesQuery.Items.ToList();
+
+            var libraryQuery = LibraryManager.GetItemsResult(new InternalItemsQuery() { Recursive = true, IsVirtualItem = false, IncludeItemTypes = new []{ "Episode" }});
+            var libraryItems = libraryQuery.Items.ToList();
+            foreach (var item in titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId)))
+            {
+                try
+                {
+                    repository.Delete(item.InternalId.ToString());
+                }
+                catch { }
+            }
+
+            try
+            {
+                repository.Vacuum();
+            }
+            catch {}
+        }
         public string Name => "Episode Audio Fingerprinting";
         public string Key => "Audio Fingerprint Options";
         public string Description => "Chroma-print audio files for title sequence detection";
