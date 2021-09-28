@@ -248,7 +248,6 @@ namespace IntroSkip.AudioFingerprinting
                                 
                                 Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
 
-
                             });
                     }
                     
