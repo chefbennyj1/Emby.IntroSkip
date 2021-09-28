@@ -29,10 +29,18 @@ using System.Collections.Generic;
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
 
             TitleSequenceResult titleSequence;
-            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            titleSequence = repository.GetResult(id.ToString());
-            var repo = repository as IDisposable;
-            repo?.Dispose();
+            try
+            {
+                var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+                titleSequence = repository.GetResult(id.ToString());
+                var repo = repository as IDisposable;
+                repo.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+                return;
+            }
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;

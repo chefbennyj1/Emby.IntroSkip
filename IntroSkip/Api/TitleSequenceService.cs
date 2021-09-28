@@ -81,6 +81,12 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
         }
 
+        [Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
+        public class SeasonalIntroVariance : IReturn<string>
+        {
+
+        }
+
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
 
@@ -94,6 +100,14 @@ namespace IntroSkip.Api
             //LibraryManager = libraryManager;
         }
 
+        public string Get(SeasonalIntroVariance request)
+        {
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var variance =  JsonSerializer.SerializeToString(GetSeasonalIntroVariance(repository));
+            
+            DisposeRepository(repository);
+            return variance;
+        }
 
         public string Get(UpdateTitleSequenceRequest request)
         {
@@ -263,6 +277,30 @@ namespace IntroSkip.Api
             // ReSharper disable once UsePatternMatching
             var repo = repository as IDisposable;
             repo?.Dispose();
+        }
+
+        /// <summary>
+        /// List of seasons where some episodes have intros and some do not.
+        /// </summary>
+        /// <param name="repository"></param>
+        /// <returns></returns>
+        private List<long> GetSeasonalIntroVariance(ITitleSequenceRepository repository)
+        {
+            var dbResults          = repository.GetBaseTitleSequenceResults(new TitleSequenceResultQuery());
+            var baseTitleSequences = dbResults.Items;
+            var seasonalGroups     = baseTitleSequences.GroupBy(sequence => sequence.SeasonId);
+            var abnormalities      = new List<long>();
+            foreach (var group in seasonalGroups)
+            {
+                if (group.All(item => item.HasSequence || !item.HasSequence)) continue; //If they all have sequence data continue
+                if (group.Any(item => item.HasSequence)) //Some of these items have sequence data and some do not.
+                {
+                    abnormalities.Add(group.Key);
+                }
+            }
+            var repo = repository as IDisposable;
+            repo.Dispose();
+            return abnormalities;
         }
     }
 }

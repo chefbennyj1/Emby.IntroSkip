@@ -270,7 +270,7 @@
                 ApiClient.deleteSeasonData(seasonId, removeAll).then((result) => {
                     loading.show();
                     if (result) {
-                        reloadItems(titleSequences, view);
+                        reloadItems(result, view);
                     }
                     loading.hide();
                     dialogHelper.close(dlg);
@@ -445,7 +445,7 @@
 
                                     view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                     var titleSequences = result.TitleSequences;
-                                    reloadItems(titleSequences, view)
+                                    reloadItems(titleSequences, view);
                                 } else {
                                     view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                     if (!removeSeasonalFingerprintButton.classList.contains('hide')) {

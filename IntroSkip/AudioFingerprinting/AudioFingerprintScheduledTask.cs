@@ -61,13 +61,20 @@ namespace IntroSkip.AudioFingerprinting
 
 
             //Sync repository Items
-            progress.Report(1.0);
-            var syncStopWatch = new Stopwatch();
-            syncStopWatch.Start();
-            Log.Info("Syncing Repository Items...");
-            RepositoryItemSync(repository);
-            syncStopWatch.Stop();
-            Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
+            try
+            {
+                progress.Report(1.0);
+                var syncStopWatch = new Stopwatch();
+                syncStopWatch.Start();
+                Log.Info("Syncing Repository Items...");
+                RepositoryItemSync(repository);
+                syncStopWatch.Stop();
+                Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+            }
 
             try
             {
@@ -113,8 +120,10 @@ namespace IntroSkip.AudioFingerprinting
 
                 progress.Report((currentProgress += step) - 1); //Give the user some kind of progress to show the task has started
 
-
-                Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = config.FingerprintingMaxDegreeOfParallelism }, (series, state) =>
+                //We divide by two because we are going to split up the parallel function for both series and episodes.
+                var fpMax = config.FingerprintingMaxDegreeOfParallelism / 2; 
+                
+                Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) }, (series, state) =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -124,11 +133,11 @@ namespace IntroSkip.AudioFingerprinting
 
                     var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
-                        Parent = series,
-                        Recursive = true,
+                        Parent           = series,
+                        Recursive        = true,
                         IncludeItemTypes = new[] { "Season" },
-                        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
-                        IsVirtualItem = false
+                        User             = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                        IsVirtualItem    = false
                     });
 
                     for (var seasonIndex = 0; seasonIndex <= seasonQuery.Items.Count() - 1; seasonIndex++)
@@ -159,87 +168,91 @@ namespace IntroSkip.AudioFingerprinting
 
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                         var duration = GetEncodingDuration(averageRuntime);
-
-                        for (var index = 0; index <= episodeQuery.Items.Count() - 1; index++)
-                        {
-
-                            if (cancellationToken.IsCancellationRequested)
+                        
+                        Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) },
+                            (episode, st) =>
                             {
-                                break;
-                            }
-
-                            //The episode data exists in the database
-                            // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
-                            if (titleSequences.Exists(result => result.InternalId == episodeQuery.Items[index].InternalId))
-                            {
-                                var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episodeQuery.Items[index].InternalId);
-
-                                // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
-                                if (titleSequenceResult.Duration == duration)
+                                if (cancellationToken.IsCancellationRequested)
                                 {
-                                    continue;
+                                    st.Break();
                                 }
-                                else  //If new episodes are added to the season it may alter the encoding duration for the fingerprint. The duration for all fingerprints must be the same.
+
+                                //The episode data exists in the database
+                                // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                                if (titleSequences.Exists(result => result.InternalId == episode.InternalId))
                                 {
-                                    Log.Info($"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
-                                    repository.Delete(titleSequenceResult.InternalId.ToString());
+                                    var titleSequenceResult =
+                                        titleSequences.FirstOrDefault(result =>
+                                            result.InternalId == episode.InternalId);
 
-                                    dbResults = repository.GetResults(new TitleSequenceResultQuery());
+                                    // ReSharper disable once PossibleNullReferenceException <-- no it's not null, it was existing right up there...
+                                    if (titleSequenceResult.Duration == duration)
+                                    {
+                                        return;
+                                    }
+                                    else //If new episodes are added to the season it may alter the encoding duration for the fingerprint. The duration for all fingerprints must be the same.
+                                    {
+                                        Log.Info(
+                                            $"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
+                                        repository.Delete(titleSequenceResult.InternalId.ToString());
 
-                                    titleSequences = dbResults.Items.ToList();
-                                    processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                                        dbResults = repository.GetResults(new TitleSequenceResultQuery());
+
+                                        titleSequences = dbResults.Items.ToList();
+                                        processedEpisodeResults = titleSequences.Where(s =>
+                                            s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                                    }
                                 }
-                            }
 
+                                var stopWatch = new Stopwatch();
+                                stopWatch.Start();
 
-                            
-                            var stopWatch = new Stopwatch();
-                            stopWatch.Start();
-                            
-                            List<uint> fingerPrintData = null;
+                                List<uint> fingerPrintData = null;
 
-                            try
-                            {
-                                fingerPrintData =
-                                    AudioFingerprintManager.Instance.GetAudioFingerprint(episodeQuery.Items[index],
-                                        cancellationToken,
-                                        duration); 
-                            }
-                            catch (Exception ex)
-                            {
-                                stopWatch.Stop();
-                                Log.Warn(ex.Message);
-                                continue;
-                            }
-
-                            try
-                            {
-                                Log.Info($"{series.Name} - S:{seasonQuery.Items[seasonIndex].IndexNumber} - E:{episodeQuery.Items[index].IndexNumber}: Saving.");
-                                repository.SaveResult(new TitleSequenceResult()
+                                try
                                 {
-                                    Duration           = duration,
-                                    Fingerprint        = fingerPrintData,
-                                    HasSequence        = false, //Set this to true when we scan the fingerprint data in the other scheduled task
-                                    IndexNumber        = episodeQuery.Items[index].IndexNumber,
-                                    InternalId         = episodeQuery.Items[index].InternalId,
-                                    SeasonId           = seasonQuery.Items[seasonIndex].InternalId,
-                                    SeriesId           = series.InternalId,
-                                    TitleSequenceStart = new TimeSpan(),
-                                    TitleSequenceEnd   = new TimeSpan(),
-                                    Confirmed          = false,
-                                    Processed          = false
+                                    fingerPrintData =
+                                        AudioFingerprintManager.Instance.GetAudioFingerprint(episode, cancellationToken,
+                                            duration);
+                                }
+                                catch (Exception ex)
+                                {
+                                    stopWatch.Stop();
+                                    Log.Warn(ex.Message);
+                                    return;
+                                }
 
-                                }, cancellationToken);
-                            }
-                            catch (Exception ex)
-                            {
-                                stopWatch.Stop();
-                                Log.Warn(ex.Message);
-                            }
+                                try
+                                {
+                                    Log.Info(
+                                        $"{series.Name} - S:{seasonQuery.Items[seasonIndex].IndexNumber} - E:{episode.IndexNumber}: Saving.");
+                                    repository.SaveResult(new TitleSequenceResult()
+                                    {
+                                        Duration = duration,
+                                        Fingerprint = fingerPrintData,
+                                        HasSequence =
+                                            false, //Set this to true when we scan the fingerprint data in the other scheduled task
+                                        IndexNumber = episode.IndexNumber,
+                                        InternalId = episode.InternalId,
+                                        SeasonId = seasonQuery.Items[seasonIndex].InternalId,
+                                        SeriesId = series.InternalId,
+                                        TitleSequenceStart = new TimeSpan(),
+                                        TitleSequenceEnd = new TimeSpan(),
+                                        Confirmed = false,
+                                        Processed = false
 
-                            Log.Info($"{episodeQuery.Items[index].Parent.Parent.Name} - S:{episodeQuery.Items[index].Parent.IndexNumber} - E:{episodeQuery.Items[index].IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                                    }, cancellationToken);
+                                }
+                                catch (Exception ex)
+                                {
+                                    stopWatch.Stop();
+                                    Log.Warn(ex.Message);
+                                }
 
-                        }
+                                Log.Info(
+                                    $"{episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+
+                            });
 
                     }
                     progress.Report((currentProgress += step) - 1);
