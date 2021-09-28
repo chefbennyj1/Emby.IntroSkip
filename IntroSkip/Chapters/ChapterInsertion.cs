@@ -24,13 +24,13 @@ using System.Collections.Generic;
             Instance = this;
         }
 
-        public void InsertIntroChapters(long id)
+        public void InsertIntroChapters(long id, TitleSequenceResult titleSequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
 
-            TitleSequenceResult titleSequence;
-            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            titleSequence = repository.GetResult(id.ToString());
+            //TitleSequenceResult titleSequence;
+            //var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            //titleSequence = repository.GetResult(id.ToString());
 
 
             //**** THESE TWO LINES MIGHT BE CAUSING THE PROBLEM ****
