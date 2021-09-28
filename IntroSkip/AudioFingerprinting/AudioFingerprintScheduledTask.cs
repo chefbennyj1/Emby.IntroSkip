@@ -245,8 +245,7 @@ namespace IntroSkip.AudioFingerprinting
                                     stopWatch.Stop();
                                     Log.Warn(ex.Message);
                                 }
-
-
+                                
                                 Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
 
 
