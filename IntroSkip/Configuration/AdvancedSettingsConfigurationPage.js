@@ -164,7 +164,6 @@
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
-                        config.FingerprintingMaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });

@@ -16,9 +16,11 @@ namespace IntroSkip.TitleSequence
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
+        private TitleSequenceDetectionManager TSDM { get; }
+        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager, TitleSequenceDetectionManager tsdm)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
+            TSDM = tsdm;
             TaskManager = taskManager;
         }
 
@@ -28,21 +30,25 @@ namespace IntroSkip.TitleSequence
             var tasks = TaskManager.ScheduledTasks.ToList();
             if (tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting").State == TaskState.Running)
             {
-                Log.Info("Title sequence task will wait until chroma-printing task has completed.");
+                Log.Info("DETECTION: Title sequence task will wait until chroma-printing task has completed.");
                 progress.Report(100.0);
                 return;
             }
 
 
 
-            Log.Info("Beginning Title Sequence Task");
+            Log.Info("DETECTION: Beginning Title Sequence Task");
             try
             {
                 var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
+                TSDM.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
+
                 var repo = repository as IDisposable;
-                repo?.Dispose();
+                if (repo != null)
+                {
+                    repo.Dispose();
+                }
 
             }
             catch (Exception ex)
