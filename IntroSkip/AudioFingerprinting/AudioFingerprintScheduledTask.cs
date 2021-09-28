@@ -1,4 +1,4 @@
-﻿using IntroSkip.TitleSequence;
+using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
@@ -38,7 +38,6 @@ namespace IntroSkip.AudioFingerprinting
             UserManager = userManager;
             LibraryManager = libraryManager;
             TaskManager = taskManager;
-            //DtoService = dtoService;
             Log = logMan.GetLogger(Plugin.Instance.Name);
         }
 
@@ -144,13 +143,15 @@ namespace IntroSkip.AudioFingerprinting
                         }
 
                         // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
-                        var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
+                        var processedEpisodeResults =
+                            titleSequences.Where(s =>
+                                s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
 
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
                             Parent = seasonQuery.Items[seasonIndex],
                             Recursive = true,
-                            IncludeItemTypes = new[] { "Episode" },
+                            IncludeItemTypes = new[] {"Episode"},
                             User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
                             IsVirtualItem = false
                         });
@@ -158,14 +159,17 @@ namespace IntroSkip.AudioFingerprinting
                         //The season has been processed and all episodes have a sequence - move on.                        
                         if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
                         {
-                            Log.Debug($"FINGERPRINT: {series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
+                            Log.Debug(
+                                $"FINGERPRINT: {series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
                             continue;
                         }
 
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                         var duration = GetEncodingDuration(averageRuntime);
 
+
                         Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) }, (episode, st) =>
+
                             {
                                 if (cancellationToken.IsCancellationRequested)
                                 {
@@ -245,12 +249,15 @@ namespace IntroSkip.AudioFingerprinting
                                     stopWatch.Stop();
                                     Log.Warn(ex.Message);
                                 }
-                                
+
+
+
                                 Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+
 
                             });
                     }
-                    
+
                     progress.Report((currentProgress += step) - 1);
                 });
             }
