@@ -167,9 +167,11 @@ namespace IntroSkip.AudioFingerprinting
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                         var duration = GetEncodingDuration(averageRuntime);
 
-                        Parallel.ForEach(episodeQuery.Items,
-                            new ParallelOptions() {MaxDegreeOfParallelism = Math.Abs(fpMax)},
-                            (episode, st) =>
+
+
+                        Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) }, (episode, st) =>
+
+
                             {
                                 if (cancellationToken.IsCancellationRequested)
                                 {
@@ -223,7 +225,6 @@ namespace IntroSkip.AudioFingerprinting
                                 }
 
 
-
                                 try
                                 {
                                     Log.Info(
@@ -251,13 +252,11 @@ namespace IntroSkip.AudioFingerprinting
                                     Log.Warn(ex.Message);
                                 }
 
-                                Log.Info(
-                                    $"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
 
+                                Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
 
                             });
                     }
-
 
                     progress.Report((currentProgress += step) - 1);
                 });
