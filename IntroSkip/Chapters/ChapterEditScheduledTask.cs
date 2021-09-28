@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+ using IntroSkip.Configuration;
+ using IntroSkip.Data;
  using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
  using MediaBrowser.Controller.Entities;
@@ -20,50 +22,55 @@ namespace IntroSkip.Chapters
     {
         public ILibraryManager LibraryManager { get; set; }
         private ITaskManager TaskManager { get; }
-        private ChapterInsertion ChapterInsertion { get; }
-        private ChapterErrorTextFileCreator ErrorTextFile { get; }
         private IItemRepository ItemRepo { get; }
-        private ILogger Log { get; }
+        private ILogger Log { get; set; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, IItemRepository itemRepo, ChapterErrorTextFileCreator textFile)
+        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, IItemRepository itemRepo)
         {
             LibraryManager = libraryManager;
             TaskManager = taskManager;
             Log = logManager.GetLogger(Plugin.Instance.Name);
-            ChapterInsertion = chapterInsertion;
-            ErrorTextFile = textFile;
             ItemRepo = itemRepo;
         }
 
-        public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
+        public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            var config = Plugin.Instance.Configuration;
-            Task chapterExecute = null;
+            var repository     = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults      = repository.GetResults(new TitleSequenceResultQuery());
+            var titleSequences = dbResults.Items.ToList();
+            Log.Info($"Title Sequences contains: {titleSequences.Count} items.");
+            var config         = Plugin.Instance.Configuration;
+            
             if (config.EnableChapterInsertion)
             {
                 Log.Debug("CHAPTER TASK IS STARTING");
+                
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
-                chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
-                chapterExecute.Wait(cancellationToken);
-
+                ProcessEpisodeChaptersPoints(titleSequences, config, progress);
+                
                 //If the chapter task is completed and there are errors in the episodes lets output the error file.
-                if (chapterExecute.IsCompleted && ChapterInsertion.ChapterErrors != null)
+                if (ChapterInsertion.Instance.ChapterErrors != null)
                 {
-                    ErrorTextFile.JotErrorFilePaths();
+                    ChapterErrorTextFileCreator.Instance.JotErrorFilePaths();
                 }
 
                 // If the user has enabled Chapter Insert option and Chapter Image Extraction in the Advanced menu then lets run that process! 
-                if (chapterExecute.IsCompleted && config.EnableAutomaticImageExtraction)
+                if (config.EnableAutomaticImageExtraction)
                 {
-                    ProcessChapterImageExtraction();
+                    var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
+
+                    await TaskManager.Execute(thumbnail, new TaskOptions());
                 }
             }
             else
             {
                 Log.Debug("CHAPTER TASK: FAILED - You may need to enable this in the Plugin Configuration");
             }
-            //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
-            return chapterExecute;
+
+            var repo = repository as IDisposable;
+            repo.Dispose();
+            progress.Report(100.0);
+            
         }
 
         public bool IsHidden => false;
@@ -94,60 +101,52 @@ namespace IntroSkip.Chapters
             };
         }
 
-        private Task ProcessEpisodeChaptersPoints()
+        private void ProcessEpisodeChaptersPoints(List<TitleSequenceResult> titleSequences, PluginConfiguration config, IProgress<double> progress)
         {
             Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
-            var config = Plugin.Instance.Configuration;
 
-            var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
-
-            ChapterInsertion.ChapterErrors.Clear();
-
-            foreach (TitleSequenceResult episode in dbResults.Items)
+            try
             {
-                if (config.EnableChapterInsertion && episode.HasSequence)
-                {
-                    long id = episode.InternalId;
-                    Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
-                    ChapterInsertion.Instance.InsertIntroChapters(id, episode);
-                }
+                ChapterInsertion.Instance.ChapterErrors?.Clear();
             }
+            catch { }
+            var step = 100.0 / titleSequences.Count;
+            var currentProgress = 0.1;
 
-            var repo = Repository as IDisposable;
-            if (repo != null)
+            foreach (TitleSequenceResult episode in titleSequences)
             {
-                repo.Dispose();
+                if (!config.EnableChapterInsertion || !episode.HasSequence) continue;
+                long id = episode.InternalId;
+                Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
+                ChapterInsertion.Instance.InsertIntroChapters(id, episode);
+                progress.Report((currentProgress += step) - 1);
             }
-
-            return null;
         }
 
-        public Task RefreshChapters()
-        {
-            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+        //public Task RefreshChapters()
+        //{
+        //    var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             
-            QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery());
-            foreach (TitleSequenceResult episode in dbResults.Items)
-            {
-                BaseItem item = ItemRepo.GetItemById(episode.InternalId);
-                item.RefreshMetadata(CancellationToken.None);
-            }
+        //    QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery());
+        //    foreach (TitleSequenceResult episode in dbResults.Items)
+        //    {
+        //        BaseItem item = ItemRepo.GetItemById(episode.InternalId);
+        //        item.RefreshMetadata(CancellationToken.None);
+        //    }
 
-            var repo = repository as IDisposable;
-            repo?.Dispose();
+        //    var repo = repository as IDisposable;
+        //    repo?.Dispose();
 
-            return null;
-        }
+        //    return null;
+        //}
 
-        public Task ProcessChapterImageExtraction()
-        {
-            //var chapterEdit = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "IntroSkip Chapter Insertion");
-            var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
+        //private async void ProcessChapterImageExtraction()
+        //{
+        //    //var chapterEdit = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "IntroSkip Chapter Insertion");
+        //    var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
 
-            TaskManager.Execute(thumbnail, new TaskOptions());
-
-            return null;
-        }
+        //    await TaskManager.Execute(thumbnail, new TaskOptions());
+            
+        //}
     }
 }

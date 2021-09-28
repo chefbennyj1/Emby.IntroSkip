@@ -34,7 +34,7 @@ namespace IntroSkip.Chapters
             return $"{configDir}{Separator}ChapterError";
         }
 
-        public Task JotErrorFilePaths()
+        public void JotErrorFilePaths()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("CHAPTER ERRORS TEXT FILE: Writing each episode to xml file");
@@ -69,7 +69,6 @@ namespace IntroSkip.Chapters
                     }
                 }
             }
-            return null;
         }
 
         #region IServerEntryPoint Implemented Members

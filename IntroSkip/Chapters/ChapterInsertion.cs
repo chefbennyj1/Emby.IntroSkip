@@ -4,10 +4,12 @@ using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
  using MediaBrowser.Model.Entities;
  using IntroSkip.TitleSequence;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Plugins;
 
- namespace IntroSkip.Chapters
+namespace IntroSkip.Chapters
 {
-    public class ChapterInsertion
+    public class ChapterInsertion : IServerEntryPoint
     {
         public static ChapterInsertion Instance { get; set; }
 
@@ -15,11 +17,14 @@ using System.Collections.Generic;
 
         private IItemRepository ItemRepository { get; set; }
 
+        private ILibraryManager LibraryManager { get; }
+
         public List<ChapterError> ChapterErrors = new List<ChapterError>();
 
-        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo)
+        public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo, ILibraryManager libraryManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
+            LibraryManager = libraryManager;
             ItemRepository = itemRepo;
             Instance = this;
         }
@@ -28,12 +33,14 @@ using System.Collections.Generic;
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
           
-            var item = ItemRepository.GetItemById(id);
+            var item = LibraryManager.GetItemById(id);
+            
             var tvShowName = item.Parent.Parent.Name;
 
             var seasonName = item.Parent.Name;
 
             var episodeNo = item.IndexNumber;
+
             Log.Debug("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
@@ -339,6 +346,16 @@ using System.Collections.Generic;
             string output = time.ToString(@"hh\:mm\:ss");
 
             return output;
+        }
+
+        public void Dispose()
+        {
+            
+        }
+
+        public void Run()
+        {
+           
         }
     }
 
