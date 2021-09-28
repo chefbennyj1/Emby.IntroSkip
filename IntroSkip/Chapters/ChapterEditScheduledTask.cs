@@ -60,6 +60,7 @@ namespace IntroSkip.Chapters
                     var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
 
                     await TaskManager.Execute(thumbnail, new TaskOptions());
+                    await Task.FromResult(true);
                 }
             }
             else
@@ -86,8 +87,7 @@ namespace IntroSkip.Chapters
         public string Description => "Insert a Title Sequence Marker in Chapters";
 
         public string Category => "Intro Skip";
-
-
+        
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
