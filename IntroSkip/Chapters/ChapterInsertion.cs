@@ -27,7 +27,7 @@ using System.Collections.Generic;
         public void InsertIntroChapters(long id, TitleSequenceResult titleSequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
-            
+          
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
 
