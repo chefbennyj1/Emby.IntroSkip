@@ -111,6 +111,8 @@
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
                     
+                    fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism ? config.FingerprintingMaxDegreeOfParallelism : 2;
+                    
                     chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
 
                     chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
@@ -160,7 +162,7 @@
                 });
 
 
-                fingerprintMaxDegreeOfParallelism.addEvetListener('change', (elem) => {
+                fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
