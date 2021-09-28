@@ -175,7 +175,6 @@ namespace IntroSkip.AudioFingerprinting
                                 {
                                     st.Break();
                                 }
-
                                 //The episode data exists in the database
                                 // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
                                 if (titleSequences.Exists(result => result.InternalId == episode.InternalId))
