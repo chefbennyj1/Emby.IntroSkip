@@ -24,32 +24,18 @@ using System.Collections.Generic;
             Instance = this;
         }
 
-        public void InsertIntroChapters(long id)
+        public void InsertIntroChapters(long id, TitleSequenceResult titleSequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
-
-            TitleSequenceResult titleSequence;
-            try
-            {
-                var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-                titleSequence = repository.GetResult(id.ToString());
-                var repo = repository as IDisposable;
-                repo.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Log.Warn(ex.Message);
-                return;
-            }
-
+          
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;
 
             var seasonName = item.Parent.Name;
 
             var episodeNo = item.IndexNumber;
-            Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
-            Log.Info("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
+            Log.Debug("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
+            Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
             var config = Plugin.Instance.Configuration;
 
@@ -81,7 +67,7 @@ using System.Collections.Generic;
                 //This wil check if the Introstart chapter point is already in the list
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                 {
-                    Log.Info("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
+                    Log.Debug("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
                 }
                 else
                 {

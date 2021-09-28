@@ -102,7 +102,7 @@ namespace IntroSkip.Data
                             }
                         }
 
-                        Logger.Info("Default journal_mode for {0} is {1}", DbFilePath, _defaultWal);
+                        Logger.Debug("Default journal_mode for {0} is {1}", DbFilePath, _defaultWal);
                     }
 
                     var queries = new List<string>
