@@ -31,8 +31,12 @@ using System.Collections.Generic;
             TitleSequenceResult titleSequence;
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             titleSequence = repository.GetResult(id.ToString());
-            var repo = repository as IDisposable;
-            repo?.Dispose();
+
+
+            //**** THESE TWO LINES MIGHT BE CAUSING THE PROBLEM ****
+            //var repo = repository as IDisposable; <---------
+            //repo?.Dispose();                      <---------
+            //****************************************
 
             var item = ItemRepository.GetItemById(id);
             var tvShowName = item.Parent.Parent.Name;

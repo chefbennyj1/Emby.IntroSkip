@@ -46,6 +46,7 @@ namespace IntroSkip.Chapters
                 chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
                 chapterExecute.Wait(cancellationToken);
 
+                //If the chapter task is completed and there are errors in the episodes lets output the error file.
                 if (chapterExecute.IsCompleted && ChapterInsertion.ChapterErrors != null)
                 {
                     ErrorTextFile.JotErrorFilePaths();
@@ -56,13 +57,12 @@ namespace IntroSkip.Chapters
                 {
                     ProcessChapterImageExtraction();
                 }
-                //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
             }
             else
             {
                 Log.Debug("CHAPTER TASK: FAILED - You may need to enable this in the Plugin Configuration");
             }
-
+            //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
             return chapterExecute;
         }
 
@@ -98,7 +98,6 @@ namespace IntroSkip.Chapters
         {
             Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
             var config = Plugin.Instance.Configuration;
-            //ITitleSequenceRepository repo = IntroSkipPluginEntryPoint.Instance.Repository;
 
             var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
