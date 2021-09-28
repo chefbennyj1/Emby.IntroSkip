@@ -110,7 +110,7 @@ namespace IntroSkip.Chapters
                 {
                     long id = episode.InternalId;
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
-                    ChapterInsertion.Instance.InsertIntroChapters(id);
+                    ChapterInsertion.Instance.InsertIntroChapters(id, episode);
                 }
             }
 
