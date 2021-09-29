@@ -20,7 +20,7 @@ namespace IntroSkip.Chapters
 {
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
-        public ILibraryManager LibraryManager { get; set; }
+        private ILibraryManager LibraryManager { get; set; }
         private ITaskManager TaskManager { get; }
         private IItemRepository ItemRepo { get; }
         private ILogger Log { get; set; }
@@ -48,6 +48,7 @@ namespace IntroSkip.Chapters
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
                 ProcessEpisodeChaptersPoints(titleSequences, config, progress);
                 
+                progress.Report(100.0);
                 //If the chapter task is completed and there are errors in the episodes lets output the error file.
                 if (ChapterInsertion.Instance.ChapterErrors != null)
                 {
@@ -58,9 +59,15 @@ namespace IntroSkip.Chapters
                 if (config.EnableAutomaticImageExtraction)
                 {
                     var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
-
-                    await TaskManager.Execute(thumbnail, new TaskOptions());
-                    await Task.FromResult(true);
+                    try
+                    {
+                        TaskManager.Execute(thumbnail, new TaskOptions());
+                        //await Task.FromResult(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn(ex.Message);
+                    }
                 }
             }
             else
@@ -70,7 +77,7 @@ namespace IntroSkip.Chapters
 
             var repo = repository as IDisposable;
             repo.Dispose();
-            progress.Report(100.0);
+            
             
         }
 
