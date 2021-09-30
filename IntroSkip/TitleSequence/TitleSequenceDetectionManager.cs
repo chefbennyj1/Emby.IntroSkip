@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.TV;
 
 // ReSharper disable TooManyChainedReferences
 
@@ -22,8 +23,7 @@ namespace IntroSkip.TitleSequence
         private ILibraryManager LibraryManager { get; }
         private IUserManager UserManager { get; }
         public static TitleSequenceDetectionManager Instance { get; private set; }
-
-
+        
         public TitleSequenceDetectionManager(ILogManager logManager, ILibraryManager libMan, IUserManager user)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
@@ -77,7 +77,6 @@ namespace IntroSkip.TitleSequence
 
             if (cancellationToken.IsCancellationRequested)
             {
-
                 progress.Report(100.0);
             }
             var config = Plugin.Instance.Configuration;
@@ -140,25 +139,22 @@ namespace IntroSkip.TitleSequence
                         });
 
 
-                        var dbEpisodes = dbResults.Items.Where(t => t.SeasonId == season.InternalId).ToList();
+                        var dbEpisodes = dbResults.Items.ToList();
 
-                        if (!dbEpisodes.Any()
-                        ) //<-- this should not happen unless the fingerprint task was never run on this season. 
+                        if (!dbEpisodes.Any()) //<-- this should not happen unless the fingerprint task was never run on this season. 
                         {
                             dbEpisodes = new List<TitleSequenceResult>();
                         }
 
                         // An entire season with no title sequence might be the case. However, something else might have caused an entire season to have no results. - Warn the log.
-                        if (dbEpisodes.All(item => item.HasSequence == false) &&
-                            dbEpisodes.All(item => item.Processed))
+                        if (dbEpisodes.All(item => item.HasSequence == false) && dbEpisodes.All(item => item.Processed))
                         {
-                                //Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
+                            //Log.Warn($"{series.Name} {season.Name}: There currently are no title sequences available for this season.\n");
                         }
 
 
                         //After processing, the DB entry is marked as 'processed'. if the item has been processed already, just move on.
-                        if (dbEpisodes.Count() == episodeQuery.TotalRecordCount &&
-                            dbEpisodes.All(item => item.Processed))
+                        if (dbEpisodes.Count() == episodeQuery.TotalRecordCount && dbEpisodes.All(item => item.Processed))
                         {
                             Log.Info($"{series.Name} S:{season.IndexNumber} have no new episodes to scan.");
                             continue;
@@ -166,8 +162,7 @@ namespace IntroSkip.TitleSequence
 
 
                         // All our processed episodes with sequences, or user confirmed information
-                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasSequence || e.Confirmed)
-                            .Select(y => y.InternalId).Distinct());
+                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasSequence || e.Confirmed).Select(y => y.InternalId).Distinct());
                         // A list of episodes with all our episodes containing sequence data removed from it. All that is left is what we need to process.
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
@@ -177,8 +172,7 @@ namespace IntroSkip.TitleSequence
                             continue;
                         }
 
-                        Log.Info(
-                            $" will process {unmatched.Count()} episodes for {season.Parent.Name} - {season.Name}.");
+                        Log.Info($" will process {unmatched.Count()} episodes for {season.Parent.Name} - {season.Name}.");
 
                         for (var index = 0; index <= unmatched.Count() - 1; index++)
                         {
@@ -243,14 +237,7 @@ namespace IntroSkip.TitleSequence
                                                 item.IndexNumber == sequence.IndexNumber &&
                                                 item.SeasonId == sequence.SeasonId);
                                         }
-
-                                        ////If this is the only episode don't mark it as processed.
-                                        ////Wait until there are more episodes available for the season.
-                                        //if (episodeQuery.TotalRecordCount > 1)
-                                        //{
-                                        //    sequence.Processed = true; //<-- now we won't process episodes again over and over
-                                        //}
-
+                                        
                                         dbEpisodes.Add(sequence);
 
                                     }
@@ -280,6 +267,7 @@ namespace IntroSkip.TitleSequence
                                 {
                                     Log.Info(
                                         $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex.Message}");
+                                    
                                 }
 
                             }
@@ -316,7 +304,7 @@ namespace IntroSkip.TitleSequence
             progress.Report(100.0);
         }
 
-        private bool IsComplete(BaseItem season)
+        private bool IsComplete(BaseItem season, List<TitleSequenceResult> dbEpisodes)
         {
             var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
             {
@@ -324,21 +312,22 @@ namespace IntroSkip.TitleSequence
                 IsVirtualItem = true,
                 IncludeItemTypes = new[] { "Episode" },
                 Recursive = true
-
             });
 
-            if (episodeQuery.Items.Any(item => item.IsVirtualItem || item.IsUnaired)) { return false; }
+            //Not all the episodes exist in the library yet
+            if (dbEpisodes.Count != episodeQuery.TotalRecordCount) return false;
+
+            if (episodeQuery.Items.Any(item => item.IsVirtualItem || item.IsUnaired))  return false; 
 
             return true;
         }
 
-        private void Clean(List<TitleSequenceResult> dbEpisodes, BaseItem season, ITitleSequenceRepository repo, CancellationToken cancellationToken)
+        private void Clean(List<TitleSequenceResult> dbEpisodes, BaseItem season,  ITitleSequenceRepository repo, CancellationToken cancellationToken)
         {
-
             // The DB file gets really big with all the finger print data. If we can remove some, do it here.
             if (dbEpisodes.All(result => result.HasSequence || result.Confirmed))
             {
-                if (IsComplete(season))
+                if (IsComplete(season, dbEpisodes))
                 {
                     //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
                     foreach (var result in dbEpisodes)

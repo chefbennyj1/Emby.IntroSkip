@@ -16,11 +16,10 @@ namespace IntroSkip.TitleSequence
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
-        private TitleSequenceDetectionManager TSDM { get; }
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager, TitleSequenceDetectionManager tsdm)
+       
+        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
-            TSDM = tsdm;
             TaskManager = taskManager;
         }
 
@@ -35,20 +34,16 @@ namespace IntroSkip.TitleSequence
                 return;
             }
 
-
-
             Log.Info("DETECTION: Beginning Title Sequence Task");
+
             try
             {
                 var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-                TSDM.Analyze(cancellationToken, progress, repository);
+                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
 
-                var repo = repository as IDisposable;
-                if (repo != null)
-                {
-                    repo.Dispose();
-                }
+                var repo = (IDisposable) repository;
+                repo.Dispose();
 
             }
             catch (Exception ex)
