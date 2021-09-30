@@ -38,6 +38,37 @@
             });
         };
 
+        ApiClient.refreshMetadata = function (id) {
+            var url = this.getUrl('Items/' + id + '/Refresh');
+            return this.ajax({
+                type: "POST",
+                url: url
+            });
+        };
+
+        ApiClient.updateChapter = function (id) {
+            var url = this.getUrl('UpdateChapter');
+            var options = {
+                InternalId : id
+            }
+            return this.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(options),
+                contentType: 'application/json'
+            });
+        };
+
+        ApiClient.updateTitleSequence = function (options) {
+            var url = this.getUrl('UpdateTitleSequence');
+            return this.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(options),
+                contentType: 'application/json'
+            });
+        };
+
         ApiClient.getLogoImageUrl = function (id) {
             var url = this.getUrl('Items/' +
                 id +
@@ -89,7 +120,7 @@
                 ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + episodeId)).then(result => {
                     resolve(result);
                 });
-            })
+            });
         }
 
         function getSeasons(seriesId) {
@@ -99,18 +130,38 @@
                 });
             });
         }
+            
 
         function saveIntro(row, view) {
             var id = row.dataset.id;
             ApiClient.getJSON(ApiClient.getUrl('EpisodeTitleSequence?InternalId=' + id)).then(intro => {
-                var url = 'UpdateTitleSequence';
-                url += '?InternalId=' + id;
-                url += '&TitleSequenceStart=' + row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
-                url += '&TitleSequenceEnd=' + row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
-                url += '&HasSequence=' + row.cells[5].querySelector('select').value;
-                url += '&SeasonId=' + intro.SeasonId;
-                ApiClient.getJSON(ApiClient.getUrl(url)).then(result => {
-                    Dashboard.processPluginConfigurationUpdateResult(result); 
+                
+                var options = {
+                    InternalId: id,
+                    TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
+                    TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
+                    HasSequence: row.cells[5].querySelector('select').value,
+                    SeasonId: intro.SeasonId
+                }
+                //var url = 'UpdateTitleSequence';
+                //url += '?InternalId=' + id;
+                //url += '&TitleSequenceStart=' + row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
+                //url += '&TitleSequenceEnd=' + row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
+                //url += '&HasSequence=' + row.cells[5].querySelector('select').value;
+                //url += '&SeasonId=' + intro.SeasonId;
+                ApiClient.updateTitleSequence(options).then(() => {
+
+                    //If chapters are enabled, refresh the items metadata, and update the chapter.
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        if (config.EnableChapterInsertion) {
+                            ApiClient.refreshMetadata(id).then(() => {
+                                ApiClient.updateChapter(id).then(complete => {
+                                    Dashboard.processPluginConfigurationUpdateResult(complete);
+                                });
+                            });
+                        }
+                    });
+
                 });
             });
 
@@ -121,7 +172,6 @@
                 ApiClient.getJSON(ApiClient.getUrl('SeasonTitleSequences?SeasonId=' + seasonId)).then(result => {
                     resolve(result);
                 });
-
             });
         }
 
@@ -190,8 +240,7 @@
             titleSequences.forEach(intro => {
                 getTableRowHtml(intro).then(html => {
                     view.querySelector('.introResultBody').innerHTML += html;
-
-
+                    
                     view.querySelectorAll('.saveSequence').forEach(btn => {
                         btn.addEventListener('click', (elem) => {
                             elem.preventDefault();
@@ -209,7 +258,7 @@
 
         
 
-         function confirm_dlg(view) {
+        function confirm_dlg(view) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
                 size: 'small'
@@ -267,13 +316,11 @@
             function clear(removeAll) {
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                ApiClient.deleteSeasonData(seasonId, removeAll).then((result) => {
-                    //loading.show();
-                    if (result) {
-                        reloadItems(result, view);
-                    }
-                    //loading.hide();
-                    dialogHelper.close(dlg);
+                ApiClient.deleteSeasonData(seasonId, removeAll).then(() => {
+                    getIntros(seasonId).then(result => {
+                        reloadItems(result.TitleSequences, view);
+                        dialogHelper.close(dlg);
+                    });
                 });
             }
 
@@ -281,8 +328,8 @@
          }
 
         function sortTable(view) {
-            var table, rows, switching, i, x, y, shouldSwitch;
-            table = view.querySelector('.tblEpisodeIntroResults')
+            var rows, switching, i, x, y, shouldSwitch;
+            const table = view.querySelector('.tblEpisodeIntroResults');
             switching = true;
             /* Make a loop that will continue until
             no switching has been done: */

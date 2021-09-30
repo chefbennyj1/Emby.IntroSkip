@@ -1,4 +1,6 @@
-﻿using IntroSkip.Chapters;
+﻿using System;
+using IntroSkip.Chapters;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
 
@@ -9,6 +11,7 @@ namespace IntroSkip.Api
     public class TitleSequenceChapterInsertionService : IService
     {
         private IJsonSerializer JsonSerializer { get; }
+        
         public TitleSequenceChapterInsertionService(IJsonSerializer json)
         {
             JsonSerializer = json;
@@ -21,9 +24,27 @@ namespace IntroSkip.Api
             
         }
 
+        [Route("/UpdateChapter", "POST", Summary = "Process the chapter data on an item")]
+        public class UpdateChapterRequest : IReturnVoid
+        {
+            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            public long InternalId { get; set; }
+        }
+
         public string Get(ChapterErrorRequest request)
         {
             return JsonSerializer.SerializeToString(ChapterInsertion.Instance.ChapterErrors);
+        }
+
+        public void Post(UpdateChapterRequest request)
+        {
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var titleSequence = repository.GetResult(request.InternalId.ToString());
+            
+            ChapterInsertion.Instance.InsertIntroChapters(request.InternalId, titleSequence);
+            
+            var repo = repository as IDisposable;
+            repo.Dispose();
         }
     }
 }
