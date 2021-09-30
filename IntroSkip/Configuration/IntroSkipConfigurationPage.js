@@ -316,13 +316,11 @@
             function clear(removeAll) {
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                ApiClient.deleteSeasonData(seasonId, removeAll).then((result) => {
-                    //loading.show();
-                    if (result) {
-                        reloadItems(result, view);
-                    }
-                    //loading.hide();
-                    dialogHelper.close(dlg);
+                ApiClient.deleteSeasonData(seasonId, removeAll).then(() => {
+                    getIntros(seasonId).then(result => {
+                        reloadItems(result.TitleSequences, view);
+                        dialogHelper.close(dlg);
+                    });
                 });
             }
 
