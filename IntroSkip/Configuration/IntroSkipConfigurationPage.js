@@ -268,11 +268,11 @@
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                 ApiClient.deleteSeasonData(seasonId, removeAll).then((result) => {
-                    loading.show();
+                    //loading.show();
                     if (result) {
                         reloadItems(result, view);
                     }
-                    loading.hide();
+                    //loading.hide();
                     dialogHelper.close(dlg);
                 });
             }

@@ -121,7 +121,7 @@ namespace IntroSkip
 
             try
             {
-                await TaskManager.Execute(fingerprint, new TaskOptions());
+                await TaskManager.Execute(fingerprint, new TaskOptions()).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

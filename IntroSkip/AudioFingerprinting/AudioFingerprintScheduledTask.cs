@@ -118,7 +118,7 @@ namespace IntroSkip.AudioFingerprinting
                 //We divide by two because we are going to split up the parallel function for both series and episodes.
                 var fpMax = config.FingerprintingMaxDegreeOfParallelism / 2; 
                 
-                Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) }, (series, state) =>
+                Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = fpMax}, (series, state) =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -167,9 +167,8 @@ namespace IntroSkip.AudioFingerprinting
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                         var duration = GetEncodingDuration(averageRuntime);
 
-
-
-                        Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = Math.Abs(fpMax) }, (episode, st) =>
+                        
+                        Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = (int)Math.Round((double)fpMax/2, MidpointRounding.AwayFromZero) }, (episode, st) =>
 
 
                             {
@@ -245,15 +244,17 @@ namespace IntroSkip.AudioFingerprinting
                                         Processed = false
 
                                     }, cancellationToken);
+
+                                    Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
                                 }
                                 catch (Exception ex)
                                 {
                                     stopWatch.Stop();
-                                    Log.Warn(ex.Message);
+                                    Log.Error(ex.Message);
                                 }
 
 
-                                Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                                
 
                             });
                     }
@@ -334,19 +335,27 @@ namespace IntroSkip.AudioFingerprinting
 
         private void RepositoryItemSync(ITitleSequenceRepository repository)
         {
-            var titleSequencesQuery = repository.GetResults(new TitleSequenceResultQuery());
+            var titleSequencesQuery = repository.GetBaseTitleSequenceResults(new TitleSequenceResultQuery());
             var titleSequences      = titleSequencesQuery.Items.ToList();
 
             var libraryQuery = LibraryManager.GetItemsResult(new InternalItemsQuery() { Recursive = true, IsVirtualItem = false, IncludeItemTypes = new []{ "Episode" }});
             var libraryItems = libraryQuery.Items.ToList();
-            foreach (var item in titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId)))
-            {
-                try
+
+            Log.Debug($"Library episodes count:        {libraryItems.Count}");
+            Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
+            if (libraryItems.Count >= titleSequences.Count) return; // if we are equal nothing has change, if emby is more we'll pick up the new stuff next.
+            
+            titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId))
+                .AsParallel()
+                .WithDegreeOfParallelism(5)
+                .ForAll(item =>
                 {
-                    repository.Delete(item.InternalId.ToString());
-                }
-                catch { }
-            }
+                    try
+                    {
+                        repository.Delete(item.InternalId.ToString());
+                    }
+                    catch { }
+                });
 
             try
             {

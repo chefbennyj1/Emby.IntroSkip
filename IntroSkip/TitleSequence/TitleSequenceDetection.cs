@@ -320,13 +320,13 @@ namespace IntroSkip.TitleSequence
 
 
             episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Abs(firstFileRegionStart));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Abs(firstFileRegionEnd));
+            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart, MidpointRounding.AwayFromZero));
+            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd, MidpointRounding.AwayFromZero));
 
 
             episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Abs(secondFileRegionStart));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Abs(secondFileRegionEnd));
+            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart, MidpointRounding.AwayFromZero));
+            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd, MidpointRounding.AwayFromZero));
 
             return new List<TitleSequenceResult>()
             {

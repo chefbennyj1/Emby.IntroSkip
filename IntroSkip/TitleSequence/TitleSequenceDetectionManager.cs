@@ -237,14 +237,7 @@ namespace IntroSkip.TitleSequence
                                                 item.IndexNumber == sequence.IndexNumber &&
                                                 item.SeasonId == sequence.SeasonId);
                                         }
-
-                                        ////If this is the only episode don't mark it as processed.
-                                        ////Wait until there are more episodes available for the season.
-                                        //if (episodeQuery.TotalRecordCount > 1)
-                                        //{
-                                        //    sequence.Processed = true; //<-- now we won't process episodes again over and over
-                                        //}
-
+                                        
                                         dbEpisodes.Add(sequence);
 
                                     }
@@ -274,6 +267,7 @@ namespace IntroSkip.TitleSequence
                                 {
                                     Log.Info(
                                         $"{unmatched[index].Parent.Parent.Name} S: {unmatched[index].Parent.IndexNumber} E: {unmatched[index].IndexNumber} {ex.Message}");
+                                    
                                 }
 
                             }
