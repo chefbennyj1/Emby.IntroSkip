@@ -66,18 +66,18 @@ namespace IntroSkip.Api
 
         }
 
-        [Route("/UpdateTitleSequence", "GET", Summary = "Episode Title Sequence Update Data")]
+        [Route("/UpdateTitleSequence", "POST", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
-            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long InternalId { get; set; }
-            [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceStart { get; set; }
-            [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceEnd { get; set; }
-            [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
+            [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool HasSequence { get; set; }
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
         }
 
@@ -109,7 +109,7 @@ namespace IntroSkip.Api
             return variance;
         }
 
-        public string Get(UpdateTitleSequenceRequest request)
+        public void Post(UpdateTitleSequenceRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
@@ -131,11 +131,11 @@ namespace IntroSkip.Api
             catch (Exception ex)
             {
                 Log.Warn(ex.Message);
-                return "error";
+                //return "error";
             }
 
             DisposeRepository(repository);
-            return "OK";
+            //return "OK";
 
         }
 
