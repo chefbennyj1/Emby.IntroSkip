@@ -245,7 +245,12 @@ namespace IntroSkip.AudioFingerprinting
 
                                     }, cancellationToken);
 
-                                    Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                                    Log.Info(
+                                        $"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                                }
+                                catch (NullReferenceException)
+                                {
+                                    //This is stream files. We'll just ignore it.
                                 }
                                 catch (Exception ex)
                                 {
@@ -254,7 +259,7 @@ namespace IntroSkip.AudioFingerprinting
                                 }
 
 
-                                
+
 
                             });
                     }
