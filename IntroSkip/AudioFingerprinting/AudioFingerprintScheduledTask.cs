@@ -251,6 +251,7 @@ namespace IntroSkip.AudioFingerprinting
                                 catch (NullReferenceException)
                                 {
                                     //This is stream files. We'll just ignore it.
+                                    stopWatch.Stop();
                                 }
                                 catch (Exception ex)
                                 {
