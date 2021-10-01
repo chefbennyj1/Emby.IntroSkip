@@ -71,9 +71,13 @@ namespace IntroSkip.Chapters
                 int iCount = chapters.Count;
                 int lastIndex = iCount - 1;
 
-                //This wil check if the Introstart chapter point is already in the list
+                //This wil check if the Introstart chapter point is already in the list,
                 if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
-                {
+                { 
+                //if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString 
+                //                                    && chapterPoint.StartPositionTicks == insertStart
+                //                                    && chapters[ chapters.FindIndex(c => c.Name == introStartString) + 1 ].StartPositionTicks == insertEnd))
+                //{
                     Log.Debug("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
                 }
                 else
