@@ -36,7 +36,13 @@ namespace IntroSkip.Chapters
         {
             var config = Plugin.Instance.Configuration;
             Task chapterExecute = null;
+            IScheduledTaskWorker detection = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
 
+            while(detection != null && detection.State == TaskState.Running)
+            {
+                Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            }
+            
             if (config.EnableChapterInsertion)
             {
                 Log.Debug("CHAPTER TASK IS STARTING");
@@ -105,7 +111,7 @@ namespace IntroSkip.Chapters
 
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
-                if (config.EnableChapterInsertion && episode.HasSequence)
+                if (config.EnableChapterInsertion && episode.HasSequence && !episode.Confirmed)
                 {
                     long id = episode.InternalId;
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
