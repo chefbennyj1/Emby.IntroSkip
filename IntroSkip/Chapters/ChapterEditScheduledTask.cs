@@ -125,7 +125,7 @@ namespace IntroSkip.Chapters
                 repo.Dispose();
             }
 
-            return null;
+            return Task.FromResult(true);
         }
 
         public Task ProcessChapterImageExtraction()
@@ -134,7 +134,7 @@ namespace IntroSkip.Chapters
 
             TaskManager.Execute(thumbnail, new TaskOptions());
 
-            return null;
+            return Task.FromResult(true);
         }
 
         /*public Task RefreshChapters()
