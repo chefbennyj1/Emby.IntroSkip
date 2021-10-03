@@ -33,15 +33,14 @@ namespace IntroSkip.Chapters
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
           
-            var item = LibraryManager.GetItemById(id);
+            //This needs to be itemRepo
+            var item = ItemRepository.GetItemById(id);
             
             var tvShowName = item.Parent.Parent.Name;
-
             var seasonName = item.Parent.Name;
-
             var episodeNo = item.IndexNumber;
 
-            Log.Debug("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
+            Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
             Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
             var config = Plugin.Instance.Configuration;
@@ -168,6 +167,8 @@ namespace IntroSkip.Chapters
 
                                 //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
                                 ItemRepository.SaveChapters(id, chapters);
+                                Log.Debug("CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
+                                    tvShowName, seasonName, episodeNo, item.Name);
                             }
                         }
                     }
