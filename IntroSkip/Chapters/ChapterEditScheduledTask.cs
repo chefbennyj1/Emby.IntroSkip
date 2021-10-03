@@ -47,7 +47,7 @@ namespace IntroSkip.Chapters
             {
                 Log.Debug("CHAPTER TASK IS STARTING");
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
-                chapterExecute = Task.Factory.StartNew(ProcessEpisodeChaptersPoints, cancellationToken);
+                chapterExecute = Task.Run(ProcessEpisodeChaptersPoints, cancellationToken);
                 chapterExecute.Wait(cancellationToken);
 
                 if (chapterExecute.IsCompleted && ChapterInsertion.ChapterErrors != null)
@@ -111,7 +111,7 @@ namespace IntroSkip.Chapters
 
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
-                if (config.EnableChapterInsertion && episode.HasSequence && !episode.Confirmed)
+                                if (config.EnableChapterInsertion && episode.HasSequence && !episode.Confirmed)
                 {
                     long id = episode.InternalId;
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
