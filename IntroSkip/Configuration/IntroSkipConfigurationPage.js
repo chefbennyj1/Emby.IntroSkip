@@ -141,6 +141,7 @@
                     TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
                     TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
                     HasSequence: row.cells[5].querySelector('select').value,
+                    Confirmed: intro.Confirmed = true,
                     SeasonId: intro.SeasonId
                 }
                 //var url = 'UpdateTitleSequence';
