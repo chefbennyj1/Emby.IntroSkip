@@ -74,7 +74,7 @@ namespace IntroSkip.TitleSequence
         // Calculate the similarity of two fingerprints
         private static double CompareFingerprints(List<uint> f1, List<uint> f2)
         {
-            double dist = 0.0;
+            var dist = 0.0;
             if (f1.Count != f2.Count)
             {
                 return 0;
@@ -153,9 +153,9 @@ namespace IntroSkip.TitleSequence
             }
             else
             {
-                offset = offset * -1;
-                offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - Math.Abs(offset)));
-                offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - Math.Abs(offset)));
+                offset = Math.Abs(offset);
+                offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - offset));
+                offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - offset));
 
             }
 
@@ -267,18 +267,14 @@ namespace IntroSkip.TitleSequence
 
             //Added for Sam to test upper threshold changes
             var config = Plugin.Instance.Configuration;
-            var tup2 = FindContiguousRegion(hammingDistances, config.HammingDistanceThreshold); //TODO: Right here we say 8 as an 'upperLimit', what happens if we expect something bigger like 10??
-
-            
-            var start  = tup2.Item1;
-            var end    = tup2.Item2;
+            var (start, end) = FindContiguousRegion(hammingDistances, 8);
 
 
-            double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
+            var secondsPerSample = duration / fingerprint1.Count;
 
             var offsetInSeconds = offset * secondsPerSample;
             var commonRegionStart = start * secondsPerSample;
-            var commonRegionEnd = (end * secondsPerSample);
+            var commonRegionEnd = end * secondsPerSample;
 
             var firstFileRegionStart = 0.0;
             var firstFileRegionEnd = 0.0;
@@ -307,7 +303,7 @@ namespace IntroSkip.TitleSequence
                 
                 throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-            if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
+            if (commonRegionEnd - commonRegionStart < 10)
             {
                 
                 throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
@@ -320,13 +316,13 @@ namespace IntroSkip.TitleSequence
 
 
             episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart, MidpointRounding.AwayFromZero));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd, MidpointRounding.AwayFromZero));
+            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
+            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
 
 
             episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart, MidpointRounding.AwayFromZero));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd, MidpointRounding.AwayFromZero));
+            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
+            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
 
             return new List<TitleSequenceResult>()
             {

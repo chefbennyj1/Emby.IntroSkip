@@ -381,4 +381,3 @@ namespace IntroSkip.Chapters
     }
 
 }
-
