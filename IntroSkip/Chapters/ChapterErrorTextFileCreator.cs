@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,9 +46,7 @@ namespace IntroSkip.Chapters
             
             var filePathText = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
             var filePathXml = $"{configDir}/ChapterError{Separator}ChapterErrorList.xml";
-
-
-            //FileStream stream;
+            
 
             if (errors == null)
             {
@@ -55,17 +54,14 @@ namespace IntroSkip.Chapters
             }
             else
             {
-
-                foreach (var error in errors)
+                using (StreamWriter writer = new StreamWriter(filePath, true))
                 {
-                    var path = error.FilePathString;
-                    using (StreamWriter writer = new StreamWriter(filePath, true))
-
+                    foreach (var error in errors)
                     {
+                        var path = error.FilePathString;
+                   
                         Log.Debug("CHAPTER ERRORS TEXT FILE: FilePath = {0}", path);
-
                         writer.WriteLine(path);
-
                     }
                 }
             }

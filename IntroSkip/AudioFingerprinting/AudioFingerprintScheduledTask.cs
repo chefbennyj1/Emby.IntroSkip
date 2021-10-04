@@ -232,8 +232,7 @@ namespace IntroSkip.AudioFingerprinting
                                     {
                                         Duration = duration,
                                         Fingerprint = fingerPrintData,
-                                        HasSequence =
-                                            false, //Set this to true when we scan the fingerprint data in the other scheduled task
+                                        HasSequence = false, //Set this to true when we scan the fingerprint data in the other scheduled task
                                         IndexNumber = episode.IndexNumber,
                                         InternalId = episode.InternalId,
                                         SeasonId = seasonQuery.Items[seasonIndex].InternalId,
@@ -258,9 +257,6 @@ namespace IntroSkip.AudioFingerprinting
                                     stopWatch.Stop();
                                     Log.Error(ex.Message);
                                 }
-
-
-
 
                             });
                     }

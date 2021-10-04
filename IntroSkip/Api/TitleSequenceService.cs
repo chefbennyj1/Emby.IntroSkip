@@ -71,14 +71,21 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long InternalId { get; set; }
+            
             [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceStart { get; set; }
+            
             [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceEnd { get; set; }
+            
             [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool HasSequence { get; set; }
+            
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
+
+            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            public bool Confirmed { get; set; }
         }
 
         [Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
