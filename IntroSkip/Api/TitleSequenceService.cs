@@ -82,6 +82,8 @@ namespace IntroSkip.Api
             public bool HasSequence { get; set; }
             
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            public bool Confirmed { get; set; }
+            [ApiMember(Name = "Confirmed", Description = "The episode is confirmed by user", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
 
             [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
@@ -129,6 +131,7 @@ namespace IntroSkip.Api
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
             titleSequence.HasSequence = request.HasSequence;
+            titleSequence.Confirmed = request.Confirmed;
             titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
 
             try
