@@ -104,6 +104,8 @@
                 //enable ItemAdded Event Listeners
                 var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
 
+                var chkEnableFastDetect = view.querySelector('#enableFastDetect');
+
                 //enable detection task auto run when fingerprinting is complete
                 var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
 
@@ -116,6 +118,8 @@
                     chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
 
                     chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
+
+                    chkEnableFastDetect.checked = config.FastDetect;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
@@ -161,6 +165,13 @@
                     loading.hide();
                 });
 
+                chkEnableFastDetect.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.FastDetect = chkEnableFastDetect.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
 
                 fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
