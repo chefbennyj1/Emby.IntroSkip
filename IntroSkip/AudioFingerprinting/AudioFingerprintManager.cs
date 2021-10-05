@@ -60,15 +60,35 @@ namespace IntroSkip.AudioFingerprinting
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
+            /*
+              gausssize, g
+              Set the Gaussian filter window size. In range from 3 to 301, must be odd number. Default is 31. 
+              Probably the most important parameter of the Dynamic Audio Normalizer is the window size of the Gaussian smoothing filter. 
+              The filter’s window size is specified in frames, centered around the current frame. For the sake of simplicity, this must be an odd number. 
+              Consequently, the default value of 31 takes into account the current frame, as well as the 15 preceding frames and the 15 subsequent frames. 
+              Using a larger window results in a stronger smoothing effect and thus in less gain variation, i.e. slower gain adaptation. 
+              Conversely, using a smaller window results in a weaker smoothing effect and thus in more gain variation, i.e. faster gain adaptation. 
+              In other words, the more you increase this value, the more the Dynamic Audio Normalizer will behave like a "traditional" normalization filter. 
+              On the contrary, the more you decrease this value, the more the Dynamic Audio Normalizer will behave like a dynamic range compressor.
 
+              compress, s
+              Set the compress factor. In range from 0.0 to 30.0. Default is 0.0.
+
+              peak, p
+              Set the target peak value. This specifies the highest permissible magnitude level for the normalized audio input. 
+
+             maxgain, m
+             Set the maximum gain factor. In range from 1.0 to 100.0. Default is 10.0.
+             */
             var args = new[]
             {
                 $"-ss {titleSequenceStart}",
                 $"-t 00:{duration}:00",
                 $"-i \"{input}\"",
                 "-ac 1",
-                "-acodec pcm_s16le", //What happens if we encode mono AAC?
+                "-acodec pcm_s16le", 
                 "-ar 16000", //11025
+                //"-af \"dynaudnorm=p=0.75:m=10.0:s=8:g=3\"",
                 "-c:v nul",
                 "-f chromaprint",
                 "-fp_format raw",

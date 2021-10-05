@@ -47,20 +47,20 @@ namespace IntroSkip.TitleSequence
         }
 
         // Calculate Hamming distance between to integers (bit difference)
-        private static uint GetHammingDistance(uint n1, uint n2)
-        {
-            var x = n1 ^ n2;
-            uint setBits = 0;
-            while (x > 0)
-            {
-                setBits += x & 1;
-                x >>= 1;
-            }
+        //private static uint GetHammingDistance(uint n1, uint n2)
+        //{
+        //    var x = n1 ^ n2;
+        //    uint setBits = 0;
+        //    while (x > 0)
+        //    {
+        //        setBits += x & 1;
+        //        x >>= 1;
+        //    }
 
-            return setBits;
-        }
+        //    return setBits;
+        //}
 
-        private static uint GetHammingDistance2(uint x, uint y)
+        private static uint GetHammingDistance(uint x, uint y)
         {
             var i = x ^ y;
             i -= ((i >> 1) & 0x55555555);
@@ -74,7 +74,7 @@ namespace IntroSkip.TitleSequence
         // Calculate the similarity of two fingerprints
         private static double CompareFingerprints(List<uint> f1, List<uint> f2)
         {
-            var dist = 0.0;
+            double dist = 0.0;
             if (f1.Count != f2.Count)
             {
                 return 0;
@@ -82,7 +82,7 @@ namespace IntroSkip.TitleSequence
 
             foreach (var i in Enumerable.Range(0, f1.Count))
             {
-                var hammingDistance = GetHammingDistance2(f1[i], f2[i]);
+                var hammingDistance = GetHammingDistance(f1[i], f2[i]);
                 dist += hammingDistance;
             }
 
@@ -153,9 +153,9 @@ namespace IntroSkip.TitleSequence
             }
             else
             {
-                offset = Math.Abs(offset);
-                offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - offset));
-                offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - offset));
+                offset = offset * -1;
+                offsetCorrectedF1.AddRange(fingerprint1.GetRange(0, fingerprint1.Count - Math.Abs(offset)));
+                offsetCorrectedF2.AddRange(fingerprint2.GetRange(offset, fingerprint2.Count - Math.Abs(offset)));
 
             }
 
@@ -262,19 +262,23 @@ namespace IntroSkip.TitleSequence
             var f2 = tup1.Item2;
 
             // ReSharper disable once TooManyChainedReferences
-            List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance2(f1[i], f2[i])).ToList();
+            List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
            
 
             //Added for Sam to test upper threshold changes
             var config = Plugin.Instance.Configuration;
-            var (start, end) = FindContiguousRegion(hammingDistances, 8);
+            var tup2 = FindContiguousRegion(hammingDistances, 8); 
+
+            
+            var start  = tup2.Item1;
+            var end    = tup2.Item2;
 
 
-            var secondsPerSample = duration / fingerprint1.Count;
+            double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
             var offsetInSeconds = offset * secondsPerSample;
             var commonRegionStart = start * secondsPerSample;
-            var commonRegionEnd = end * secondsPerSample;
+            var commonRegionEnd = (end * secondsPerSample);
 
             var firstFileRegionStart = 0.0;
             var firstFileRegionEnd = 0.0;
@@ -303,7 +307,7 @@ namespace IntroSkip.TitleSequence
                 
                 throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
-            if (commonRegionEnd - commonRegionStart < 10)
+            if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
             {
                 
                 throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
@@ -316,13 +320,13 @@ namespace IntroSkip.TitleSequence
 
 
             episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(firstFileRegionEnd));
+            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart));
+            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd));
 
 
             episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Round(secondFileRegionEnd));
+            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart));
+            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd));
 
             return new List<TitleSequenceResult>()
             {
