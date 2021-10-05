@@ -168,7 +168,7 @@
                 chkEnableFastDetect.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.FastDetect = chkEnableFastDetect.value;
+                        config.FastDetect = chkEnableFastDetect.checked;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
