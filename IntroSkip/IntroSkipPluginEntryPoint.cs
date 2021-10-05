@@ -10,6 +10,7 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 
@@ -67,20 +68,17 @@ namespace IntroSkip
                 //Run the Detection task after fingerprinting
                 case "Episode Audio Fingerprinting":
                     if (!Plugin.Instance.Configuration.EnableIntroDetectionAutoRun) return;
-                    TaskManager.Execute(
-                        TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection"),
+                    TaskManager.Execute(TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection"),
                         new TaskOptions());
                     break;
 
-                //Run the Chapters after detection
+                    //Run the Chapters after detection
                 case "Episode Title Sequence Detection":
                     if (!Plugin.Instance.Configuration.EnableChapterInsertion) return;
-                    TaskManager.Execute(
-                        TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "IntroSkip Chapter Insertion"),
-                        new TaskOptions());
+                    TaskManager.Execute(TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "IntroSkip Chapter Insertion"),
+                            new TaskOptions());
                     break;
             }
-            
         }
 
         
