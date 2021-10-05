@@ -352,8 +352,9 @@ namespace IntroSkip.TitleSequence
             var results = new ConcurrentDictionary<int, TitleSequenceResult>();
             titleSequences.AsParallel().WithDegreeOfParallelism(4).WithCancellation(cancellationToken).ForAll(result =>
             {
-                if (result.TitleSequenceStart == TimeSpan.Zero)
+                if (result.TitleSequenceStart - TimeSpan.FromSeconds(5) <= TimeSpan.Zero)
                 {
+                    result.TitleSequenceStart = TimeSpan.Zero;
                     result.TitleSequenceEnd = common;
                 }
 
