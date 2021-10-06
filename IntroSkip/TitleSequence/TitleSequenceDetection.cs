@@ -47,7 +47,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Calculate Hamming distance between to integers (bit difference)
-        //private static uint GetHammingDistance(uint n1, uint n2)
+        //private static double GetHammingDistance(uint n1, uint n2)
         //{
         //    var x = n1 ^ n2;
         //    uint setBits = 0;
@@ -60,7 +60,7 @@ namespace IntroSkip.TitleSequence
         //    return setBits;
         //}
 
-        private static uint GetHammingDistance(uint x, uint y)
+        private static double GetHammingDistance(uint x, uint y)
         {
             var i = x ^ y;
             i -= ((i >> 1) & 0x55555555);
@@ -125,7 +125,7 @@ namespace IntroSkip.TitleSequence
                         y = Clip(y + 1, 0, length - 1);
                     }
 
-                    diff = diff - 1;
+                    diff -= 1;
                 }
                 catch (Exception ex)
                 {
@@ -163,7 +163,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Find the intro region based on Hamming distances
-        private static Tuple<int, int> FindContiguousRegion(List<uint> hammingDistances, int upperLimit)
+        private static Tuple<int, int> FindContiguousRegion(List<double> hammingDistances, int upperLimit)
         {
             var start = -1;
             var end = -1;
@@ -189,7 +189,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Look at next elements in the array and determine if they also fall below the upper limit
-        private static bool nextOnesAreAlsoSmall(List<uint> hammingDistances, int index, int upperLimit)
+        private static bool nextOnesAreAlsoSmall(List<double> hammingDistances, int index, int upperLimit)
         {
             if (index + 3 < hammingDistances.Count())
             {
@@ -262,7 +262,7 @@ namespace IntroSkip.TitleSequence
             var f2 = tup1.Item2;
 
             // ReSharper disable once TooManyChainedReferences
-            List<uint> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
+            List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
            
 
             //Added for Sam to test upper threshold changes
