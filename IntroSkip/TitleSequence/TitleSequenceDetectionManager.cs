@@ -398,12 +398,13 @@ namespace IntroSkip.TitleSequence
                     var startDiff = commonStart.Seconds - result.TitleSequenceStart.Seconds;
                     var endDiff = commonEnd.Seconds - result.TitleSequenceEnd.Seconds;
 
+                    if (durationDiff > 10) return;
                     //Add a weight to each result, by adding up the differences between them. Only Absolute Numbers
                     weightedResults.TryAdd(durationDiff + startDiff + endDiff, result);
 
                 });
 
-            return weightedResults[weightedResults.Keys.Min()]; //<-- Take the result with the smallest weight. The smallest difference.
+            return weightedResults[weightedResults.Keys.Max()]; //<-- Take the result with the smallest weight. The smallest difference.
         }
         
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, TitleSequenceResult>> groups)
