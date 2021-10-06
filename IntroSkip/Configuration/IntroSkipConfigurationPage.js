@@ -144,12 +144,7 @@
                     Confirmed: intro.Confirmed = true,
                     SeasonId: intro.SeasonId
                 }
-                //var url = 'UpdateTitleSequence';
-                //url += '?InternalId=' + id;
-                //url += '&TitleSequenceStart=' + row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
-                //url += '&TitleSequenceEnd=' + row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S";
-                //url += '&HasSequence=' + row.cells[5].querySelector('select').value;
-                //url += '&SeasonId=' + intro.SeasonId;
+                
                 ApiClient.updateTitleSequence(options).then(() => {
 
                     //If chapters are enabled, refresh the items metadata, and update the chapter.
@@ -224,7 +219,7 @@
                     
 
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
-                    html += '<span>Save</span>';
+                    html += '<span>Confirm</span>';
                     html += '</button>';
 
                     html += '</td>';
