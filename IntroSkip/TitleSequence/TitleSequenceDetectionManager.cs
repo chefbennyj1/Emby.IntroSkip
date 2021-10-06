@@ -322,7 +322,7 @@ namespace IntroSkip.TitleSequence
                             var common = CommonTimeSpan(sequenceDurationGroups);
 
                             Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } is: { common }");
-                            episodeResults.AsParallel().WithDegreeOfParallelism(4).WithCancellation(cancellationToken)
+                            episodeResults.AsParallel().WithDegreeOfParallelism(2).WithCancellation(cancellationToken)
                                 .ForAll(
                                     item =>
                                     {
@@ -352,7 +352,7 @@ namespace IntroSkip.TitleSequence
             var results = new ConcurrentDictionary<int, TitleSequenceResult>();
             titleSequences.AsParallel().WithDegreeOfParallelism(4).WithCancellation(cancellationToken).ForAll(result =>
             {
-                if (result.TitleSequenceStart - TimeSpan.FromSeconds(5) <= TimeSpan.Zero)
+                if (result.TitleSequenceStart - TimeSpan.FromSeconds(10) <= TimeSpan.Zero)
                 {
                     result.TitleSequenceStart = TimeSpan.Zero;
                     result.TitleSequenceEnd = common;
@@ -370,12 +370,11 @@ namespace IntroSkip.TitleSequence
                 var startDiff = commonStart.Seconds - result.TitleSequenceStart.Seconds;
                 var endDiff = commonEnd.Seconds - result.TitleSequenceEnd.Seconds;
 
-                results.TryAdd(Math.Abs(durationDiff) + Math.Abs(startDiff) + Math.Abs(endDiff), result); 
-                
-                
+                results.TryAdd(Math.Abs(durationDiff) + Math.Abs(startDiff) + Math.Abs(endDiff), result);
+
             });
             
-            return results[results.Keys.Min()];
+            return results[results.Keys.Max()];
         }
         
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, TitleSequenceResult>> groups)
