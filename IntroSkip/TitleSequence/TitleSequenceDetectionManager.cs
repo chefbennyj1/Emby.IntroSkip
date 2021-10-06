@@ -199,19 +199,20 @@ namespace IntroSkip.TitleSequence
                                     continue;
                                 }
 
-                                if (!Plugin.Instance.Configuration.FastDetect)
+
+                                if (Plugin.Instance.Configuration.FastDetect)
                                 {
                                     // If we have valid title sequence data for both items move on
-                                    if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) &&
-                                        dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
+                                    if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) && dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
                                     {
-                                        if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId).HasSequence &&
+                                        if (dbEpisodes.FirstOrDefault(i => i.InternalId == unmatchedItem.InternalId).HasSequence && 
                                             dbEpisodes.FirstOrDefault(i => i.InternalId == comparableItem.InternalId).HasSequence)
                                         {
                                             continue;
                                         }
                                     }
                                 }
+
 
                                 try
                                 {
@@ -242,24 +243,27 @@ namespace IntroSkip.TitleSequence
                                         episodeResults[unmatchedItem.InternalId].Add(
                                             sequences.FirstOrDefault(s => s.InternalId == unmatchedItem.InternalId));
 
+
                                         episodeResults[episodeQuery.Items[episodeComparableIndex].InternalId]
                                             .Add(sequences.FirstOrDefault(s =>
                                                 s.InternalId == episodeQuery.Items[episodeComparableIndex].InternalId));
                                     }
+
                                     else
                                     {
                                         foreach (var sequence in sequences)
                                         {
                                             //Just remove these entries in the episode list (if they exist) and add the new result back. Easier!
-                                            if (dbEpisodes.Exists(item => item.IndexNumber == sequence.IndexNumber &&
-                                                                          item.SeasonId == sequence.SeasonId))
+                                            if (dbEpisodes.Exists(item =>
+                                                item.IndexNumber == sequence.IndexNumber &&
+                                                item.SeasonId == sequence.SeasonId))
                                             {
-                                                dbEpisodes.RemoveAll(item => item.IndexNumber == sequence.IndexNumber &&
-                                                                             item.SeasonId == sequence.SeasonId);
+                                                dbEpisodes.RemoveAll(item =>
+                                                    item.IndexNumber == sequence.IndexNumber &&
+                                                    item.SeasonId == sequence.SeasonId);
                                             }
 
                                             dbEpisodes.Add(sequence);
-
                                         }
                                     }
 
@@ -295,48 +299,66 @@ namespace IntroSkip.TitleSequence
                             }
                         });
 
-                        if (Plugin.Instance.Configuration.FastDetect)
+                        switch (Plugin.Instance.Configuration.FastDetect)
                         {
-                            foreach (var episode in dbEpisodes)
+                            case true:
                             {
-                                //If this is the only episode don't mark it as processed.
-                                //Wait until there are more episodes available for the season.
-                                if (episodeQuery.TotalRecordCount > 1)
+                                foreach (var episode in dbEpisodes)
                                 {
-                                    episode.Processed = true; //<-- now we won't process episodes again over and over
+                                    //If this is the only episode don't mark it as processed.
+                                    //Wait until there are more episodes available for the season.
+                                    if (episodeQuery.TotalRecordCount > 1)
+                                    {
+                                        episode.Processed = true; //<-- now we won't process episodes again over and over
+                                    }
+
+                                    repository.SaveResult(episode, cancellationToken);
+
+                                    var found = LibraryManager.GetItemById(episode.InternalId); //<-- This will take up time, and could be removed later
+                                    Log.Info(
+                                        $"{ found.Parent.Parent.Name } S: { found.Parent.IndexNumber } E: { found.IndexNumber } title sequence successful.");
                                 }
 
-                                repository.SaveResult(episode, cancellationToken);
-
-                                var found = LibraryManager.GetItemById(episode.InternalId); //<-- This will take up time, and could be removed later
-                                Log.Info($"{found.Parent.Parent.Name} S: {found.Parent.IndexNumber} E: {found.IndexNumber} title sequence successful.");
-
+                                break;
+                            }
+                            case false:
+                            {
+                                //Find our common title sequence duration.
+                                var common = TimeSpan.Zero;
+                               
+                                //All our results from every comparison
+                                var fullResults = new List<TitleSequenceResult>();
+                                episodeResults.ToList().ForEach(item => fullResults.AddRange(item.Value));
                                 
+                                //Group the results by the duration if the intro
+                                var sequenceDurationGroups = fullResults.GroupBy(i => i.TitleSequenceEnd - i.TitleSequenceStart);
+                                common = CommonTimeSpan(sequenceDurationGroups);
+                                
+                                Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } intro is: { common } - calculated from: { fullResults.Count } results");
+
+                                episodeResults
+                                    .AsParallel()
+                                    .WithDegreeOfParallelism(2)
+                                    .WithCancellation(cancellationToken)
+                                    .ForAll(
+                                        item =>
+                                        {
+                                            var titleSequence = GetBestTitleSequenceResult(common, item.Value, cancellationToken);
+                                            if (episodeQuery.TotalRecordCount > 1)
+                                            {
+                                                titleSequence.Processed = true; //<-- now we won't process episodes again over and over
+                                            }
+                                            repository.SaveResult(titleSequence, cancellationToken);
+                                            var e = LibraryManager.GetItemById(titleSequence.InternalId);
+                                            Log.Debug($"DETECTION: Best result:  {season.Parent.Name} - { season.Name } E:{e.IndexNumber} \nSTART is: { titleSequence.TitleSequenceStart } \nEND: {titleSequence.TitleSequenceEnd}");
+
+                                        });
+
+                                episodeResults.Clear();
+                                break;
                             }
                         }
-                        else
-                        {
-                            Log.Debug($"DETECTION: Checking duration groups for {season.Parent.Name} - { season.Name }");
-                        
-                            var sequenceDurationGroups = dbResults.Items.GroupBy(i => i.TitleSequenceEnd - i.TitleSequenceStart);
-                            var common = CommonTimeSpan(sequenceDurationGroups);
 
-                            Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } is: { common }");
-                            episodeResults.AsParallel().WithDegreeOfParallelism(2).WithCancellation(cancellationToken)
-                                .ForAll(
-                                    item =>
-                                    {
-                                        var titleSequence = GetBestTitleSequenceResult(common, item.Value, cancellationToken);
-                                        if (episodeQuery.TotalRecordCount > 1)
-                                        {
-                                            titleSequence.Processed = true; //<-- now we won't process episodes again over and over
-                                        }
-                                        repository.SaveResult(titleSequence, cancellationToken);
-                                        var e = LibraryManager.GetItemById(titleSequence.InternalId);
-                                        Log.Debug($"DETECTION: Best result:  {season.Parent.Name} - { season.Name } E:{e.IndexNumber} \nSTART is: { titleSequence.TitleSequenceStart } \nEND: {titleSequence.TitleSequenceEnd}");
-                                    });
-                            episodeResults.Clear();
-                        }
                         dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = season.InternalId });
                         Clean(dbResults.Items.ToList(), season, repository, cancellationToken);
                     }
@@ -345,36 +367,44 @@ namespace IntroSkip.TitleSequence
             
             progress.Report(100.0);
         }
+        
 
         private TitleSequenceResult GetBestTitleSequenceResult(TimeSpan common,
             ConcurrentBag<TitleSequenceResult> titleSequences, CancellationToken cancellationToken)
         {
-            var results = new ConcurrentDictionary<int, TitleSequenceResult>();
-            titleSequences.AsParallel().WithDegreeOfParallelism(4).WithCancellation(cancellationToken).ForAll(result =>
-            {
-                if (result.TitleSequenceStart - TimeSpan.FromSeconds(10) <= TimeSpan.Zero)
+            var weightedResults = new ConcurrentDictionary<int, TitleSequenceResult>();
+            var commonStart = TimeSpan.Zero;
+            var commonEnd = TimeSpan.Zero;
+            titleSequences
+                .AsParallel()
+                .WithDegreeOfParallelism(2)
+                .WithCancellation(cancellationToken)
+                .ForAll(result =>
                 {
-                    result.TitleSequenceStart = TimeSpan.Zero;
-                    result.TitleSequenceEnd = common;
-                }
+                    if (result.TitleSequenceStart - TimeSpan.FromSeconds(10) <= TimeSpan.Zero)
+                    {
+                        result.TitleSequenceStart = TimeSpan.Zero;
+                        result.TitleSequenceEnd = common;
+                    }
 
-                var duration = result.TitleSequenceEnd - result.TitleSequenceStart;
-                
-                var startGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceStart);
-                var commonStart = CommonTimeSpan(startGroups);
+                    var duration = result.TitleSequenceEnd - result.TitleSequenceStart;
 
-                var endGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd);
-                var commonEnd = CommonTimeSpan(endGroups);
-                
-                var durationDiff = common.Seconds - duration.Seconds;
-                var startDiff = commonStart.Seconds - result.TitleSequenceStart.Seconds;
-                var endDiff = commonEnd.Seconds - result.TitleSequenceEnd.Seconds;
+                    var startGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceStart);
+                    commonStart = CommonTimeSpan(startGroups);
 
-                results.TryAdd(Math.Abs(durationDiff) + Math.Abs(startDiff) + Math.Abs(endDiff), result);
+                    var endGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd);
+                    commonEnd = CommonTimeSpan(endGroups);
 
-            });
-            
-            return results[results.Keys.Max()];
+                    var durationDiff = common.Seconds - duration.Seconds;
+                    var startDiff = commonStart.Seconds - result.TitleSequenceStart.Seconds;
+                    var endDiff = commonEnd.Seconds - result.TitleSequenceEnd.Seconds;
+
+                    //Add a weight to each result, by adding up the differences between them. Only Absolute Numbers
+                    weightedResults.TryAdd(Math.Abs(durationDiff) + Math.Abs(startDiff) + Math.Abs(endDiff), result);
+
+                });
+
+            return weightedResults[weightedResults.Keys.Min()]; //<-- Take the result with the smallest weight. The smallest difference.
         }
         
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, TitleSequenceResult>> groups)
