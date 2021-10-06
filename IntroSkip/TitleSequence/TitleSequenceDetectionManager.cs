@@ -373,8 +373,7 @@ namespace IntroSkip.TitleSequence
             ConcurrentBag<TitleSequenceResult> titleSequences, CancellationToken cancellationToken)
         {
             var weightedResults = new ConcurrentDictionary<int, TitleSequenceResult>();
-            var commonStart = TimeSpan.Zero;
-            var commonEnd = TimeSpan.Zero;
+            
             titleSequences
                 .AsParallel()
                 .WithDegreeOfParallelism(2)
@@ -390,17 +389,17 @@ namespace IntroSkip.TitleSequence
                     var duration = result.TitleSequenceEnd - result.TitleSequenceStart;
 
                     var startGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceStart);
-                    commonStart = CommonTimeSpan(startGroups);
+                    var commonStart = CommonTimeSpan(startGroups);
 
                     var endGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd);
-                    commonEnd = CommonTimeSpan(endGroups);
+                    var commonEnd = CommonTimeSpan(endGroups);
 
                     var durationDiff = common.Seconds - duration.Seconds;
                     var startDiff = commonStart.Seconds - result.TitleSequenceStart.Seconds;
                     var endDiff = commonEnd.Seconds - result.TitleSequenceEnd.Seconds;
 
                     //Add a weight to each result, by adding up the differences between them. Only Absolute Numbers
-                    weightedResults.TryAdd(Math.Abs(durationDiff) + Math.Abs(startDiff) + Math.Abs(endDiff), result);
+                    weightedResults.TryAdd(durationDiff + startDiff + endDiff, result);
 
                 });
 
