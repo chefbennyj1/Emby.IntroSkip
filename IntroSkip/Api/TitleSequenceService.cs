@@ -41,6 +41,7 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
+            [ApiMember(Name = "RemoveAll", Description = "Remove all, or keep edited content", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
             public bool RemoveAll { get; set; }
         }
 
