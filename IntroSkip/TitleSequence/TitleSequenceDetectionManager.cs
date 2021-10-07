@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -120,8 +121,7 @@ namespace IntroSkip.TitleSequence
                         try
                         {
 
-                            dbResults = repository.GetResults(new TitleSequenceResultQuery()
-                            { SeasonInternalId = season.InternalId });
+                            dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = season.InternalId });
 
                         }
                         catch (Exception ex)
@@ -142,8 +142,7 @@ namespace IntroSkip.TitleSequence
                         });
 
 
-                        var dbEpisodes = new List<TitleSequenceResult>();
-                        dbEpisodes.AddRange(dbResults.Items);
+                        var dbEpisodes = dbResults.Items.ToList();
 
                         if (!dbEpisodes.Any()) //<-- this should not happen unless the fingerprint task was never run on this season. 
                         {
@@ -177,10 +176,14 @@ namespace IntroSkip.TitleSequence
                         }
 
                         Log.Info($" will process {unmatched.Count()} episodes for {season.Parent.Name} - {season.Name}.");
+                        
+                        var fastDetect = Plugin.Instance.Configuration.FastDetect;
+
+                        Log.Info($"Using: {(fastDetect ? "Fast Detection..." : " Deep Detection...")}");
 
                         var episodeResults = new ConcurrentDictionary<long, ConcurrentBag<TitleSequenceResult>>();
 
-                        unmatched.AsParallel().WithCancellation(cancellationToken).WithDegreeOfParallelism(4).ForAll((unmatchedItem) =>
+                        unmatched.AsParallel().WithCancellation(cancellationToken).WithDegreeOfParallelism(2).ForAll((unmatchedItem) =>
                         {
                             //Compare the unmatched episode  with every other episode in the season until there is a match.
                             for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
@@ -200,7 +203,7 @@ namespace IntroSkip.TitleSequence
                                 }
 
 
-                                if (Plugin.Instance.Configuration.FastDetect)
+                                if (fastDetect)
                                 {
                                     // If we have valid title sequence data for both items move on
                                     if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) && dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
@@ -225,7 +228,7 @@ namespace IntroSkip.TitleSequence
 
                                     var sequences = titleSequenceDetection.DetectTitleSequence(episodeQuery.Items[episodeComparableIndex], unmatchedItem, dbResults);
                                     
-                                    if (!Plugin.Instance.Configuration.FastDetect)
+                                    if (!fastDetect)
                                     {
                                         if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
                                         {
@@ -267,7 +270,6 @@ namespace IntroSkip.TitleSequence
                                         }
                                     }
 
-
                                     stopWatch.Stop();
 
                                     // ReSharper disable once AccessToModifiedClosure
@@ -278,12 +280,19 @@ namespace IntroSkip.TitleSequence
                                 }
                                 catch (TitleSequenceInvalidDetectionException)
                                 {
+
                                     //Keep going!
                                     if (episodeComparableIndex != episodeQuery.Items.Count() - 1) continue;
 
                                     //We have exhausted all our episode comparing
-                                    if (dbEpisodes.Exists(item => item.InternalId == unmatchedItem.InternalId))
-                                        continue;
+                                    if (fastDetect)
+                                    {
+                                        if (dbEpisodes.Exists(item => item.InternalId == unmatchedItem.InternalId)) continue;
+                                    }
+                                    else
+                                    {
+                                        if (episodeResults.ContainsKey(unmatchedItem.InternalId)) continue;
+                                    }
 
                                     Log.Info(
                                         $"{unmatchedItem.Parent.Parent.Name} S: {unmatchedItem.Parent.IndexNumber} E: {unmatchedItem.IndexNumber} currently has no title sequence."); //<-- we never get this log entry??
@@ -299,7 +308,7 @@ namespace IntroSkip.TitleSequence
                             }
                         });
 
-                        switch (Plugin.Instance.Configuration.FastDetect)
+                        switch (fastDetect)
                         {
                             case true:
                             {
@@ -323,9 +332,15 @@ namespace IntroSkip.TitleSequence
                             }
                             case false:
                             {
+                                
                                 //Find our common title sequence duration.
                                 var common = TimeSpan.Zero;
-                               
+
+                                if (episodeResults.Count == 0) //<--There are no results to scan.
+                                {
+                                    return;
+                                }
+
                                 //All our results from every comparison
                                 var fullResults = new List<TitleSequenceResult>();
                                 episodeResults.ToList().ForEach(item => fullResults.AddRange(item.Value));
@@ -333,8 +348,8 @@ namespace IntroSkip.TitleSequence
                                 //Group the results by the duration if the intro
                                 var sequenceDurationGroups = fullResults.GroupBy(i => i.TitleSequenceEnd - i.TitleSequenceStart);
                                 common = CommonTimeSpan(sequenceDurationGroups);
-                                
                                 Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } intro is: { common } - calculated from: { fullResults.Count } results");
+                                fullResults.Clear(); //<--Free up memory
 
                                 episodeResults
                                     .AsParallel()
@@ -354,11 +369,11 @@ namespace IntroSkip.TitleSequence
 
                                         });
 
-                                episodeResults.Clear();
+                                
                                 break;
                             }
                         }
-
+                        episodeResults.Clear();
                         dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = season.InternalId });
                         Clean(dbResults.Items.ToList(), season, repository, cancellationToken);
                     }
