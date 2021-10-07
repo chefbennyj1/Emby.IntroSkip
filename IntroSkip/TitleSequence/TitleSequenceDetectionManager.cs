@@ -386,6 +386,7 @@ namespace IntroSkip.TitleSequence
                         result.TitleSequenceEnd = common;
                     }
 
+
                     var duration = result.TitleSequenceEnd - result.TitleSequenceStart;
 
                     var startGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceStart);
