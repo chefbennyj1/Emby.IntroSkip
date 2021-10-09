@@ -35,22 +35,21 @@ namespace IntroSkip.TitleSequence
             }
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
-
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             try
             {
-                var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+                
                 TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
-
-                var repo = (IDisposable) repository;
-                repo.Dispose();
-
+                
             }
             catch (Exception ex)
             {
                 Log.Warn(ex.Message);
             }
 
+            var repo = (IDisposable) repository;
+            repo.Dispose();
             progress.Report(100.0);
         }
 

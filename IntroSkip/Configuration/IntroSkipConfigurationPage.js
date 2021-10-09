@@ -133,34 +133,40 @@
             
 
         function saveIntro(row, view) {
-            var id = row.dataset.id;
-            ApiClient.getJSON(ApiClient.getUrl('EpisodeTitleSequence?InternalId=' + id)).then(intro => {
-                
-                var options = {
-                    InternalId: id,
-                    TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
-                    TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
-                    HasSequence: row.cells[5].querySelector('select').value,
-                    Confirmed: intro.Confirmed = true,
-                    SeasonId: intro.SeasonId
-                }
-                
-                ApiClient.updateTitleSequence(options).then(() => {
+            return new Promise((resolve, reject) => {
+                var id = row.dataset.id;
+                ApiClient.getJSON(ApiClient.getUrl('EpisodeTitleSequence?InternalId=' + id)).then(intro => {
 
-                    //If chapters are enabled, refresh the items metadata, and update the chapter.
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        if (config.EnableChapterInsertion) {
-                            ApiClient.refreshMetadata(id).then(() => {
-                                ApiClient.updateChapter(id).then(complete => {
-                                    Dashboard.processPluginConfigurationUpdateResult(complete);
+                    var options = {
+                        InternalId: id,
+                        TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT")
+                            .replace(":", "M") +
+                            "S",
+                        TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT")
+                            .replace(":", "M") +
+                            "S",
+                        HasSequence: row.cells[5].querySelector('select').value,
+                        Confirmed: intro.Confirmed = true,
+                        SeasonId: intro.SeasonId
+                    }
+
+                    ApiClient.updateTitleSequence(options).then(() => {
+
+                        //If chapters are enabled, refresh the items metadata, and update the chapter.
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            if (config.EnableChapterInsertion) {
+                                ApiClient.refreshMetadata(id).then(() => {
+                                    ApiClient.updateChapter(id).then(complete => {
+                                        Dashboard.processPluginConfigurationUpdateResult(complete);
+                                        resolve(true);
+                                    });
                                 });
-                            });
-                        }
-                    });
+                            }
+                        });
 
+                    });
                 });
             });
-
         }
 
         function getIntros(seasonId) {
@@ -169,6 +175,13 @@
                     resolve(result);
                 });
             });
+        }
+
+        function getExtractedThumbImage(id, imageFrame, isStart) {
+            //return new Promise((resolve, reject) => {
+                var url = ApiClient.getUrl('ExtractThumbImage?InternalId=' + id + "&ImageFrame=" + encodeURIComponent(imageFrame) + "&IsStart=" + isStart);
+                return url;
+            //});
         }
 
         function imageLink(baseItem) {
@@ -211,9 +224,10 @@
                     html += '</div>';
 
                     html += '</td>';
-                   
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + startTimespan.minutes + ":" + startTimespan.seconds + '</div></td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + "00:" + endTimespan.minutes + ":" + endTimespan.seconds + '<div></td>';
+                    var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
+                    var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><img style="width:110px" src="' + getExtractedThumbImage(intro.InternalId, start, true) + '"/><div contenteditable>' + start + '</div></td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><img style="width:110px" src="' + getExtractedThumbImage(intro.InternalId, end, false) + '"/><div contenteditable>' + end + '</div></td>';
                     
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
                     
@@ -241,7 +255,13 @@
                         btn.addEventListener('click', (elem) => {
                             elem.preventDefault();
                             var row = elem.target.closest('tr');
-                            saveIntro(row, view);
+                            saveIntro(row, view).then(() => {
+                                var seasonSelect = view.querySelector('#selectEmbySeason');
+                                var _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                                getIntros(_seasonId).then(result => {
+                                    reloadItems(result.TitleSequences, view);
+                                });
+                            });
                         });
                     });
 

@@ -7,14 +7,36 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Controller.Net;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Mime;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
 
 namespace IntroSkip.Api
 {
-    public class TitleSequenceService : IService
+    public class TitleSequenceService : IService, IHasResultFactory
     {
+        
+        [Route("/ExtractThumbImage", "GET", Summary = "Image jpg resource frame")]
+        public class ExtractThumbImage : IReturn<object>
+        {
+            [ApiMember(Name = "ImageFrame", Description = "The image frame to extract from the stream", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public string ImageFrame { get; set; }
+
+            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "long[]", ParameterType = "query", Verb = "GET")]
+            public long InternalId { get; set; }
+
+            [ApiMember(Name = "IsStart", Description = "Is the Title SequenceStart", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
+            public bool IsStart { get; set; }
+            public object Img { get; set; }
+        }
 
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
@@ -22,14 +44,7 @@ namespace IntroSkip.Api
             [ApiMember(Name = "InternalIds", Description = "Comma delimited list Internal Ids of the series to scan", IsRequired = true, DataType = "long[]", ParameterType = "query", Verb = "POST")]
             public long[] InternalIds { get; set; }
         }
-
-        //[Route("/RemoveIntro", "DELETE", Summary = "Remove Episode Title Sequence Start and End Data")]
-        //public class RemoveTitleSequenceRequest : IReturn<string>
-        //{
-        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-        //    public long InternalId { get; set; }
-        //}
-
+        
         [Route("/RemoveAll", "DELETE", Summary = "Remove All Episode Title Sequence Data")]
         public class RemoveAllRequest : IReturn<string>
         {
@@ -44,13 +59,7 @@ namespace IntroSkip.Api
             [ApiMember(Name = "RemoveAll", Description = "Remove all, or keep edited content", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
             public bool RemoveAll { get; set; }
         }
-
-        //[Route("/RemoveEpisodeTitleSequenceData", "DELETE", Summary = "Remove Episode Title Sequence data")]
-        //public class RemoveTitleSequenceDataRequest : IReturn<string>
-        //{
-        //    [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode title sequence data to remove", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-        //    public long InternalId { get; set; }
-        //}
+        
 
         [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
@@ -99,14 +108,52 @@ namespace IntroSkip.Api
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
 
-        //private ILibraryManager LibraryManager { get; }
+        private ILibraryManager LibraryManager { get; }
+
+        public IHttpResultFactory ResultFactory { get; set; }
+
+        private IFfmpegManager FfmpegManager { get; set; }
+
+        public IRequest Request { get; set; }
+      
+       
 
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceService(IJsonSerializer json, ILogManager logMan)
+        public TitleSequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager)
         {
             JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
-            //LibraryManager = libraryManager;
+            LibraryManager = libraryManager;
+            ResultFactory = resultFactory;
+            FfmpegManager = ffmpegManager;
+        }
+
+        public object Get(ExtractThumbImage request)
+        {
+            var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
+            var ffmpegPath = ffmpegConfiguration.EncoderPath;
+            var item = LibraryManager.GetItemById(request.InternalId);
+            var requestFrame = TimeSpan.Parse(request.ImageFrame);
+            requestFrame = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
+            var frame = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
+            var args = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            using (var process = new Process { StartInfo = procStartInfo })
+            {
+                process.Start();
+
+                FileStream output = process.StandardOutput.BaseStream as FileStream;
+                
+                return ResultFactory.GetResult(Request, output, "image/bmp");
+
+            }
         }
 
         public string Get(SeasonalIntroVariance request)
