@@ -375,6 +375,7 @@ namespace IntroSkip.TitleSequence
                                 //Group the results by the duration if the intro
                                 var sequenceDurationGroups = fullResults.GroupBy(i => i.TitleSequenceEnd - i.TitleSequenceStart);
                                 common = CommonTimeSpan(sequenceDurationGroups);
+
                                 Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } intro is: { common } - calculated from: { fullResults.Count } results");
                                 //fullResults.Clear(); //<--Free up memory
 
@@ -385,14 +386,14 @@ namespace IntroSkip.TitleSequence
                                     .ForAll(
                                         item =>
                                         {
-                                            var titleSequence = GetBestTitleSequenceResult(common, item.Value, cancellationToken);
+                                            var (confidence, titleSequence) = GetBestTitleSequenceResult(common, item.Value, cancellationToken);
                                             if (episodeQuery.TotalRecordCount > 1)
                                             {
                                                 titleSequence.Processed = true; //<-- now we won't process episodes again over and over
                                             }
                                             repository.SaveResult(titleSequence, cancellationToken);
                                             var e = LibraryManager.GetItemById(titleSequence.InternalId);
-                                            Log.Debug($"DETECTION: Best result:  {season.Parent.Name} - { season.Name } E:{e.IndexNumber} \nSTART: { titleSequence.TitleSequenceStart } \nEND: {titleSequence.TitleSequenceEnd}");
+                                            Log.Debug($"DETECTION: Best result:  {season.Parent.Name} - { season.Name } E:{e.IndexNumber} \nSTART: { titleSequence.TitleSequenceStart } \nEND: {titleSequence.TitleSequenceEnd} \nCONFIDENCE: {confidence}");
 
                                         });
 
@@ -411,7 +412,7 @@ namespace IntroSkip.TitleSequence
         }
         
 
-        private TitleSequenceResult GetBestTitleSequenceResult(TimeSpan common,
+        private Tuple <double, TitleSequenceResult> GetBestTitleSequenceResult(TimeSpan common,
             ConcurrentBag<TitleSequenceResult> titleSequences, CancellationToken cancellationToken)
         {
             var weightedResults = new ConcurrentDictionary<double, TitleSequenceResult>();
@@ -458,13 +459,20 @@ namespace IntroSkip.TitleSequence
                         endWeight = result.TitleSequenceEnd.Ticks / commonEnd.Ticks;
                     }
 
-                    //Add a weight to each result, by adding up the differences between them. 
-                    weightedResults.TryAdd(durationWeight + startWeight + endWeight, result);
+                    var score = durationWeight + startWeight + endWeight;
+                    var avg = Math.Round(score / 3, 2, MidpointRounding.AwayFromZero);
+                    if (avg >= Plugin.Instance.Configuration.DetectionConfidence)
+                    {
+                        //Add a weight to each result, by adding up the differences between them. 
+                        weightedResults.TryAdd(avg, result);
+                    }
 
                 });
-            
-            Log.Debug($"Title sequence result score: { Math.Round(weightedResults.Keys.Max() / 3) }");
-            return weightedResults[weightedResults.Keys.Max()]; //<-- Take the result with the highest rank. The smallest difference.
+
+            var bestResult = weightedResults[weightedResults.Keys.Max()];
+            var confidence = weightedResults.Keys.Max();
+            return Tuple.Create(confidence, bestResult); //<-- Take the result with the highest rank. The smallest difference.
+
         }
         
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, TitleSequenceResult>> groups)
