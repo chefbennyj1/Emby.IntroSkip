@@ -12,9 +12,6 @@ using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
-using MediaBrowser.Model.Dto;
-using MediaBrowser.Model.Entities;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -131,13 +128,13 @@ namespace IntroSkip.Api
         public object Get(ExtractThumbImage request)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
-            var ffmpegPath = ffmpegConfiguration.EncoderPath;
-            var item = LibraryManager.GetItemById(request.InternalId);
-            var requestFrame = TimeSpan.Parse(request.ImageFrame);
-            requestFrame = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
-            var frame = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
-            var args = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
-            var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
+            var ffmpegPath          = ffmpegConfiguration.EncoderPath;
+            var item                = LibraryManager.GetItemById(request.InternalId);
+            var requestFrame        = TimeSpan.Parse(request.ImageFrame);
+            requestFrame            = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
+            var frame               = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
+            var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
+            var procStartInfo       = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

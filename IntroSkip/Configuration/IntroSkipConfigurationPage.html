@@ -2,21 +2,25 @@
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-                <form>
+                
 
+                <form>
                     <div class="infoBanner flex align-items-center">
+
                         Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
                         You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
                     </div>
 
                     <br />
 
+
                     <div class="detailLogo" style="float: right; position: absolute; right: 20%;"></div>
 
                     <div style="display: flex; align-items: center;">
 
+
                         <!-- Emby Series List -->
-                        <div style="flex-grow: 1;" class="selectContainer">
+                        <div style="width: 60%;" class="selectContainer">
                             <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
                             <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
                             <div class="selectArrowContainer">
@@ -26,11 +30,12 @@
                                 Show Title Sequence (Intro) data for this TV Show.
                             </div>
                         </div>
+
                     </div>
 
-                    <div style="display: flex; align-items: center;">
+                    <div style="align-items: center;">
                         <!-- Emby Season List -->
-                        <div style="flex-grow: 1;" class="selectContainer">
+                        <div style="width: 60%;" class="selectContainer">
                             <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
                             <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
                             <div class="selectArrowContainer">
@@ -42,6 +47,7 @@
                         </div>
                     </div>
 
+
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
                             <input is="emby-checkbox" type="checkbox" class="chkShowConfirmSeasonalIntroData emby-checkbox">
@@ -49,6 +55,7 @@
                         </label>
                         <div class="fieldDescription checkboxFieldDescription">Confirm that all title sequences are correct and save.</div>
                     </div>
+
 
                     <br />
 
@@ -59,18 +66,18 @@
                 </form>
                 
                 <hr />
-                
+
                 <div class="detailSectionHeader" style="padding-bottom: 2em">
                     <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
                         Title sequence length for this season: <span class="averageTitleSequenceTime"></span>
                     </h2>
                 </div>
-                <div class="introResults scrollY" style="max-height: 34em; margin:0 2em 2em 2em">
+                <div class="introResults scrollY" style="max-height: 82em; margin: 0 2em 2em 2em">
                     <table class="tblEpisodeIntroResults table detailTable" style="width: 100%;">
                         <thead>
                             <tr style="text-align: left;">
                                 <th class="detailTableHeaderCell" data-priority="2"></th>
-                                <th class="detailTableHeaderCell" data-priority="2"></th>
+                                <th class="detailTableHeaderCell" data-priority="2">Episode Link</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Series</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Season</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Episode</th>
@@ -87,8 +94,8 @@
                 </div>
               
                 <!--<button is="emby-button" type="submit" class="hide RefreshSeasonalMetaData raised button-submit block emby-button">
-        <span>Refresh Metadata</span>
-    </button>-->
+                <span>Refresh Metadata</span>
+            </button>-->
             </div>
         </div>
     </div>
