@@ -106,6 +106,8 @@
 
                 var chkEnableFastDetect = view.querySelector('#enableFastDetect');
 
+                var confidenceInput = view.querySelector('#txtTitleSequenceSamplingWeightConfidence');
+                
                 //enable detection task auto run when fingerprinting is complete
                 var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
 
@@ -120,6 +122,12 @@
                     chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
 
                     chkEnableFastDetect.checked = config.FastDetect;
+
+                    confidenceInput.value = config.DetectionConfidence;
+
+                    if (!chkEnableFastDetect.checked) {
+                        confidenceInput.closest('.inputContainer').classList.remove('hide');
+                    }
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
@@ -168,7 +176,28 @@
                 chkEnableFastDetect.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.FastDetect = chkEnableFastDetect.checked;
+                        var fastDetect = chkEnableFastDetect.checked;
+                        config.FastDetect = fastDetect;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => {
+                           
+                            if (!fastDetect) {
+                                if (confidenceInput.closest('.inputContainer').classList.contains('hide')) {
+                                    confidenceInput.closest('.inputContainer').classList.remove('hide');
+                                }
+                            } else {
+                                if (!confidenceInput.closest('.inputContainer').classList.contains('hide')) {
+                                    confidenceInput.closest('.inputContainer').classList.add('hide');
+                                }
+                            }
+                            
+                        });
+                    });
+                });
+
+                confidenceInput.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.DetectionConfidence = confidenceInput.value;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });

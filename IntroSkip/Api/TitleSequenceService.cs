@@ -12,10 +12,6 @@ using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
-using MediaBrowser.Model.Dto;
-using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Querying;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -93,16 +89,7 @@ namespace IntroSkip.Api
             public bool HasSequence { get; set; }
             
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
-            public long SeasonId { get; set; }
-
-            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
-            public bool Confirmed { get; set; }
-        }
-
-        [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
-        public class ConfirmAllSeasonIntrosRequest : IReturn<string>
-        {
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            
             public long SeasonId { get; set; }
 
             [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
@@ -141,13 +128,13 @@ namespace IntroSkip.Api
         public object Get(ExtractThumbImage request)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
-            var ffmpegPath = ffmpegConfiguration.EncoderPath;
-            var item = LibraryManager.GetItemById(request.InternalId);
-            var requestFrame = TimeSpan.Parse(request.ImageFrame);
-            requestFrame = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
-            var frame = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
-            var args = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
-            var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
+            var ffmpegPath          = ffmpegConfiguration.EncoderPath;
+            var item                = LibraryManager.GetItemById(request.InternalId);
+            var requestFrame        = TimeSpan.Parse(request.ImageFrame);
+            requestFrame            = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
+            var frame               = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
+            var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
+            var procStartInfo       = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -173,34 +160,6 @@ namespace IntroSkip.Api
             
             DisposeRepository(repository);
             return variance;
-        }
-
-        public void Post(ConfirmAllSeasonIntrosRequest request)
-        {
-            ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
-            List<TitleSequenceResult> titleSequences = dbResults.Items.ToList();
-            Log.Info("API CALL: update Season --- Season Id = {0}", request.SeasonId);
-
-            foreach (var episode in titleSequences)
-            {
-                // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
-                episode.Confirmed = true;
-                episode.Fingerprint = episode.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-                try
-                {
-                    repository.SaveResult(episode, CancellationToken.None);
-                    Log.Info("API CALL: Repository Saved for Id:{0}", episode.InternalId, episode.Confirmed.ToString());
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn(ex.Message);
-                    //return "error";
-                }
-            }
-            DisposeRepository(repository);
-            //return "OK";
-
         }
 
         public void Post(UpdateTitleSequenceRequest request)

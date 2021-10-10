@@ -1,65 +1,66 @@
-﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/IntroSkipConfigurationPageJS">
+<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/IntroSkipConfigurationPageJS">
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-
-
-                <div class="infoBanner flex align-items-center" style="width: 60%">
-                    Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
-                    You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
-                </div>
-
-                <br />
-
-                <div class="detailLogo" style="float:right; margin-top: 2em; margin-right: 15em"></div>
-
-
-                <div style="align-items: center;">
-
-                    <!-- Emby Series List -->
-                    <div style="width: 60%;" class="selectContainer">
-                        <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
-                        <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                        <div class="selectArrowContainer">
-                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                <div style="display:flex">
+                    <form style="flex-grow:1">
+                        <div class="infoBanner flex align-items-center">
+                            Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
+                            You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
                         </div>
+
+                        <br />
+                        <div style="align-items: center;">
+
+                            <!-- Emby Series List -->
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
+                                <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                <div class="selectArrowContainer">
+                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                </div>
+                                <div class="fieldDescription">
+                                    Show Title Sequence (Intro) data for this TV Show.
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div style="align-items: center;">
+                            <!-- Emby Season List -->
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
+                                <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                <div class="selectArrowContainer">
+                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                </div>
+                                <div class="fieldDescription">
+                                    Show Title Sequence (Intro) data for this season.
+                                </div>
+                            </div>
+                        </div>
+
+                        <br />
+                        <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
+                            <span>Confirm All Season Intros are Correct</span>
+                        </button>
                         <div class="fieldDescription">
-                            Show Title Sequence (Intro) data for this TV Show.
+                            Confirm all intros for this season are correct.
                         </div>
-                    </div>
 
-                </div>
-
-                <div style="align-items: center;">
-                    <!-- Emby Season List -->
-                    <div style="width: 60%;" class="selectContainer">
-                        <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
-                        <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                        <div class="selectArrowContainer">
-                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                        </div>
+                        <br />
+                        <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
+                            <span>Rescan data</span>
+                        </button>
                         <div class="fieldDescription">
-                            Show Title Sequence (Intro) data for this season.
+                            This will remove all Detection and Fingerprint data for this season (option to keep your edited intros).
                         </div>
-                    </div>
-                </div>
 
-                <br />
-                <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button" style="width:35%; margin-left:0%">
-                    <span>Confirm All Season Intros are Correct</span>
-                </button>
-                <div class="fieldDescription">
-                    Confirm all intros for this season are correct.
-                </div>
+                    </form>
 
-                <br />
-                <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button" style="width:35%; margin-left:0%">
-                    <span>Rescan data</span>
-                </button>
-                <div class="fieldDescription">
-                    This will remove all Detection and Fingerprint data for this season (option to keep your edited intros).
+                    <div class="detailLogo hide" style="margin-top: 2em; margin-right: 5em; position: absolute; right: 20%;"></div>
                 </div>
-                <br/>
+                <br />
 
                 <hr />
 

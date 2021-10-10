@@ -1,4 +1,4 @@
-﻿define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
+define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
     function (loading, dialogHelper, mainTabsManager) {
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
@@ -418,6 +418,13 @@
             view.addEventListener('viewshow', (e) => {
                 
                 loading.show();
+
+                const isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+                if(!isMobile){
+                    view.querySelector('.detailLogo').classList.remove('hide');
+                }else {
+                    
+                }
 
                 mainTabsManager.setTabs(this, 0, getTabs);
 
