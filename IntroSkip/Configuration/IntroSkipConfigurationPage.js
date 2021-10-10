@@ -69,6 +69,19 @@
             });
         };
 
+        ApiClient.saveSeasonalIntros = function (seasonId) {
+            var url = this.getUrl('ConfirmAllSeasonIntros');
+            var options = {
+                SeasonId: seasonId
+            }
+            return this.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(options),
+                contentType: 'application/json'
+            });
+        };
+
         ApiClient.getLogoImageUrl = function (id) {
             var url = this.getUrl('Items/' +
                 id +
@@ -131,6 +144,14 @@
             });
         }
             
+
+        function saveSeasonalIntros(seasonId) {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl('ConfirmAllSeasonIntros')).then(result => {
+                    resolve(result);
+                });
+            });
+        }
 
         function saveIntro(row, view) {
             return new Promise((resolve, reject) => {
@@ -395,7 +416,9 @@
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
 
+
                 var chkConfirmSeasonalIntroData = view.querySelector('.chkShowConfirmSeasonalIntroData');
+
 
                 getSeries().then(series => {
 
@@ -544,11 +567,13 @@
                     confirm_dlg(view);
                 });
 
+
                 chkConfirmSeasonalIntroData.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     var confirmAll = chkShowConfirmSeasonalIntroData.checked;
                     
                 });
+
 
             });
         }
