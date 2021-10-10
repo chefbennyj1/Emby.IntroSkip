@@ -1,90 +1,90 @@
-﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/IntroSkipConfigurationPageJS">
+<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/IntroSkipConfigurationPageJS">
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-                
+                <div style="display:flex">
+                    <form style="flex-grow:1">
+                        <div class="infoBanner flex align-items-center">
+                            Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
+                            You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
+                        </div>
 
-                <form>
-                    <div class="infoBanner flex align-items-center">
+                        <br />
+                        <div style="align-items: center;">
 
-                        Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
-                        You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
-                    </div>
-
-                    <br />
-
-
-                    <div class="detailLogo" style="float: right; position: absolute; right: 20%;"></div>
-
-                    <div style="display: flex; align-items: center;">
-
-
-                        <!-- Emby Series List -->
-                        <div style="width: 60%;" class="selectContainer">
-                            <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
-                            <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                            <div class="selectArrowContainer">
-                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                            <!-- Emby Series List -->
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
+                                <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                <div class="selectArrowContainer">
+                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                </div>
+                                <div class="fieldDescription">
+                                    Show Title Sequence (Intro) data for this TV Show.
+                                </div>
                             </div>
-                            <div class="fieldDescription">
-                                Show Title Sequence (Intro) data for this TV Show.
+
+                        </div>
+
+                        <div style="align-items: center;">
+                            <!-- Emby Season List -->
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
+                                <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                <div class="selectArrowContainer">
+                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                </div>
+                                <div class="fieldDescription">
+                                    Show Title Sequence (Intro) data for this season.
+                                </div>
                             </div>
                         </div>
 
-                    </div>
-
-                    <div style="align-items: center;">
-                        <!-- Emby Season List -->
-                        <div style="width: 60%;" class="selectContainer">
-                            <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
-                            <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                            <div class="selectArrowContainer">
-                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                            </div>
-                            <div class="fieldDescription">
-                                Show Title Sequence (Intro) data for this season.
-                            </div>
+                        <br />
+                        <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
+                            <span>Confirm All Season Intros are Correct</span>
+                        </button>
+                        <div class="fieldDescription">
+                            Confirm all intros for this season are correct.
                         </div>
-                    </div>
 
+                        <br />
+                        <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
+                            <span>Rescan data</span>
+                        </button>
+                        <div class="fieldDescription">
+                            This will remove all Detection and Fingerprint data for this season (option to keep your edited intros).
+                        </div>
 
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input is="emby-checkbox" type="checkbox" class="chkShowConfirmSeasonalIntroData emby-checkbox">
-                            <span class="checkboxLabel">Confirm all intros</span>
-                        </label>
-                        <div class="fieldDescription checkboxFieldDescription">Confirm that all title sequences are correct and save.</div>
-                    </div>
+                    </form>
 
+                    <div class="detailLogo hide" style="margin-top: 2em; margin-right: 5em; position: absolute; right: 20%;"></div>
+                </div>
+                <br />
 
-                    <br />
-
-                    <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
-                        <span>Rescan data</span>
-                    </button>
-
-                </form>
-                
                 <hr />
 
                 <div class="detailSectionHeader" style="padding-bottom: 2em">
                     <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
                         Title sequence length for this season: <span class="averageTitleSequenceTime"></span>
                     </h2>
+                    <h3 style="margin: .6em 0; color:mediumseagreen; vertical-align: middle; display: inline-block; margin-top: 1em; margin-left: 20%">
+                        Please Edit Options in Green<span class="editableFields"></span>
+                    </h3>
                 </div>
                 <div class="introResults scrollY" style="max-height: 82em; margin: 0 2em 2em 2em">
                     <table class="tblEpisodeIntroResults table detailTable" style="width: 100%;">
                         <thead>
                             <tr style="text-align: left;">
-                                <th class="detailTableHeaderCell" data-priority="2"></th>
+                                <th class="detailTableHeaderCell" data-priority="2">Confirmed</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Episode Link</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Series</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Season</th>
                                 <th class="detailTableHeaderCell" data-priority="2">Episode</th>
-                                <th class="detailTableHeaderCell" data-priority="3">Has Intro</th>
-                                <th class="detailTableHeaderCell" data-priority="1">Intro Start</th>
-                                <th class="detailTableHeaderCell" data-priority="1">Intro End</th>
-                                <th class="detailTableHeaderCell" data-priority="1">Actions</th>
+                                <th class="detailTableHeaderCell" data-priority="3" style="color:mediumseagreen">Has Intro</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color:mediumseagreen">Intro Start</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color:mediumseagreen">Intro End</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color:mediumseagreen">Actions</th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>
                             </tr>
@@ -93,9 +93,10 @@
                     </table>
                 </div>
 
+                <hr />
                 <!--<button is="emby-button" type="submit" class="hide RefreshSeasonalMetaData raised button-submit block emby-button">
-                <span>Refresh Metadata</span>
-            </button>-->
+        <span>Refresh Metadata</span>
+    </button>-->
             </div>
         </div>
     </div>
