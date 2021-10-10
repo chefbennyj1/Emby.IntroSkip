@@ -7,7 +7,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Activity'
+                    name: 'Intros'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
