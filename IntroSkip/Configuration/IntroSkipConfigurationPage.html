@@ -5,11 +5,14 @@
                 <form>
 
                     <div class="infoBanner flex align-items-center">
-                        Must have a minimum of 2 Episodes in the same Season for detection to run. <br/>
+                        Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
                         You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
                     </div>
 
-                    <br/>
+                    <br />
+
+                    <div class="detailLogo" style="float: right; position: absolute; right: 20%;"></div>
+
                     <div style="display: flex; align-items: center;">
 
                         <!-- Emby Series List -->
@@ -39,12 +42,24 @@
                         </div>
                     </div>
 
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" class="chkShowConfirmSeasonalIntroData emby-checkbox">
+                            <span class="checkboxLabel">Confirm all intros</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Confirm that all title sequences are correct and save.</div>
+                    </div>
+
+                    <br />
+
+                    <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
+                        <span>Rescan data</span>
+                    </button>
+
                 </form>
-
-
-
+                
                 <hr />
-
+                
                 <div class="detailSectionHeader" style="padding-bottom: 2em">
                     <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
                         Title sequence length for this season: <span class="averageTitleSequenceTime"></span>
@@ -70,10 +85,7 @@
                         <tbody class="introResultBody"></tbody>
                     </table>
                 </div>
-                <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
-                    <span>Rescan data</span>
-                </button>
-                <hr />
+              
                 <!--<button is="emby-button" type="submit" class="hide RefreshSeasonalMetaData raised button-submit block emby-button">
         <span>Refresh Metadata</span>
     </button>-->

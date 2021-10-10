@@ -387,12 +387,15 @@
 
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
                     '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+                
                 var _seriesId, _seasonId;
 
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
+
+                var chkConfirmSeasonalIntroData = view.querySelector('.chkShowConfirmSeasonalIntroData');
 
                 getSeries().then(series => {
 
@@ -402,11 +405,17 @@
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
+                    view.querySelector('.detailLogo').innerHTML = '<img src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
+
                     getSeasons(_seriesId).then(seasons => {
 
                         for (var j = 0; j <= seasons.Items.length - 1; j++) {
                             seasonSelect.innerHTML += '<option data-index="' + seasons.Items[j].IndexNumber + '" value="' + seasons.Items[j].Id + '">' + seasons.Items[j].Name + '</option>';
                         }
+
+                        //Name the confirm all check box with the Season name
+                        chkConfirmSeasonalIntroData.closest('.checkboxContainer').querySelector('.checkboxLabel').innerHTML =
+                            "Confirm all " + seasons.Items[0].Name + " intros";
 
                         _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
@@ -463,9 +472,13 @@
                                 removeSeasonalFingerprintButton.querySelector('span').innerHTML =
                                     "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
+                                //Name the confirm all check box with the Season name
+                                chkConfirmSeasonalIntroData.closest('.checkboxContainer').querySelector('.checkboxLabel').innerHTML =
+                                    "Confirm all " + seasonSelect[seasonSelect.selectedIndex].innerHTML + " intros";
+
                                 view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                 var titleSequences = result.TitleSequences;
-                                reloadItems(titleSequences, view)
+                                reloadItems(titleSequences, view);
                             } else {
                                 view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                 if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -483,6 +496,9 @@
                     seasonSelect.innerHTML = '';
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+
+
+                    view.querySelector('.detailLogo').innerHTML = '<img src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
                         seasons.Items.forEach(season => {
@@ -526,7 +542,13 @@
                     e.preventDefault();
                     confirm_dlg(view);
                 });
-                 
+
+                chkConfirmSeasonalIntroData.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    var confirmAll = chkShowConfirmSeasonalIntroData.checked;
+                    
+                });
+
             });
         }
     });
