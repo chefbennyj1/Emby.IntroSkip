@@ -4,7 +4,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Activity'
+                    name: 'Intros'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -45,9 +45,7 @@
 
         function imageLink(baseItem) {
             return ApiClient._serverAddress +
-                "/web/index.html#!/item?id=" +
-                baseItem.Id +
-                "&serverId=" +
+                "/web/index.html#!/item?id=" + baseItem.Id + "&serverId=" +
                 ApiClient._serverInfo.Id;
         }
 
