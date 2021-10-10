@@ -87,7 +87,7 @@
             return [
                 {
                     href: Dashboard.getConfigurationPageUrl('IntroSkipConfigurationPage'),
-                    name: 'Activity'
+                    name: 'Intros'
                 },
                 {
                     href: Dashboard.getConfigurationPageUrl('ChapterEditorConfigurationPage'),
@@ -130,7 +130,6 @@
                 });
             });
         }
-            
 
         function saveIntro(row, view) {
             return new Promise((resolve, reject) => {
@@ -191,6 +190,7 @@
                 "&serverId=" +
                 ApiClient._serverInfo.Id;
         }
+
         function getTableRowHtml(intro) {
             return new Promise((resolve, reject) => {
                 getEpisode(intro.InternalId).then(result => {
@@ -208,7 +208,7 @@
                     html += '</svg>';
                     html += '</td>';
 
-                    html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank"><img style="width:125px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
+                    html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
                     html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
                     html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
                     html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
@@ -226,8 +226,8 @@
                     html += '</td>';
                     var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
                     var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><img style="width:110px" src="' + getExtractedThumbImage(intro.InternalId, start, true) + '"/><div contenteditable>' + start + '</div></td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><img style="width:110px" src="' + getExtractedThumbImage(intro.InternalId, end, false) + '"/><div contenteditable>' + end + '</div></td>';
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, start, true) + '"/><div contenteditable>' + start + '</div></td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, end, false) + '"/><div contenteditable>' + end + '</div></td>';
                     
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
                     
@@ -378,8 +378,19 @@
             }
         }
 
+        function renderLogoImage(baseItem) {
+            return new Promise((resolve, reject) => {
+                var seriesSelect = view.querySelector('#selectEmbySeries');
+                seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                ApiClient.getLogoImageUrl(baseItem.seriesId).then(result => {
+                    resolve(result);
+                });
+            });
+        }
+
         return function (view) {
             view.addEventListener('viewshow', (e) => {
+                
                 loading.show();
 
                 mainTabsManager.setTabs(this, 0, getTabs);
@@ -393,6 +404,7 @@
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
+                var confirmSeasonalFingerprintButton = view.querySelector('.confirmSeasonalFingerprintData');
 
                 getSeries().then(series => {
 
@@ -401,6 +413,7 @@
                     }
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
 
@@ -483,6 +496,8 @@
                     seasonSelect.innerHTML = '';
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
                         seasons.Items.forEach(season => {
