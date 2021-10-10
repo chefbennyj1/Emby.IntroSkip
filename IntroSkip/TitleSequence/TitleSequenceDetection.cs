@@ -267,11 +267,7 @@ namespace IntroSkip.TitleSequence
 
             //Added for Sam to test upper threshold changes
             var config = Plugin.Instance.Configuration;
-            var tup2 = FindContiguousRegion(hammingDistances, 8); 
-
-            
-            var start  = tup2.Item1;
-            var end    = tup2.Item2;
+            var (start, end) = FindContiguousRegion(hammingDistances, 8);
 
 
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
