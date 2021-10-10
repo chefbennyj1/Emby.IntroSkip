@@ -69,6 +69,19 @@
             });
         };
 
+        ApiClient.saveSeasonalIntros = function (seasonId) {
+            var url = this.getUrl('ConfirmAllSeasonIntros');
+            var options = {
+                SeasonId: seasonId
+            }
+            return this.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(options),
+                contentType: 'application/json'
+            });
+        };
+
         ApiClient.getLogoImageUrl = function (id) {
             var url = this.getUrl('Items/' +
                 id +
@@ -127,6 +140,14 @@
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&ParentId=' + seriesId + '&IncludeItemTypes=Season&SortBy=SortName')).then(r => {
                     resolve(r);
+                });
+            });
+        }
+
+        function saveSeasonalIntros(seasonId) {
+            return new Promise((resolve, reject) => {
+                ApiClient.getJSON(ApiClient.getUrl('ConfirmAllSeasonIntros')).then(result => {
+                    resolve(result);
                 });
             });
         }
@@ -404,7 +425,7 @@
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
-                var confirmSeasonalFingerprintButton = view.querySelector('.confirmSeasonalFingerprintData');
+                var confirmSeasonalIntros = view.querySelector('.confirmSeasonalIntros');
 
                 getSeries().then(series => {
 
@@ -540,6 +561,12 @@
                 removeSeasonalFingerprintButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     confirm_dlg(view);
+                });
+
+                confirmSeasonalIntros.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                    ApiClient.saveSeasonalIntros(_seasonId);
                 });
                  
             });
