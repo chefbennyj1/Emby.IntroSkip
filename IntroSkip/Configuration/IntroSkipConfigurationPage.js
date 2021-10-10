@@ -495,6 +495,7 @@
                     loading.show();
                     seasonSelect.innerHTML = '';
 
+
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
 
