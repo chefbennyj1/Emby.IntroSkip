@@ -24,6 +24,7 @@
   <None Remove="Configuration\IntroSkipConfigurationPage.html" />
   <None Remove="Configuration\IntroSkipConfigurationPage.js" />
   <None Remove="Configuration\u50inpcc.wxg~" />
+  <None Remove="no_intro.png" />
   <None Remove="thumb.jpg" />
 </ItemGroup>
 
@@ -34,6 +35,7 @@
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
+  <EmbeddedResource Include="no_intro.png" />
   <EmbeddedResource Include="thumb.jpg">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </EmbeddedResource>

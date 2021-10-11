@@ -12,6 +12,8 @@ using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -102,6 +104,12 @@ namespace IntroSkip.Api
 
         }
 
+        [Route("/NoTitleSequenceThumbImage", "GET", Summary = "No Title Sequence Thumb Image")]
+        public class NoTitleSequenceThumbImageRequest : IReturn<object>
+        {
+
+        }
+
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
 
@@ -152,7 +160,10 @@ namespace IntroSkip.Api
 
             }
         }
-
+        
+        public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
+            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
+        
         public string Get(SeasonalIntroVariance request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
@@ -200,34 +211,7 @@ namespace IntroSkip.Api
             DisposeRepository(repository);
         }
 
-        //public string Delete(RemoveAllRequest request)
-        //{
-        //    try
-        //    {
-        //        var fingerprintFiles = FileSystem
-        //            .GetFiles(
-        //                $"{AudioFingerprintFileManager.Instance.GetFingerprintDirectory()}{FileSystem.DirectorySeparatorChar}",
-        //                true).Where(file => file.Extension == ".json");
-        //        foreach (var file in fingerprintFiles)
-        //        {
-        //            FileSystem.DeleteFile(file.FullName);
-        //        }
-        //    }catch {}
-
-        //    try
-        //    {
-        //        var titleSequenceFiles = FileSystem
-        //            .GetFiles(
-        //                $"{TitleSequenceManager.Instance.GetTitleSequenceDirectory()}{FileSystem.DirectorySeparatorChar}",
-        //                true).Where(file => file.Extension == ".json");
-        //        foreach (var file in titleSequenceFiles)
-        //        {
-        //            FileSystem.DeleteFile(file.FullName);
-        //        }
-        //    }catch {}
-
-        //    return "OK";
-        //}
+        
 
         public string Delete(RemoveSeasonDataRequest request)
         {
@@ -324,6 +308,14 @@ namespace IntroSkip.Api
             int maxCount = enumerableSequences.Max(g => g.Count());
             var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
+        }
+
+        private object GetEmbeddedResourceStream(string resourceName, string contentType)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
+
+            return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
         }
 
         private void DisposeRepository(ITitleSequenceRepository repository)

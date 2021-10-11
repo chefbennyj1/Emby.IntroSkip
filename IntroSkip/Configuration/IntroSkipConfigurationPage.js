@@ -96,6 +96,13 @@
             return url;
         }
 
+        ApiClient.getCoverImageUrl = function (id) {
+            var url = this.getUrl('Items/' +
+                id +
+                '/Images/Primary?maxHeight=500&amp;maxWidth=300&amp;quality=90');
+            return url;
+        }
+
         function getTabs() {
             return [
                 {
@@ -115,7 +122,7 @@
 
 
         function titleSequenceStatusIcon(confirmed) {
-            return confirmed ?
+            return confirmed ? 
                 "M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M16.59 7.58L10 14.17L7.41 11.59L6 13L10 17L18 9L16.59 7.58Z" :
                 "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
         }
@@ -197,11 +204,11 @@
             });
         }
 
-        function getExtractedThumbImage(id, imageFrame, isStart) {
-            //return new Promise((resolve, reject) => {
-                var url = ApiClient.getUrl('ExtractThumbImage?InternalId=' + id + "&ImageFrame=" + encodeURIComponent(imageFrame) + "&IsStart=" + isStart);
-                return url;
-            //});
+        function getExtractedThumbImage(hasIntro, id, imageFrame, isStart) {
+            if (!hasIntro) {
+                return ApiClient.getUrl('NoTitleSequenceThumbImage');
+            }
+            return ApiClient.getUrl('ExtractThumbImage?InternalId=' + id + "&ImageFrame=" + encodeURIComponent(imageFrame) + "&IsStart=" + isStart);
         }
 
         function imageLink(baseItem) {
@@ -225,7 +232,7 @@
 
                     html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
                     html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
-                    html += '<path fill="currentColor" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
+                    html += '<path stroke="black" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
                     html += '</svg>';
                     html += '</td>';
 
@@ -236,7 +243,7 @@
                     html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
 
                     
-                    html += '<div class="selectContainer" style="top:15px">';
+                    html += '<div class="selectContainer" style="top:40px">';
                     html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
                     html += '<option value="true" ' + (intro.HasSequence ? 'selected' : "") + '>true</option>';
                     html += '<option value="false" ' + (!intro.HasSequence ? 'selected' : "") + '>false</option>';
@@ -244,20 +251,19 @@
                     html += '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
                     html += '</div>';
 
-                    html += '</td>';
+                    html += '</td">';
                     var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
                     var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, start, true) + '"/><div contenteditable>' + start + '</div></td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, end, false) + '"/><div contenteditable>' + end + '</div></td>';
+                    var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + start + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, start, true) + '"/></td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + end + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, end, false) + '"/></td>';
                     
-                    html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
-                    
-
+                    html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';  
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
                     html += '<span>Confirm</span>';
                     html += '</button>';
-
                     html += '</td>';
+
                     html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
                     html += '</tr>';
                     resolve(html);
@@ -414,23 +420,25 @@
                 
                 loading.show();
 
+                const isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+                if(!isMobile){
+                    view.querySelector('.detailLogo').classList.remove('hide');
+                }else {
+                    
+                }
+
                 mainTabsManager.setTabs(this, 0, getTabs);
 
 
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
                     '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
-                
                 var _seriesId, _seasonId;
 
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
-                var confirmSeasonalFingerprintButton = view.querySelector('.confirmSeasonalFingerprintData');
-
-
-                var chkConfirmSeasonalIntroData = view.querySelector('.chkShowConfirmSeasonalIntroData');
-
+                var confirmSeasonalIntros = view.querySelector('.confirmSeasonalIntros');
 
                 getSeries().then(series => {
 
@@ -439,19 +447,13 @@
                     }
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
-
-                    view.querySelector('.detailLogo').innerHTML = '<img src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
 
                         for (var j = 0; j <= seasons.Items.length - 1; j++) {
                             seasonSelect.innerHTML += '<option data-index="' + seasons.Items[j].IndexNumber + '" value="' + seasons.Items[j].Id + '">' + seasons.Items[j].Name + '</option>';
                         }
-
-                        //Name the confirm all check box with the Season name
-                        chkConfirmSeasonalIntroData.closest('.checkboxContainer').querySelector('.checkboxLabel').innerHTML =
-                            "Confirm all " + seasons.Items[0].Name + " intros";
 
                         _seasonId = seasonSelect[seasonSelect.selectedIndex].value;
                         _seasonIndexNumber = seasonSelect[seasonSelect.selectedIndex].dataset['index'];
@@ -508,13 +510,9 @@
                                 removeSeasonalFingerprintButton.querySelector('span').innerHTML =
                                     "Reset data for " + seasonSelect[seasonSelect.selectedIndex].innerHTML;
 
-                                //Name the confirm all check box with the Season name
-                                chkConfirmSeasonalIntroData.closest('.checkboxContainer').querySelector('.checkboxLabel').innerHTML =
-                                    "Confirm all " + seasonSelect[seasonSelect.selectedIndex].innerHTML + " intros";
-
                                 view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
                                 var titleSequences = result.TitleSequences;
-                                reloadItems(titleSequences, view);
+                                reloadItems(titleSequences, view)
                             } else {
                                 view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                                 if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -531,13 +529,9 @@
                     loading.show();
                     seasonSelect.innerHTML = '';
 
-
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
-
-
-                    view.querySelector('.detailLogo').innerHTML = '<img src="' + ApiClient.getLogoImageUrl(_seriesId) + '"/>';
-
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
                         seasons.Items.forEach(season => {
@@ -582,14 +576,12 @@
                     confirm_dlg(view);
                 });
 
-
-                chkConfirmSeasonalIntroData.addEventListener('change', (elem) => {
-                    elem.preventDefault();
-                    var confirmAll = chkShowConfirmSeasonalIntroData.checked;
-                    
+                confirmSeasonalIntros.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                    ApiClient.saveSeasonalIntros(_seasonId);
                 });
-
-
+                 
             });
         }
     });
