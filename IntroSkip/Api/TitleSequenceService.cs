@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using MediaBrowser.Model.Querying;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -110,6 +111,16 @@ namespace IntroSkip.Api
 
         }
 
+        [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
+        public class ConfirmAllSeasonIntrosRequest : IReturn<string>
+        {
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            public long SeasonId { get; set; }
+
+            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            public bool Confirmed { get; set; }
+        }
+
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
 
@@ -163,7 +174,35 @@ namespace IntroSkip.Api
         
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
-        
+
+        public void Post(ConfirmAllSeasonIntrosRequest request)
+        {
+            ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            List<TitleSequenceResult> titleSequences = dbResults.Items.ToList();
+            Log.Info("API CALL: update Season --- Season Id = {0}", request.SeasonId);
+
+            foreach (var episode in titleSequences)
+            {
+                // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
+                episode.Confirmed = true;
+                episode.Fingerprint = episode.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                try
+                {
+                    repository.SaveResult(episode, CancellationToken.None);
+                    Log.Info("API CALL: Repository Saved for Id:{0}", episode.InternalId, episode.Confirmed.ToString());
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(ex.Message);
+                    //return "error";
+                }
+            }
+            DisposeRepository(repository);
+            //return "OK";
+
+        }
+
         public string Get(SeasonalIntroVariance request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
