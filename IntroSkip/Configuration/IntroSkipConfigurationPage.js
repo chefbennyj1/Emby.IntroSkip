@@ -1,4 +1,4 @@
-define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
+﻿define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
     function (loading, dialogHelper, mainTabsManager) {
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
@@ -204,11 +204,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
         }
 
-        function getExtractedThumbImage(id, imageFrame, isStart) {
-            //return new Promise((resolve, reject) => {
-                var url = ApiClient.getUrl('ExtractThumbImage?InternalId=' + id + "&ImageFrame=" + encodeURIComponent(imageFrame) + "&IsStart=" + isStart);
-                return url;
-            //});
+        function getExtractedThumbImage(hasIntro, id, imageFrame, isStart) {
+            if (!hasIntro) {
+                return ApiClient.getUrl('NoTitleSequenceThumbImage');
+            }
+            return ApiClient.getUrl('ExtractThumbImage?InternalId=' + id + "&ImageFrame=" + encodeURIComponent(imageFrame) + "&IsStart=" + isStart);
         }
 
         function imageLink(baseItem) {
@@ -243,7 +243,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
 
                     
-                    html += '<div class="selectContainer" style="top:15px">';
+                    html += '<div class="selectContainer" style="top:40px">';
                     html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
                     html += '<option value="true" ' + (intro.HasSequence ? 'selected' : "") + '>true</option>';
                     html += '<option value="false" ' + (!intro.HasSequence ? 'selected' : "") + '>false</option>';
@@ -254,8 +254,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     html += '</td">';
                     var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
                     var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + start + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, start, true) + '"/></td>';
-                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + end + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(intro.InternalId, end, false) + '"/></td>';
+                    var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
+                    html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + start + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, start, true) + '"/></td>';
+                    html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + end + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, end, false) + '"/></td>';
                     
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';  
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';

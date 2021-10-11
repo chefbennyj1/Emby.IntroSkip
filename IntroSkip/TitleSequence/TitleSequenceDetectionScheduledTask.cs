@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Data;
 
 // ReSharper disable once TooManyDependencies
 // ReSharper disable three TooManyChainedReferences
@@ -35,6 +36,10 @@ namespace IntroSkip.TitleSequence
             }
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
+            
+            var config = Plugin.Instance.Configuration;
+            if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
+            
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             try
             {
