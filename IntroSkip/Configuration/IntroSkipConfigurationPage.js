@@ -121,10 +121,16 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
 
 
-        function titleSequenceStatusIcon(confirmed) {
-            return confirmed ? 
+        /*function titleSequenceStatusIcon(confirmed) {
+            return (confirmed ? 
                 "M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M16.59 7.58L10 14.17L7.41 11.59L6 13L10 17L18 9L16.59 7.58Z" :
-                "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+                "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z");
+        }*/
+
+        function titleSequenceStatusIcon(confirmed) {
+            return (confirmed ?
+                "stroke='black' stroke-width='1' fill='mediumseagreen'" :
+                "stroke='black' stroke-width='1' fill='orange'");
         }
 
         function getSeries() {
@@ -147,14 +153,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return new Promise((resolve, reject) => {
                 ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&ParentId=' + seriesId + '&IncludeItemTypes=Season&SortBy=SortName')).then(r => {
                     resolve(r);
-                });
-            });
-        }
-
-        function saveSeasonalIntros(seasonId) {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('ConfirmAllSeasonIntros')).then(result => {
-                    resolve(result);
                 });
             });
         }
@@ -230,9 +228,15 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
 
-                    html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
+                    /*html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
                     html += '<svg style="width:24px;height:24px" viewBox="0 0 24 24">';
                     html += '<path stroke="black" d="' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
+                    html += '</svg>';
+                    html += '</td>';*/
+
+                    html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
+                    html += '<svg width="30" height="30">';
+                    html += '<circle cx="15" cy="15" r="10"' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
                     html += '</svg>';
                     html += '</td>';
 
@@ -302,7 +306,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         
-
+        //REMOVE ALL SEASON BUTTON POPUP DIALOG
         function confirm_dlg(view) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
@@ -325,12 +329,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
            
             //Submit - remove all season data
-            html += '<button is="emby-button" type="button" class="btnClearAll submit raised button-cancel">';
+            html += '<button is="emby-button" type="button" class="btnClearAll submit raised" style="background-color:red; color:white">';
             html += '<span>Remove All</span>';
             html += '</button>';
 
             //Keep confirmed user data (the data the user edited in the table)
-            html += '<button is="emby-button" type="button" class="btnKeepConfirmed submit raised button-cancel">';
+            html += '<button is="emby-button" type="button" class="btnKeepConfirmed submit raised button-submit">';
             html += '<span>Keep Edited Content</span>';
             html += '</button>';
 
@@ -370,7 +374,64 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             }
 
             dialogHelper.open(dlg);
-         }
+        }
+
+        //CONFIRM ALL SEASON BUTTON POPUP DIALOG
+        function confirmAllSeasons_dlg(view) {
+            var dlg = dialogHelper.createDialog({
+                removeOnClose: true,
+                size: 'small'
+            });
+
+            dlg.classList.add('ui-body-a');
+            dlg.classList.add('background-theme-a');
+
+            dlg.classList.add('formDialog');
+            dlg.style.maxWidth = '30%';
+            dlg.style.maxHeight = '20%';
+
+            var html = '';
+            html += '<div class="formDialogHeader">';
+            html += '<button is="paper-icon-button-light" class="btnCancel autoSize" tabindex="-1"><i class="md-icon">&#xE5C4;</i></button>';
+            html += '<h3 class="formDialogHeaderTitle">Confirm Season Intros</h3>';
+            html += '</div>';
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
+
+            //Submit - remove all season data
+            html += '<button is="emby-button" type="button" class="btnConfirmAll submit raised button-submit">';
+            html += '<span>Confirm All</span>';
+            html += '</button>';
+
+            //Cancel
+            html += '<button is="emby-button" type="button" class="btnCancel submit raised button-cancel">';
+            html += '<span>Cancel</span>';
+            html += '</button>';
+
+            html += '</div>';
+            html += '</div>';
+
+            dlg.innerHTML = html;
+
+            dlg.querySelectorAll('.btnCancel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    dialogHelper.close(dlg);
+                });
+            });
+
+            dlg.querySelector('.btnConfirmAll').addEventListener('click', () => {
+                confirmAll();
+            });
+
+            function confirmAll() {
+                var seasonSelect = view.querySelector('#selectEmbySeason');
+                var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                ApiClient.saveSeasonalIntros(seasonId);                    
+                        dialogHelper.close(dlg);
+            }
+
+            dialogHelper.open(dlg);
+        }
 
         function sortTable(view) {
             var rows, switching, i, x, y, shouldSwitch;
@@ -407,16 +468,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             }
         }
 
-        function renderLogoImage(baseItem) {
-            return new Promise((resolve, reject) => {
-                var seriesSelect = view.querySelector('#selectEmbySeries');
-                seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                ApiClient.getLogoImageUrl(baseItem.seriesId).then(result => {
-                    resolve(result);
-                });
-            });
-        }
-
         return function (view) {
             view.addEventListener('viewshow', (e) => {
                 
@@ -449,7 +500,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     }
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:40%px" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
 
@@ -533,7 +584,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     _seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
-                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
+                    view.querySelector('.detailLogo').innerHTML = '<img style="width:40%" src="' + ApiClient.getPrimaryImageUrl(_seriesId) + '"/>';
 
                     getSeasons(_seriesId).then(seasons => {
                         seasons.Items.forEach(season => {
@@ -580,8 +631,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 confirmSeasonalIntros.addEventListener('click', (e) => {
                     e.preventDefault();
-                    seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                    ApiClient.saveSeasonalIntros(_seasonId);
+                    confirmAllSeasons_dlg(view);
                 });
                  
             });
