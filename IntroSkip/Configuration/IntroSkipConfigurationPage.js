@@ -254,11 +254,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     html += '</td">';
                     var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
                     var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-
                     var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
                     html += '<td data-title="Start" class="detailTableBodyCell fileCell"><div contenteditable>' + start + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, start, true) + '"/></td>';
                     html += '<td data-title="End" class="detailTableBodyCell fileCell"><div contenteditable>' + end + '</div><img style="width:175px; height:100px" src="' + getExtractedThumbImage(hasIntro, intro.InternalId, end, false) + '"/></td>';
-
                     
                     html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';  
                     html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
@@ -440,7 +438,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 
                 var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
-                var confirmSeasonalIntros = view.querySelector('.confirmSeasonalIntros');
+                var confirmSeasonalFingerprintButton = view.querySelector('.confirmSeasonalFingerprintData');
+
+
+                var chkConfirmSeasonalIntroData = view.querySelector('.chkShowConfirmSeasonalIntroData');
+
 
                 getSeries().then(series => {
 
