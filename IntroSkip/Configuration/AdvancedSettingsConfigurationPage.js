@@ -204,6 +204,9 @@
 
                 fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
+                    if (fingerprintMaxDegreeOfParallelism < 2) {
+                        fingerprintMaxDegreeOfParallelism.value = 2;
+                    }
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
