@@ -159,7 +159,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 ApiClient.refreshMetadata(id).then(() => {
                     ApiClient.updateChapter(id).then(complete => {
                         Dashboard.processPluginConfigurationUpdateResult(complete);
-                        resolve(true);
                     });
                 });
             }
