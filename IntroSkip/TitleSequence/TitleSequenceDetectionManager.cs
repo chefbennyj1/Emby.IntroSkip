@@ -446,24 +446,25 @@ namespace IntroSkip.TitleSequence
 
                     if (common != TimeSpan.Zero)
                     {
-                        durationWeight = duration.Ticks / common.Ticks;
+                        durationWeight = duration.Ticks / (double)common.Ticks;
                     }
 
-                    if(result.TitleSequenceStart != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
+                    if(result.TitleSequenceStart != TimeSpan.Zero || commonStart != TimeSpan.Zero) //else Start weight remains 1
                     {
-                        startWeight =  result.TitleSequenceStart.Ticks / commonStart.Ticks;
+                        startWeight =  result.TitleSequenceStart.Ticks / (double)commonStart.Ticks;
                     }
 
-                    if(result.TitleSequenceEnd != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
+                    if(result.TitleSequenceEnd != TimeSpan.Zero || commonStart != TimeSpan.Zero) //else Start weight remains 1
                     {
-                        endWeight = result.TitleSequenceEnd.Ticks / commonEnd.Ticks;
+                        endWeight = result.TitleSequenceEnd.Ticks / (double)commonEnd.Ticks;
                     }
 
+                    //Add a weight to each result, by adding up the differences between them. 
                     var score = durationWeight + startWeight + endWeight;
                     var avg = Math.Round(score / 3, 2, MidpointRounding.AwayFromZero);
+
                     if (avg >= Plugin.Instance.Configuration.DetectionConfidence)
                     {
-                        //Add a weight to each result, by adding up the differences between them. 
                         weightedResults.TryAdd(avg, result);
                     }
 
@@ -471,7 +472,7 @@ namespace IntroSkip.TitleSequence
 
             var bestResult = weightedResults[weightedResults.Keys.Max()];
             var confidence = weightedResults.Keys.Max();
-            return Tuple.Create(confidence, bestResult); //<-- Take the result with the highest rank. The smallest difference.
+            return Tuple.Create(confidence, bestResult); //<-- Take the result with the highest rank. 
 
         }
         
