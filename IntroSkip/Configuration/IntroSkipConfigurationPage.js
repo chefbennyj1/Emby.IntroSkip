@@ -508,7 +508,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                             if (removeSeasonalFingerprintButton.classList.contains('hide')) {
                                 removeSeasonalFingerprintButton.classList.remove('hide');
                             }
-
                             removeSeasonalFingerprintButton.querySelector('span').innerHTML =
                                 "Reset " + seasonSelect[seasonSelect.selectedIndex].innerText + "Data";
 
