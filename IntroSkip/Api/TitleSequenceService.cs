@@ -111,6 +111,7 @@ namespace IntroSkip.Api
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
@@ -122,6 +123,8 @@ namespace IntroSkip.Api
 
         }
 
+=======
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
 =======
 >>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
         private IJsonSerializer JsonSerializer { get; }
@@ -178,6 +181,7 @@ namespace IntroSkip.Api
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
 <<<<<<< HEAD
+<<<<<<< HEAD
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
@@ -207,6 +211,9 @@ namespace IntroSkip.Api
 
         }
 
+=======
+        
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
 =======
         
 >>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
