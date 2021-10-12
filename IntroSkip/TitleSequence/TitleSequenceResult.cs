@@ -6,6 +6,7 @@ namespace IntroSkip.TitleSequence
     {
         public List<uint> Fingerprint { get; set; }
         public double Duration { get; set; }
+
         public bool Processed { get; set; } = false;
     }
 }

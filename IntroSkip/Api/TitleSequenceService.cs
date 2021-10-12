@@ -172,7 +172,6 @@ namespace IntroSkip.Api
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
 
-
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
             ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
@@ -200,7 +199,6 @@ namespace IntroSkip.Api
             //return "OK";
 
         }
-
 
         public string Get(SeasonalIntroVariance request)
         {
