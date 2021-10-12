@@ -117,10 +117,6 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
-
-            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
-            public bool Confirmed { get; set; }
-
         }
 
 =======
