@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using MediaBrowser.Model.Querying;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -110,8 +111,6 @@ namespace IntroSkip.Api
 
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
@@ -123,10 +122,6 @@ namespace IntroSkip.Api
 
         }
 
-=======
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
-=======
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
 
@@ -180,8 +175,6 @@ namespace IntroSkip.Api
         
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
-<<<<<<< HEAD
-<<<<<<< HEAD
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
@@ -211,12 +204,6 @@ namespace IntroSkip.Api
 
         }
 
-=======
-        
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
-=======
-        
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
         public string Get(SeasonalIntroVariance request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
