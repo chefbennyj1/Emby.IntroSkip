@@ -113,7 +113,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }];
         }
          
-        
+        function titleSequenceStatusIcon(confirmed) {
+            return (confirmed ?
+                "stroke='black' stroke-width='1' fill='mediumseagreen'" :
+                "stroke='black' stroke-width='1' fill='orange'");
+        }
 
         async function getSeries() {
             return await ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName'));
@@ -164,12 +168,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         function imageLink(baseItem) {
             return ApiClient._serverAddress + "/web/index.html#!/item?id=" + baseItem.Id + "&serverId=" + ApiClient._serverInfo.Id;
-        }
-
-        function titleSequenceStatusIcon(confirmed) {
-            return (confirmed ?
-                "stroke='black' stroke-width='1' fill='mediumseagreen'" :
-                "stroke='black' stroke-width='1' fill='orange'");
         }
 
         async function getTableRowHtml(intro) {
@@ -320,7 +318,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             async function confirmAll(seasonId, page) {
                 await ApiClient.saveSeasonalIntros(seasonId);
-                var result = getIntros(seasonId);
+                var result = await getIntros(seasonId);
                 reloadItems(result.TitleSequences, page);
             }
 

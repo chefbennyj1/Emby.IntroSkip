@@ -201,12 +201,7 @@ namespace IntroSkip.Api
 
         }
 
-=======
-        
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
-=======
-        
->>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
+
         public string Get(SeasonalIntroVariance request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
