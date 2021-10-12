@@ -174,10 +174,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             var result = await getEpisode(intro.InternalId);
 
-            var html = '';
-            var episode = result.Items[0];
+            var html          = '';
+            var episode       = result.Items[0];
             var startTimespan = parseISO8601Duration(intro.TitleSequenceStart);
-            var endTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
+            var endTimespan   = parseISO8601Duration(intro.TitleSequenceEnd);
 
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
 
@@ -209,11 +209,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
 
             html += '<td style="position:relative" data-title="Start" class="detailTableBodyCell fileCell">';
-            html += `<div class="editTimestamp" style="position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 63.8%;" contenteditable>${start}</div>`;
+            html += `<div class="editTimestamp" contenteditable>${start}</div>`;
             html += `<img class="startThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, start, true)}"/>`;
             html += '</td>';
             html += '<td style="position:relative" data-title="End" class="detailTableBodyCell fileCell">';
-            html += `<div class="editTimestamp" style="position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 63.8%;" contenteditable>${end}</div>`;
+            html += `<div class="editTimestamp" contenteditable>${end}</div>`;
             html += `<img class="endThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, end, false)}"/>`;
             html += '</td>';
 
@@ -235,7 +235,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             titleSequences.forEach(async (intro) => {
                 var html = await getTableRowHtml(intro);
                 view.querySelector('.introResultBody').innerHTML += html;
-                
+
+                view.querySelectorAll('.editTimestamp').forEach(edit => {
+                    edit.style = "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px;";
+                });
+
                 view.querySelectorAll('.saveSequence').forEach(async (btn) => {
                     btn.addEventListener('click', async (elem) => {
                         elem.preventDefault();
