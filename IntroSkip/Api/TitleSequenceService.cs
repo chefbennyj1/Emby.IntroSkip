@@ -114,6 +114,10 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
+
+            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            public bool Confirmed { get; set; }
+
         }
 
         private IJsonSerializer JsonSerializer { get; }
@@ -163,13 +167,13 @@ namespace IntroSkip.Api
         
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
-        
+
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
             ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             List<TitleSequenceResult> titleSequences = dbResults.Items.ToList();
-            //Log.Info("API CALL: update Season --- Season Id = {0}", request.SeasonId);
+
 
             foreach (var episode in titleSequences)
             {
@@ -179,7 +183,7 @@ namespace IntroSkip.Api
                 try
                 {
                     repository.SaveResult(episode, CancellationToken.None);
-                    //Log.Info("API CALL: Repository Saved for Id:{0}", episode.InternalId, episode.Confirmed.ToString());
+
                 }
                 catch (Exception ex)
                 {
