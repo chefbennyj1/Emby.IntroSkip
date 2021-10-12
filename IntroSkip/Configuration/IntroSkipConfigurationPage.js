@@ -153,15 +153,15 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             await ApiClient.updateTitleSequence(options); 
 
-            //If chapters are enabled, refresh the items metadata, and update the chapter.
-            var config = await ApiClient.getPluginConfiguration(pluginId); 
-            if (config.EnableChapterInsertion) {
-                ApiClient.refreshMetadata(id).then(() => {
-                    ApiClient.updateChapter(id).then(complete => {
-                        Dashboard.processPluginConfigurationUpdateResult(complete);
-                    });
-                });
-            }
+            ////If chapters are enabled, refresh the items metadata, and update the chapter.
+            //var config = await ApiClient.getPluginConfiguration(pluginId); 
+            //if (config.EnableChapterInsertion) {
+            //    ApiClient.refreshMetadata(id).then(() => {
+            //        ApiClient.updateChapter(id).then(complete => {
+            //            Dashboard.processPluginConfigurationUpdateResult(complete);
+            //        });
+            //    });
+            //}
         }
 
         async function getIntros(seasonId) {
@@ -242,17 +242,19 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             titleSequences.forEach(async (intro) => {
                 var html = await getTableRowHtml(intro);
                 view.querySelector('.introResultBody').innerHTML += html;
-                view.querySelectorAll('.saveSequence').forEach(btn => {
+                
+                view.querySelectorAll('.saveSequence').forEach(async (btn) => {
                     btn.addEventListener('click', async (elem) => {
                         elem.preventDefault();
                         var row = elem.target.closest('tr');
                         await saveIntro(row, view);
                         var seasonSelect = view.querySelector('#selectEmbySeason');
-                        var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                        var result = await getIntros(seasonId);
+                        var seasonId     = seasonSelect[seasonSelect.selectedIndex].value;
+                        var result       = await getIntros(seasonId);
                         await reloadItems(result.TitleSequences, view);
                     });
                 });
+
                 sortTable(view);
             });
         }
