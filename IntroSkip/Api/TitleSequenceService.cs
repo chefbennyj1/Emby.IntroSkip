@@ -14,7 +14,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
-using MediaBrowser.Model.Querying;
 
 // ReSharper disable TooManyChainedReferences
 // ReSharper disable MethodNameNotMeaningful
@@ -56,6 +55,8 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
+            [ApiMember(Name = "RemoveAll", Description = "Remove all, or keep edited content", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
+            public bool RemoveAll { get; set; }
         }
         
 
@@ -109,6 +110,8 @@ namespace IntroSkip.Api
 
         }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
@@ -116,13 +119,23 @@ namespace IntroSkip.Api
             public long SeasonId { get; set; }
         }
 
+=======
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
+=======
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
+
         private ILibraryManager LibraryManager { get; }
+
         public IHttpResultFactory ResultFactory { get; set; }
+
         private IFfmpegManager FfmpegManager { get; set; }
+
         public IRequest Request { get; set; }
       
+       
+
         // ReSharper disable once TooManyDependencies
         public TitleSequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager)
         {
@@ -163,6 +176,8 @@ namespace IntroSkip.Api
         
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
+<<<<<<< HEAD
+<<<<<<< HEAD
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
@@ -192,6 +207,12 @@ namespace IntroSkip.Api
 
         }
 
+=======
+        
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
+=======
+        
+>>>>>>> parent of 586deb9 (Refactor javascript. promises to async/await)
         public string Get(SeasonalIntroVariance request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
@@ -238,19 +259,29 @@ namespace IntroSkip.Api
             TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
             DisposeRepository(repository);
         }
+
         
 
         public string Delete(RemoveSeasonDataRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var seasonResult = repository.GetBaseTitleSequenceResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
                 try
                 {
-                    repository.Delete(item.InternalId.ToString());
-                    titleSequences.Remove(item);
+                    if (request.RemoveAll)
+                    {
+                        repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
+                    }
+                    else
+                    {
+                        if (item.Confirmed) continue;
+                        repository.Delete(item.InternalId.ToString());
+                        titleSequences.Remove(item);
+                    }
                 }
                 catch { }
             }
