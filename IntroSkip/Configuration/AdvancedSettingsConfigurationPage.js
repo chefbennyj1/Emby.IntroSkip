@@ -19,20 +19,13 @@
                 }];
         }
 
-        function getSeries() {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName')).then(result => {
-                    resolve(result);
-                });
-            });
+        async function getSeries() {
+            return await ApiClient.getJSON(ApiClient.getUrl(
+                'Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName'));
         }
         
-        function getBaseItem(id) {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
-                    resolve(result);
-                });
-            });
+        async function getBaseItem(id) {
+            return await ApiClient.getJSON(ApiClient.getUrl(`Items?Ids=${id}`));
         }
 
         function getListItemHtml(series, padding) {
@@ -69,20 +62,19 @@
             element.innerHTML = '';
             if (list && list.length) {
                 var padding = 0;
-                list.forEach(id => {
-                    getBaseItem(id).then(result => {
-                        var baseItem = result.Items[0];
-                        element.innerHTML += getListItemHtml(baseItem, padding);
-                        padding += 77; //Why is this padding necessary
-                        var removeButtons = view.querySelectorAll('.removeItemBtn');
-                        removeButtons.forEach(btn => {
-                            btn.addEventListener('click',
-                                el => {
-                                    el.preventDefault();
-                                    handleRemoveItemClick(el, element, view);
-                                });
+                list.forEach(async (id) => {
+                    var result = await getBaseItem(id);
+                    var baseItem = result.Items[0];
+                    element.innerHTML += getListItemHtml(baseItem, padding);
+                    padding += 77; //Why is this padding necessary
+                    var removeButtons = view.querySelectorAll('.removeItemBtn');
+                    removeButtons.forEach(btn => {
+                        btn.addEventListener('click', el => {
+                            el.preventDefault();
+                            handleRemoveItemClick(el, element, view);
                         });
                     });
+
                 });
             }
         }
@@ -90,7 +82,7 @@
        
 
         return function (view) {
-            view.addEventListener('viewshow', () => {
+            view.addEventListener('viewshow', async () => {
 
                 loading.show();
 
@@ -101,6 +93,7 @@
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
                 var fingerprintMaxDegreeOfParallelism = view.querySelector('#txtFingerprintMaxDegreeOfParallelism');
+
                 //enable ItemAdded Event Listeners
                 var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
 
@@ -111,135 +104,131 @@
                 //enable detection task auto run when fingerprinting is complete
                 var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
 
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                var config = await ApiClient.getPluginConfiguration(pluginId);
 
-                    titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
-                    
-                    fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism ? config.FingerprintingMaxDegreeOfParallelism : 2;
-                    
-                    chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
+                titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
 
-                    chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
+                fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism ? config.FingerprintingMaxDegreeOfParallelism : 2;
 
-                    chkEnableFastDetect.checked = config.FastDetect;
+                chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
 
-                    confidenceInput.value = config.DetectionConfidence;
+                chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
 
-                    if (!chkEnableFastDetect.checked) {
-                        confidenceInput.closest('.inputContainer').classList.remove('hide');
-                    }
+                chkEnableFastDetect.checked = config.FastDetect;
 
-                    if (config.IgnoredList) {
-                        reloadList(config.IgnoredList, ignoreListElement, view);
-                    }
-                });
+                confidenceInput.value = config.DetectionConfidence;
 
-                
+                if (!chkEnableFastDetect.checked) {
+                    confidenceInput.closest('.inputContainer').classList.remove('hide');
+                }
+
+                if (config.IgnoredList) {
+                    reloadList(config.IgnoredList, ignoreListElement, view);
+                }
+
                 //Our ignore list
                 var seriesSelect = view.querySelector('#selectEmbySeries');
-                getSeries().then(series => {
-                    for (let i = 0; i <= series.Items.length - 1; i++) {
-                        seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
-                    }
-                });
+                var series = await getSeries();
+                for (let i = 0; i <= series.Items.length - 1; i++) {
+                    seriesSelect.innerHTML += `<option value="${series.Items[i].Id}">${series.Items[i].Name}</option>`;
+                }
 
                 var addToIgnoreListBtn = view.querySelector('#btnAddSeriesToIgnoreList');
-                addToIgnoreListBtn.addEventListener('click', (el) => {
+                
+                addToIgnoreListBtn.addEventListener('click', async (el) => {
                     el.preventDefault();
 
                     loading.show();
 
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                    
+                    config = await ApiClient.getPluginConfiguration(pluginId);
 
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    if (config.IgnoredList) {
+                        config.IgnoredList.push(seriesId);
+                    } else {
+                        config.IgnoredList = [seriesId];
+                    }
 
-                        if (config.IgnoredList) {
+                    var r = await ApiClient.updatePluginConfiguration(pluginId, config);
 
-                            config.IgnoredList.push(seriesId);
+                    reloadList(config.IgnoredList, ignoreListElement, view);
 
-                        } else {
-
-                            config.IgnoredList = [ seriesId ];
-
-                        }
-                        ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
-                            reloadList(config.IgnoredList, ignoreListElement, view);
-
-                            Dashboard.processPluginConfigurationUpdateResult(r); 
-                        });
-
-                    });
-                        
+                    Dashboard.processPluginConfigurationUpdateResult(r);
                     loading.hide();
                 });
 
-                chkEnableFastDetect.addEventListener('change', (elem) => {
+                chkEnableFastDetect.addEventListener('change', async (elem) => {
                     elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        var fastDetect = chkEnableFastDetect.checked;
-                        config.FastDetect = fastDetect;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => {
-                           
-                            if (!fastDetect) {
-                                if (confidenceInput.closest('.inputContainer').classList.contains('hide')) {
-                                    confidenceInput.closest('.inputContainer').classList.remove('hide');
-                                }
-                            } else {
-                                if (!confidenceInput.closest('.inputContainer').classList.contains('hide')) {
-                                    confidenceInput.closest('.inputContainer').classList.add('hide');
-                                }
-                            }
-                            
-                        });
-                    });
+
+                    config = await ApiClient.getPluginConfiguration(pluginId);
+
+                    var fastDetect = chkEnableFastDetect.checked;
+                    config.FastDetect = fastDetect;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
+
+                    if (!fastDetect) {
+                        if (confidenceInput.closest('.inputContainer').classList.contains('hide')) {
+                            confidenceInput.closest('.inputContainer').classList.remove('hide');
+                        }
+                    } else {
+                        if (!confidenceInput.closest('.inputContainer').classList.contains('hide')) {
+                            confidenceInput.closest('.inputContainer').classList.add('hide');
+                        }
+                    }
                 });
 
-                confidenceInput.addEventListener('change', (elem) => {
+                confidenceInput.addEventListener('change', async (elem) => {
                     elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.DetectionConfidence = confidenceInput.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
+                    
+                    config = await ApiClient.getPluginConfiguration(pluginId);
+                    config.DetectionConfidence = confidenceInput.value;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
                 });
 
-                fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
+                fingerprintMaxDegreeOfParallelism.addEventListener('change', async (elem) => {
                     elem.preventDefault();
+
                     if (fingerprintMaxDegreeOfParallelism < 2) {
                         fingerprintMaxDegreeOfParallelism.value = 2;
                     }
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
+                    
+                    config = await ApiClient.getPluginConfiguration(pluginId);
+                    config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
                 });
 
-                titleSequenceMaxDegreeOfParallelism.addEventListener('change', (elem) => {
+                titleSequenceMaxDegreeOfParallelism.addEventListener('change', async (elem) => {
                     elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
+
+                    config = await ApiClient.getPluginConfiguration(pluginId);
+                    config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
                 });
 
-                chkEnableItemAddedTaskAutoRun.addEventListener('change', (elem) => {
+                chkEnableItemAddedTaskAutoRun.addEventListener('change', async (elem) => {
                     elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.EnableItemAddedTaskAutoRun = chkEnableItemAddedTaskAutoRun.checked; 
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
+
+                    config = ApiClient.getPluginConfiguration(pluginId);
+                    config.EnableItemAddedTaskAutoRun = chkEnableItemAddedTaskAutoRun.checked;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
                 });
 
-                chkEnableDetectionTaskAutoRun.addEventListener('change', (elem) => {
+                chkEnableDetectionTaskAutoRun.addEventListener('change', async (elem) => {
                     elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.EnableIntroDetectionAutoRun = chkEnableDetectionTaskAutoRun.checked; 
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
+
+                    config = await ApiClient.getPluginConfiguration(pluginId);
+                    config.EnableIntroDetectionAutoRun = chkEnableDetectionTaskAutoRun.checked;
+
+                    await ApiClient.updatePluginConfiguration(pluginId, config);
                 });
 
                 loading.hide();
             });
-
-
         }
     });
