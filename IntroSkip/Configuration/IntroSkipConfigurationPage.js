@@ -115,7 +115,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
          
         function titleSequenceStatusIcon(confirmed) {
             return (confirmed ?
-                "stroke='black' stroke-width='1' fill='mediumseagreen'" :
+                "stroke='black' stroke-width='1' fill='var(--theme-primary-color)'" :
                 "stroke='black' stroke-width='1' fill='orange'");
         }
 
@@ -208,17 +208,17 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
             var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
 
-            html += '<td data-title="Start" class="detailTableBodyCell fileCell">';
-            html += '<div contenteditable>' + start + '</div>';
-            html += '<img style="width:175px; height:100px" src="' + await getExtractedThumbImage(hasIntro, intro.InternalId, start, true) + '"/>';
+            html += '<td style="position:relative" data-title="Start" class="detailTableBodyCell fileCell">';
+            html += `<div class="editTimestamp" style="position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 63.8%;" contenteditable>${start}</div>`;
+            html += `<img class="startThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, start, true)}"/>`;
             html += '</td>';
-            html += '<td data-title="End" class="detailTableBodyCell fileCell">';
-            html += '<div contenteditable>' + end + '</div>';
-            html += '<img style="width:175px; height:100px" src="' + await getExtractedThumbImage(hasIntro, intro.InternalId, end, false) + '"/>';
+            html += '<td style="position:relative" data-title="End" class="detailTableBodyCell fileCell">';
+            html += `<div class="editTimestamp" style="position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 63.8%;" contenteditable>${end}</div>`;
+            html += `<img class="endThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, end, false)}"/>`;
             html += '</td>';
 
             html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
-            html += '<button style="margin-left: 1em;" data-id="' + episode.Id + '" class="saveSequence emby-button button-submit">';
+            html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
             html += '<span>Confirm</span>';
             html += '</button>';
             html += '</td>';
@@ -249,6 +249,19 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 });
 
                 sortTable(view);
+
+                view.querySelectorAll('.startThumb').forEach(thumb => {
+                    thumb.addEventListener('click', (e) => {
+                        e.target.closest('td').querySelector('.editTimestamp').focus();
+                    });
+                });
+
+                view.querySelectorAll('.endThumb').forEach(thumb => {
+                    thumb.addEventListener('click', (e) => {
+                        e.target.closest('td').querySelector('.editTimestamp').focus();
+                    });
+                });
+
             });
         }
          
@@ -311,15 +324,18 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
 
             async function clearAll(seasonId, page) {
-                await ApiClient.deleteSeasonData(seasonId);
-                var result = await getIntros(seasonId); 
-                reloadItems(result.TitleSequences, page);
+                ApiClient.deleteSeasonData(seasonId).then(async () => {
+                    var result = await getIntros(seasonId); 
+                    await reloadItems(result.TitleSequences, page);
+                });
             }
 
             async function confirmAll(seasonId, page) {
-                await ApiClient.saveSeasonalIntros(seasonId);
-                var result = await getIntros(seasonId);
-                reloadItems(result.TitleSequences, page);
+                ApiClient.saveSeasonalIntros(seasonId).then(async () => {
+                    var result = await getIntros(seasonId);
+                    await reloadItems(result.TitleSequences, page);
+                });
+                
             }
 
             dialogHelper.open(dlg);
@@ -372,7 +388,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 mainTabsManager.setTabs(this, 0, getTabs);
 
-
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
                     '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
                 
@@ -391,7 +406,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }
 
                 seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(seriesId) + '"/>';
+                view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
 
                 var seasons = await getSeasons(seriesId);
 
@@ -431,10 +446,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         }
                     }
                 }
-                
-                loading.hide();
-                 
- 
+
                 seasonSelect.addEventListener('change', async (e) => {
                     e.preventDefault();
                     loading.show();
@@ -450,7 +462,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     var introResult = await getIntros(seasonId);
                     if (introResult) {
                         if (introResult.TitleSequences) {
-                            const length = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
+                            const length = parseISO8601Duration(introResult.CommonEpisodeTitleSequenceLength);
 
                             if (removeSeasonalFingerprintButton.classList.contains('hide')) {
                                 removeSeasonalFingerprintButton.classList.remove('hide');
@@ -460,7 +472,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                                 `Reset ${seasonSelect[seasonSelect.selectedIndex].innerHTML} Data`;
 
                             view.querySelector('.averageTitleSequenceTime').innerText = `00:${length.minutes}:${length.seconds}`;
-                            const sequences = result.TitleSequences;
+                            const sequences = introResult.TitleSequences;
                             await reloadItems(sequences, view);
                         } else {
                             view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
@@ -480,11 +492,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
-                    view.querySelector('.detailLogo').innerHTML = '<img style="width:225px" src="' + ApiClient.getPrimaryImageUrl(seriesId) + '"/>';
+                    view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
 
                     var seasons = await getSeasons(seriesId);
                     seasons.Items.forEach(season => {
-                        seasonSelect.innerHTML += '<option data-index="' + season.IndexNumber + '" value="' + season.Id + '">' + season.Name + '</option>';
+                        seasonSelect.innerHTML += `<option data-index="${season.IndexNumber}" value="${season.Id}">${season.Name}</option>`;
                     });
 
                     view.querySelector('.introResultBody').innerHTML = '';
@@ -505,9 +517,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                                 removeSeasonalFingerprintButton.classList.remove('hide');
                             }
                             removeSeasonalFingerprintButton.querySelector('span').innerHTML =
-                                "Reset " + seasonSelect[seasonSelect.selectedIndex].innerText + "Data";
+                                `Reset ${seasonSelect[seasonSelect.selectedIndex].innerText}Data`;
 
-                            view.querySelector('.averageTitleSequenceTime').innerText = "00:" + averageLength.minutes + ":" + averageLength.seconds;
+                            view.querySelector('.averageTitleSequenceTime').innerText = `00:${averageLength.minutes}:${averageLength.seconds}`;
                             var titleSequences = result.TitleSequences;
                             await reloadItems(titleSequences, view);
                         } else {
@@ -529,6 +541,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     e.preventDefault();
                     confirm_dlg(view, "ConfirmAll");
                 });
+
+                
+                
+
+                loading.hide();
+
             });
         }
     });
