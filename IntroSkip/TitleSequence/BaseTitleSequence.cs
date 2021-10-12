@@ -11,6 +11,6 @@ namespace IntroSkip.TitleSequence
         public TimeSpan TitleSequenceEnd { get; set; }
         public long SeriesId { get; set; }
         public long SeasonId { get; set; }
-
+        public bool Confirmed { get; set; }
     }
 }

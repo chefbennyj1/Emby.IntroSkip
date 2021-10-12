@@ -274,6 +274,12 @@ namespace IntroSkip.Data
                 result.IndexNumber = reader.GetInt(index);
             }
 
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.Confirmed = reader.GetBoolean(index);
+            }
+                        
 
 
             return result;

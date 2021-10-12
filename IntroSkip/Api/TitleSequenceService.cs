@@ -56,8 +56,6 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
             public long SeasonId { get; set; }
-            [ApiMember(Name = "RemoveAll", Description = "Remove all, or keep edited content", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
-            public bool RemoveAll { get; set; }
         }
         
 
@@ -119,21 +117,16 @@ namespace IntroSkip.Api
 
             [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool Confirmed { get; set; }
+
         }
 
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
-
         private ILibraryManager LibraryManager { get; }
-
         public IHttpResultFactory ResultFactory { get; set; }
-
         private IFfmpegManager FfmpegManager { get; set; }
-
         public IRequest Request { get; set; }
       
-       
-
         // ReSharper disable once TooManyDependencies
         public TitleSequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager)
         {
@@ -180,7 +173,7 @@ namespace IntroSkip.Api
             ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             List<TitleSequenceResult> titleSequences = dbResults.Items.ToList();
-            Log.Info("API CALL: update Season --- Season Id = {0}", request.SeasonId);
+
 
             foreach (var episode in titleSequences)
             {
@@ -190,7 +183,7 @@ namespace IntroSkip.Api
                 try
                 {
                     repository.SaveResult(episode, CancellationToken.None);
-                    Log.Info("API CALL: Repository Saved for Id:{0}", episode.InternalId, episode.Confirmed.ToString());
+
                 }
                 catch (Exception ex)
                 {
@@ -249,29 +242,19 @@ namespace IntroSkip.Api
             TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
             DisposeRepository(repository);
         }
-
         
 
         public string Delete(RemoveSeasonDataRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var seasonResult = repository.GetBaseTitleSequenceResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
                 try
                 {
-                    if (request.RemoveAll)
-                    {
-                        repository.Delete(item.InternalId.ToString());
-                        titleSequences.Remove(item);
-                    }
-                    else
-                    {
-                        if (item.Confirmed) continue;
-                        repository.Delete(item.InternalId.ToString());
-                        titleSequences.Remove(item);
-                    }
+                    repository.Delete(item.InternalId.ToString());
+                    titleSequences.Remove(item);
                 }
                 catch { }
             }
