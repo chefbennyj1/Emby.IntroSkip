@@ -15,18 +15,6 @@
   <CodeAnalysisRuleSet />
 </PropertyGroup>
 
-<ItemGroup>
-  <None Remove="AudioFingerprinting\5fnb1sma.csw~" />
-  <None Remove="Configuration\AdvancedSettingsConfigurationPage.html" />
-  <None Remove="Configuration\AdvancedSettingsConfigurationPage.js" />
-  <None Remove="Configuration\ChapterEditorConfigurationPage.html" />
-  <None Remove="Configuration\ChapterEditorConfigurationPage.js" />
-  <None Remove="Configuration\IntroSkipConfigurationPage.html" />
-  <None Remove="Configuration\IntroSkipConfigurationPage.js" />
-  <None Remove="Configuration\u50inpcc.wxg~" />
-  <None Remove="no_intro.png" />
-  <None Remove="thumb.jpg" />
-</ItemGroup>
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.html" />
@@ -36,22 +24,13 @@
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
   <EmbeddedResource Include="no_intro.png" />
-  <EmbeddedResource Include="thumb.jpg">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </EmbeddedResource>
+  <EmbeddedResource Include="thumb.jpg" />
 </ItemGroup>
 
 
-<ItemGroup> <PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3" />
+<ItemGroup> 
+<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3"/>
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
-
 </ItemGroup>
-
-
-
-
-
-
-
 
 </Project>
