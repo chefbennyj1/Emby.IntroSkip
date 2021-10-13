@@ -149,7 +149,7 @@ namespace IntroSkip.Api
             FfmpegManager = ffmpegManager;
         }
 
-        public object Get(ExtractThumbImage request)
+        public async Task<object> Get(ExtractThumbImage request)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath          = ffmpegConfiguration.EncoderPath;
@@ -166,17 +166,19 @@ namespace IntroSkip.Api
                 CreateNoWindow = true,
             };
 
-            using (var process = new Process { StartInfo = procStartInfo })
-            {
+            var process = new Process {StartInfo = procStartInfo};
+            
                 process.Start();
 
-                FileStream output = process.StandardOutput.BaseStream as FileStream;
-                
-                return ResultFactory.GetResult(Request, output, "image/bmp");
+            var task = Task.Factory.StartNew(() => process.StandardOutput.BaseStream as FileStream);
 
-            }
+            FileStream output = await task;
+            
+            process.Dispose();
+            return ResultFactory.GetResult(Request, output, "image/bmp");
+
         }
-        
+
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
 

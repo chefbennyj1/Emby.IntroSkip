@@ -286,6 +286,11 @@ namespace IntroSkip.AudioFingerprinting
                 return 20;
             }
 
+            if (averageRuntime <= TimeSpan.FromMinutes(13))
+            {
+                return 8;
+            }
+
             return 15;
 
         }
@@ -294,6 +299,7 @@ namespace IntroSkip.AudioFingerprinting
         {
             var totalCount = episodes.Count();
             long? runtimeSum = 0L;
+
             Parallel.ForEach(episodes, //<-- Do this fast
                 (e) =>
                 {
