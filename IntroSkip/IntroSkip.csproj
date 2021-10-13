@@ -15,10 +15,17 @@
   <CodeAnalysisRuleSet />
 </PropertyGroup>
 
+<ItemGroup>
+  <None Remove="Configuration\StatsConfigurationPage.html" />
+  <None Remove="Configuration\StatsConfigurationPage.js" />
+</ItemGroup>
+
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.js" />
+  <EmbeddedResource Include="Configuration\StatsConfigurationPage.html" />
+  <EmbeddedResource Include="Configuration\StatsConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
@@ -29,7 +36,7 @@
 
 
 <ItemGroup> 
-<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3"/>
+<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3" />
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 </ItemGroup>
 

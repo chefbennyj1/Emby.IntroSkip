@@ -110,6 +110,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
                     name: 'Advanced'
+                },
+                {
+                    href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
+                    name: 'Stats'
                 }];
         }
          
@@ -291,7 +295,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
            
             //Submit - Confirm
-            html += '<button is="emby-button" type="button" class="btnConfirm raised button-submit block emby-button button-cancel">';
+            html += '<button is="emby-button" type="button" style="width:35%" class="btnConfirm raised button-submit block emby-button">';
             html += '<span>Confirm</span>';
             html += '</button>';
                  
@@ -410,7 +414,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }
 
                 seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                view.querySelector('.detailLogo').innerHTML = `<img style="width:275px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
 
                 var seasons = await getSeasons(seriesId);
 
@@ -496,7 +500,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
-                    view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                    view.querySelector('.detailLogo').innerHTML = `<img style="width:275px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
 
                     var seasons = await getSeasons(seriesId);
                     seasons.Items.forEach(season => {

@@ -12,6 +12,7 @@ namespace IntroSkip.TitleSequence
         public long SeriesId { get; set; }
         public long SeasonId { get; set; }
         public bool Confirmed { get; set; }
+        public bool Processed { get; set; } = false;
 
     }
 }
