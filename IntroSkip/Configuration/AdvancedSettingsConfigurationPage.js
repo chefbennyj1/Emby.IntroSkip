@@ -27,12 +27,8 @@
             });
         }
         
-        function getBaseItem(id) {
-            return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
-                    resolve(result);
-                });
-            });
+        async function getBaseItem(id) {
+            return await ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id));
         }
 
         function getListItemHtml(series, padding) {
@@ -69,20 +65,20 @@
             element.innerHTML = '';
             if (list && list.length) {
                 var padding = 0;
-                list.forEach(id => {
-                    getBaseItem(id).then(result => {
-                        var baseItem = result.Items[0];
-                        element.innerHTML += getListItemHtml(baseItem, padding);
-                        padding += 77; //Why is this padding necessary
-                        var removeButtons = view.querySelectorAll('.removeItemBtn');
-                        removeButtons.forEach(btn => {
-                            btn.addEventListener('click',
-                                el => {
-                                    el.preventDefault();
-                                    handleRemoveItemClick(el, element, view);
-                                });
-                        });
+                list.forEach(async id => {
+                    var result = await getBaseItem(id);
+                    var baseItem = result.Items[0];
+                    element.innerHTML += getListItemHtml(baseItem, padding);
+                    padding += 77; //Why is this padding necessary
+                    var removeButtons = view.querySelectorAll('.removeItemBtn');
+                    removeButtons.forEach(btn => {
+                        btn.addEventListener('click',
+                            el => {
+                                el.preventDefault();
+                                handleRemoveItemClick(el, element, view);
+                            });
                     });
+
                 });
             }
         }
