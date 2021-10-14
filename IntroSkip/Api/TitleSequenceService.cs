@@ -11,6 +11,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -348,17 +349,15 @@ namespace IntroSkip.Api
 
         private class SeasonStatisticsResponse
         {
-            public List<DetectionStats> DetectionStats { get; set; }
+            public List<DetectionStats> SeasonStats { get; set; }
         }
-
-
-        public List<DetectionStats> detectionStats = new List<DetectionStats>();
         public string Get(SeasonStatisticsRequest request)
         {
-
+            List<DetectionStats> detectStats = new List<DetectionStats>();
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
             var dbResults = repository.GetBaseTitleSequenceResults(query);
+
             var item = LibraryManager.GetItemById(request.SeasonId);
 
             Log.Info("STATISTICS: DETECTIONS STATISTICS have started for {0} - {1}", item.Parent.Name, item.Name);
@@ -366,7 +365,7 @@ namespace IntroSkip.Api
             var titleSequences = dbResults.Items.ToList();
 
             
-            int hasIntro = 0;
+            int hasIntroCount = 0;
             int totalEpisodeCount = 0;
 
             foreach (var episode in titleSequences) 
@@ -375,17 +374,18 @@ namespace IntroSkip.Api
 
                 if (episode.HasSequence)
                 {
-                    hasIntro++;
+                    hasIntroCount++;
                 }
-                else { hasIntro += 0; }
+                else { hasIntroCount += 0; }
             }
-            Log.Info("STATISTICS: TOTAL Episodes that have Sequence IS {0}", hasIntro.ToString());
+            Log.Info("STATISTICS: TOTAL Episodes that have Sequence IS {0}", hasIntroCount.ToString());
             Log.Info("STATISTICS: TOTAL Episodes in Season IS {0}", totalEpisodeCount.ToString());
 
-            if (totalEpisodeCount == hasIntro || hasIntro == 0)
+            if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
             {
-                detectionStats.Add(new DetectionStats
+                detectStats.Add(new DetectionStats
                 {
+                    Date = DateTime.Now,
                     SeasonId = item.InternalId,
                     TVShowName = item.Parent.Name,
                     Season = item.Name,
@@ -393,24 +393,25 @@ namespace IntroSkip.Api
                     PercentDetected = 100,
                     HasIssue = false
                 });
-                foreach (var stat in detectionStats)
+                foreach (var stat in detectStats)
                 {
                     Log.Info("STATISTICS: Season ID: {0}", stat.SeasonId.ToString());
                     Log.Info("STATISTICS: {0}", stat.TVShowName);
                     Log.Info("STATISTICS: {0}", stat.Season);
                     Log.Info("STATISTICS: No of Episodes:{0}", stat.EpisodeCount.ToString());
-                    Log.Info("STATISTICS: DETECTION SUCCESS = {0}", stat.PercentDetected.ToString());
+                    Log.Info("STATISTICS: DETECTION SUCCESS = {0}%", stat.PercentDetected.ToString(CultureInfo.InvariantCulture));
                     Log.Info("STATISTICS: HAS ISSUE = {0}", stat.HasIssue.ToString());
                 }
             }
 
             else
             {
-                int x = hasIntro;
+                int x = hasIntroCount;
                 int y = totalEpisodeCount;
                 double percentage =((double) x / y) * 100;
-                detectionStats.Add(new DetectionStats
+                detectStats.Add(new DetectionStats
                 {
+                    Date = DateTime.Now,
                     SeasonId = item.InternalId,
                     TVShowName = item.Parent.Name,
                     Season = item.Name,
@@ -418,13 +419,13 @@ namespace IntroSkip.Api
                     PercentDetected = percentage,
                     HasIssue = true
                 });
-                foreach (var stat in detectionStats)
+                foreach (var stat in detectStats)
                 {
                     Log.Info("STATISTICS: Season ID: {0}", stat.SeasonId.ToString());
                     Log.Info("STATISTICS: {0}", stat.TVShowName);
                     Log.Info("STATISTICS: {0}", stat.Season);
                     Log.Info("STATISTICS: No of Episodes:{0}", stat.EpisodeCount.ToString());
-                    Log.Info("STATISTICS: DETECTION SUCCESS = {0}", stat.PercentDetected.ToString());
+                    Log.Info("STATISTICS: DETECTION SUCCESS = {0}%", stat.PercentDetected.ToString(CultureInfo.InvariantCulture));
                     Log.Info("STATISTICS: HAS ISSUE = {0}", stat.HasIssue.ToString());
                     Log.Info("STATISTICS: WARNING {0}: {1} IS ONLY {2}% CORRECT",stat.TVShowName, stat.Season, stat.PercentDetected.ToString());
                 }
@@ -432,16 +433,11 @@ namespace IntroSkip.Api
 
             DisposeRepository(repository);
 
-            return JsonSerializer.SerializeToString(new SeasonStatisticsResponse()
+            
+            return JsonSerializer.SerializeToString(new SeasonStatisticsResponse
             {
-                DetectionStats = detectionStats
+                SeasonStats = detectStats
             });
-
-        }
-
-        private string GetPercentageString(double ratio)
-        {
-            return ratio.ToString("0.0%");
         }
 
         private TimeSpan CalculateCommonTitleSequenceLength(List<BaseTitleSequence> season)

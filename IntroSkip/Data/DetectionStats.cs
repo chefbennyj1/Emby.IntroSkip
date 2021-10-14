@@ -18,8 +18,7 @@ namespace IntroSkip.Data
         public string Season            { get; set; }
         public int EpisodeCount         { get; set; }
         public double PercentDetected   { get; set; }
-        public bool IsConfirmed         { get; set; }
-        public bool IsProcessed         { get; set; }
+        public DateTime Date            { get; set; }
         public bool HasIssue            { get; set; }
     }
 }

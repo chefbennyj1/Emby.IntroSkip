@@ -185,16 +185,22 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
 
+            //Index 1
             html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
             html += '<svg width="30" height="30">';
             html += '<circle cx="15" cy="15" r="10"' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
             html += '</svg>';
             html += '</td>';
 
+            //Index 2
             html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
+            //Index 3
             html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
+            //Index 4
             html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
+            //Index 5
             html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
+            //Index 6
             html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
 
 

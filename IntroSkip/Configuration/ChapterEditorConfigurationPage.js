@@ -134,8 +134,8 @@
                 //Chapter Error Result Table
                 getChapterErrors().then(errResults => {
                     errResults.forEach(errItem => {
-                        getBaseItem(errItem.Id).then(result => {
-                            var baseItem = result.Items[0];
+                        getBaseItem(errItem.Id).then(itemResult => {
+                            var baseItem = itemResult.Items[0];
                             chapterErrorResultTable.innerHTML += renderTableRowHtml(errItem, baseItem);
                         });
                         
