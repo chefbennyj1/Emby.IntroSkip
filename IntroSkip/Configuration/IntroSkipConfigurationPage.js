@@ -162,7 +162,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function getExtractedThumbImage(hasIntro, id, imageFrame, isStart) {
-            var thumb = !hasIntro ? 'NoTitleSequenceThumbImage' : `ExtractThumbImage?InternalId=${id}&ImageFrame=${encodeURIComponent(imageFrame)}&IsStart=${isStart}`;
+            var thumb = !hasIntro ? 'NoTitleSequenceThumbImage' : `ExtractThumbImage?InternalId=${id}&ImageFrame=${encodeURIComponent(imageFrame)}&IsIntroStart=${isStart}`;
             return await ApiClient.getUrl(thumb);
         }
 
@@ -219,7 +219,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
             html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
-            html += '<span>Confirm</span>';
+            html += '<span>Save</span>';
             html += '</button>';
             html += '</td>';
 
