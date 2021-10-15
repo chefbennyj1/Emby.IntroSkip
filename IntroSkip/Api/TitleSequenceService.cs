@@ -34,7 +34,7 @@ namespace IntroSkip.Api
             public long InternalId { get; set; }
 
             [ApiMember(Name = "IsStart", Description = "Is the Title SequenceStart", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
-            public bool IsStart { get; set; }
+            public bool IsIntroStart { get; set; }
             public object Img { get; set; }
         }
 
@@ -55,9 +55,7 @@ namespace IntroSkip.Api
         public class RemoveSeasonDataRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long SeasonId { get; set; }
-            [ApiMember(Name = "RemoveAll", Description = "Remove all, or keep edited content", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
-            public bool RemoveAll { get; set; }
+            public long SeasonId { get; set; }           
         }
         
 
@@ -147,26 +145,25 @@ namespace IntroSkip.Api
             var ffmpegPath          = ffmpegConfiguration.EncoderPath;
             var item                = LibraryManager.GetItemById(request.InternalId);
             var requestFrame        = TimeSpan.Parse(request.ImageFrame);
-            requestFrame            = requestFrame.Add( TimeSpan.FromSeconds(request.IsStart ? 7 : -7));
-            var frame               = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; //<--back track the image frame so it isn't always a black screen.
-            var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 300x120 -";
+            requestFrame            = requestFrame.Add( TimeSpan.FromSeconds(request.IsIntroStart ? 7 : -7)); //<--back track the image frame so it isn't always a black screen.
+            var frame               = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; 
+            var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 -";
             var procStartInfo       = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true,
             };
 
-            var process = new Process {StartInfo = procStartInfo};
-            
+            FileStream output;
+
+            using (var process = new Process { StartInfo = procStartInfo })
+            {
                 process.Start();
+                output = await Task.Factory.StartNew(() => process.StandardOutput.BaseStream as FileStream);
+            }
 
-            var task = Task.Factory.StartNew(() => process.StandardOutput.BaseStream as FileStream);
-
-            FileStream output = await task;
-            
-            process.Dispose();
             return ResultFactory.GetResult(Request, output, "image/bmp");
 
         }
@@ -260,17 +257,10 @@ namespace IntroSkip.Api
             {
                 try
                 {
-                    if (request.RemoveAll)
-                    {
-                        repository.Delete(item.InternalId.ToString());
-                        titleSequences.Remove(item);
-                    }
-                    else
-                    {
-                        if (item.Confirmed) continue;
-                        repository.Delete(item.InternalId.ToString());
-                        titleSequences.Remove(item);
-                    }
+
+                    repository.Delete(item.InternalId.ToString());
+                    titleSequences.Remove(item);
+
                 }
                 catch { }
             }
