@@ -250,9 +250,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         var result       = await getIntros(seasonId);
                         await reloadItems(result.TitleSequences, view);
                     });
-                });
-
-                sortTable(view);
+                });                
 
                 view.querySelectorAll('.startThumb').forEach(thumb => {
                     thumb.addEventListener('click', (e) => {
@@ -266,7 +264,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     });
                 });
 
+                 sortTable(view);
             });
+
+            
         }
          
         function confirm_dlg(view, confirmAction) {
@@ -362,8 +363,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     shouldSwitch = false;
                     /* Get the two elements you want to compare,
                     one from current row and one from the next: */
-                    x = parseInt(rows[i].getElementsByTagName("TD")[4].dataset.index);
-                    y = parseInt(rows[i + 1].getElementsByTagName("TD")[4].dataset.index);
+                    x = parseInt(rows[i].getElementsByTagName("TD")[3].dataset.index);
+                    y = parseInt(rows[i + 1].getElementsByTagName("TD")[3].dataset.index);
                     // Check if the two rows should switch place:
                     if (x > y) {
                         // If so, mark as a switch and break the loop:
