@@ -22,44 +22,53 @@
             ];
         }
 
+        function waitdlg2(view) {
+            var dlg = dialogHelper.createDialog({
+                removeOnClose: true,
+                size: 'small'
+            });
 
-        var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
+            dlg.classList.add('ui-body-a');
+            dlg.classList.add('background-theme-a');
 
-        function sortTable(view) {
-            var rows, switching, i, x, y, shouldSwitch;
-            const table = view.querySelector('.tblStatsResultBody');
-            switching = true;
-            /* Make a loop that will continue until
-            no switching has been done: */
-            while (switching) {
-                // Start by saying: no switching is done:
-                switching = false;
-                rows = table.rows;
-                /* Loop through all table rows (except the
-                first, which contains table headers): */
-                for (i = 1; i < (rows.length - 1); i++) {
-                    // Start by saying there should be no switching:
-                    shouldSwitch = false;
-                    /* Get the two elements you want to compare,
-                    one from current row and one from the next: */
-                    x = parseInt(rows[i].getElementsByTagName("TD")[2].dataset.index);
-                    y = parseInt(rows[i + 1].getElementsByTagName("TD")[2].dataset.index);
-                    // Check if the two rows should switch place:
-                    if (x > y) {
-                        // If so, mark as a switch and break the loop:
-                        shouldSwitch = true;
-                        break;
-                    }
-                }
-                if (shouldSwitch) {
-                    /* If a switch has been marked, make the switch
-                    and mark that a switch has been done: */
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                }
-            }
+            dlg.classList.add('formDialog');
+            dlg.style.maxWidth = '30%';
+            dlg.style.maxHeight = '20%';
+
+            var html = '';
+            html += '<div class="formDialogHeader">';
+            html += '<button is="paper-icon-button-light" class="btnCancel autoSize" tabindex="-1"><i class="md-icon">&#xE5C4;</i></button>';
+            html += '<h3 class="formDialogHeaderTitle">Getting Statistics</h3>';
+            html += '</div>';
+
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
+
+            html += `<h3 class="sectionTitle">${"Please wait while the stats are loaded"}</h3>`;
+
+            /*Cancel
+            html += '<button is="emby-button" type="button" class="btnCancel submit raised button-cancel">';
+            html += '<span>Cancel</span>';
+            html += '</button>';*/
+
+            html += '</div>';
+            html += '</div>';
+
+            dlg.innerHTML = html;
+            
+            /*dlg.querySelectorAll('.btnCancel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    dialogHelper.close(dlg);
+                });
+            });*/
+
+            dialogHelper.open(dlg);
+
+            reloadItems(view);
+            dialogHelper.close(dlg);
         }
 
+        var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
 
         function getSeasonStatistics() {
             return new Promise((resolve, reject) => {
@@ -68,11 +77,6 @@
                 });
             });
         }
-
-        loading.show();
-        getSeasonStatistics().then(() => {
-            loading.hide();
-        });
 
         //really doesn't like async methods
         /*async function getSeasonStatistics() {
@@ -85,11 +89,11 @@
                 "stroke='black' stroke-width='1' fill='mediumseagreen'");
         }
 
-        function reloadItems(view) {
+        async function reloadItems(view) {
             view.querySelector('.tblStatsResultBody').innerHTML = '';
             var statisticsResultTable = view.querySelector('.tblStatsResultBody');
             
-            getSeasonStatistics().then(statResults => {
+            await getSeasonStatistics().then(statResults => {
                 statResults.forEach(statItem => {
                     statisticsResultTable.innerHTML += renderTableRowHtml(statItem);
                 });
@@ -147,17 +151,32 @@
 
                     //elements
                     var runStatsTaskBtn = view.querySelector('.runStatsTaskBtn');
+                    //var enableFullStats = view.querySelector('.chkEnableFullStats');
 
-                    //Load the list on launch
-                    //reloadItems(view);
 
-                    //update the list on button click
+                    //Full Stats Option
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        //Chapter Insertion Option
+                        enableFullStats.checked = config.EnableFullStatistics;
+                    });
+                    enableFullStats.addEventListener('change',
+                        (e) => {
+                            e.preventDefault();
+                            ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                                config.EnableFullStatistics = enableFullStats.checked;
+                                ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                            });
+                        });
+
+
+                    //Get Statistics on button click
                     runStatsTaskBtn.addEventListener('click', (e) => {
                         e.preventDefault();
-                        loading.show();
-                        reloadItems(view);
-                        loading.hide();
+                        waitdlg2(view);
+                        //reloadItems(view);
+                        
                     });
+
                     loading.hide();
             });
 

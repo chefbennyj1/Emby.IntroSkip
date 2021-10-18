@@ -15,6 +15,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using IntroSkip.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Querying;
 
@@ -356,11 +357,19 @@ namespace IntroSkip.Api
 
        public string Get(SeasonStatisticsRequest request)
         {
+            PluginConfiguration config = Plugin.Instance.Configuration;
             ReturnedDetectionStatsList.Clear();
             GetDetectionStatistics();
-            ReturnedDetectionStatsList.RemoveAll(x => x.HasIssue == false);
-            ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
-             
+            if (!config.EnableFullStatistics)
+            {
+                ReturnedDetectionStatsList.RemoveAll(x => x.HasIssue == false);
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+            else
+            {
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+
             foreach (var stat in ReturnedDetectionStatsList)
             {
                 Log.Info("STATISTICS: DETECTIONS STATISTICS have started for {0}: {1}", stat.TVShowName, stat.Season);
@@ -448,6 +457,7 @@ namespace IntroSkip.Api
                         }
                     }
 
+                    //Hoping not using this will increase performance massively.
                     if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
                     {
                         ReturnedDetectionStatsList.Add(new DetectionStats
@@ -481,7 +491,7 @@ namespace IntroSkip.Api
                             HasSeqCount = hasIntroCount,
                             PercentDetected = percentage,
                             IntroDuration = commonDuration,
-                            Comment = "Needs Attention",
+                            Comment = "Hope you're Happy Rich!! LOL :)",
                             HasIssue = true
                         });
                     }

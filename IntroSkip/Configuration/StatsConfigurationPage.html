@@ -8,11 +8,26 @@
                     <h2 class="sectionTitle">IntroSkip Statistics</h2>
                 </div>
 
-                <br/>
+                <br />
+                <div class="inputContainer">
+                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                        <input is="emby-toggle" type="checkbox" id="enableFullStats" class="chkEnableFullStats" data-embytoggle="">
+                        <span class="toggleButtonLabel mdl-switch__label">Enable All Stats</span>
+                        <div class="mdl-switch__trackContainer">
+                            <div class="mdl-switch__track"></div>
+                            <div class="mdl-switch__thumb">
+                                <span class="mdl-switch__focus-helper"></span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="fieldDescription">
+                        This will show statistics for every TV Show and Episode (loading times will increase) 
+                    </div>
+                </div>
 
                 <div class="sectionTitleContainer flex align-items-center">
                     <h3 class="sectionTitle" style="margin-right:3%">Update Statistics:</h3>
-                    <button is="emby-button" style="width:15%"type="submit" class="runStatsTaskBtn raised button-submit block emby-button">
+                    <button is="emby-button" style="width:15%" type="submit" class="runStatsTaskBtn raised button-submit block emby-button">
                         <span>GET STATS</span>
                     </button>
                 </div>
