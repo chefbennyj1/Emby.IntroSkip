@@ -16,6 +16,10 @@
                 {
                     href: Dashboard.getConfigurationPageUrl('AdvancedSettingsConfigurationPage'),
                     name: 'Advanced'
+                },
+                {
+                    href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
+                    name: 'Stats'
                 }];
         }
 

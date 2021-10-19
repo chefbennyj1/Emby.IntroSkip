@@ -11,13 +11,13 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using IntroSkip.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Querying;
-
-// ReSharper disable TooManyChainedReferences
-// ReSharper disable MethodNameNotMeaningful
 
 namespace IntroSkip.Api
 {
@@ -74,6 +74,12 @@ namespace IntroSkip.Api
 
         }
 
+        [Route("/GetSeasonStatistics", "GET", Summary = "Get Statics by Season")]
+        public class SeasonStatisticsRequest : IReturn<string> 
+        {
+            //No args to pass - all code is done in the request below
+        }
+
         [Route("/UpdateTitleSequence", "POST", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
@@ -112,7 +118,9 @@ namespace IntroSkip.Api
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            
+
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
         }
 
@@ -283,6 +291,7 @@ namespace IntroSkip.Api
         public string Get(SeasonTitleSequenceRequest request)
         {
 
+
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
             var dbResults = repository.GetBaseTitleSequenceResults(query);
@@ -326,6 +335,156 @@ namespace IntroSkip.Api
                 return JsonSerializer.SerializeToString(new BaseTitleSequence()); //Empty
             }
 
+        }
+
+       public string Get(SeasonStatisticsRequest request)
+        {
+            PluginConfiguration config = Plugin.Instance.Configuration;
+            ReturnedDetectionStatsList.Clear();
+            GetDetectionStatistics();
+            if (!config.EnableFullStatistics)
+            {
+                ReturnedDetectionStatsList.RemoveAll(x => !x.HasIssue);
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+            else
+            {
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+
+            foreach (var stat in ReturnedDetectionStatsList)
+            {
+                Log.Info("STATISTICS: DETECTIONS STATISTICS have started for {0}: {1}", stat.TVShowName, stat.Season);
+                Log.Debug("STATISTICS: Season ID: {0}", stat.SeasonId.ToString());
+                Log.Debug("STATISTICS: No of Episodes:{0}", stat.EpisodeCount.ToString());
+                Log.Debug("STATISTICS: No of detected Episodes:{0}", stat.HasSeqCount.ToString());
+                Log.Info("STATISTICS: DETECTION SUCCESS = {0}%", stat.PercentDetected.ToString(CultureInfo.InvariantCulture));
+                Log.Info("STATISTICS: HAS ISSUE = {0}", stat.HasIssue.ToString());
+            }
+            return JsonSerializer.SerializeToString(ReturnedDetectionStatsList);
+        }
+       
+
+        public static List<DetectionStats> ReturnedDetectionStatsList = new List<DetectionStats>();
+        
+        public void GetDetectionStatistics()
+        {
+            var seriesList = new InternalItemsQuery()
+            {
+                Recursive = true,
+                IncludeItemTypes = new[] { "Series" },
+                IsVirtualItem = false,
+            };
+
+            var seriesItems = LibraryManager.GetItemList(seriesList);
+            //var seriesItemsCount = seriesItems.Count();
+            
+            Log.Info("STATISTICS: Series Count = {0}", seriesItems.Length.ToString());
+            List<long> seasonIds = new List<long>();
+            foreach (var season in seriesItems)
+            {
+                var seasonInternalItemQuery = new InternalItemsQuery()
+                {
+                    Parent = season,
+                    Recursive = true,
+                    IncludeItemTypes = new[] { "Season" },
+                    IsVirtualItem = false,
+                };
+                BaseItem[] seasonItems = LibraryManager.GetItemList(seasonInternalItemQuery);
+
+                foreach (var id in seasonItems)
+                {
+                    seasonIds.Add(id.InternalId);
+                    
+                }
+            }
+            Log.Info("STATISTICS: No of Seasons to process = {0}", seasonIds.Count.ToString());
+
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            try
+            {
+                foreach (var season in seasonIds)
+                {
+                    var query = new TitleSequenceResultQuery() { SeasonInternalId = season };
+                    var dbResults = repository.GetBaseTitleSequenceResults(query);
+
+                    var seasonItem = LibraryManager.GetItemById(season);
+                    var detectedSequences = dbResults.Items.ToList();
+
+                    TimeSpan commonDuration;
+                    try
+                    {
+                        commonDuration = CalculateCommonTitleSequenceLength(detectedSequences);
+                    }
+                    catch
+                    {
+                        commonDuration = new TimeSpan(0, 0, 0);
+                    }
+
+
+                    int hasIntroCount = 0;
+                    int totalEpisodeCount = 0;
+
+                    foreach (var episode in detectedSequences)
+                    {
+                        totalEpisodeCount++;
+
+                        if (episode.HasSequence)
+                        {
+                            hasIntroCount++;
+                        }
+                        else
+                        {
+                            hasIntroCount += 0;
+                        }
+                    }
+
+                    //Hoping not using this will increase performance massively.
+                    if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
+                    {
+                        ReturnedDetectionStatsList.Add(new DetectionStats
+                        {
+                            Date = DateTime.Now,
+                            SeasonId = seasonItem.InternalId,
+                            TVShowName = seasonItem.Parent.Name,
+                            Season = seasonItem.Name,
+                            EpisodeCount = totalEpisodeCount,
+                            HasSeqCount = hasIntroCount,
+                            PercentDetected = 100,
+                            IntroDuration = commonDuration,
+                            Comment = "Looks Good",
+                            HasIssue = false
+                        });
+                    }
+
+                    else
+                    {
+                        int x = hasIntroCount;
+                        int y = totalEpisodeCount;
+                        double percentage = Math.Round((double)x / y * 100);
+                        
+                        ReturnedDetectionStatsList.Add(new DetectionStats
+                        {
+                            Date = DateTime.Now,
+                            SeasonId = seasonItem.InternalId,
+                            TVShowName = seasonItem.Parent.Name,
+                            Season = seasonItem.Name,
+                            EpisodeCount = totalEpisodeCount,
+                            HasSeqCount = hasIntroCount,
+                            PercentDetected = percentage,
+                            IntroDuration = commonDuration,
+                            Comment = "Needs Attention",
+                            HasIssue = true
+                        });
+                    }
+                }
+
+                DisposeRepository(repository);
+            }
+            catch(Exception e)
+            {
+                Log.Warn("STATISTICS: ******* ISSUE CREATING STATS FOR INTROSKIP *********");
+            }
         }
 
         private TimeSpan CalculateCommonTitleSequenceLength(List<BaseTitleSequence> season)

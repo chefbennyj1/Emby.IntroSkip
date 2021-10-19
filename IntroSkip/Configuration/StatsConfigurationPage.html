@@ -1,0 +1,65 @@
+﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs ChapterEditorConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/StatsConfigurationPageJS">
+    <div class="content-primary">
+        <div class="verticalSection verticalSection">
+
+            <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">IntroSkip Detection Statistics</h2>
+                </div>
+                <div class="fieldDescription" style="width:45%">
+                    This Page allows you to run statistics on the detection success of all your TV Shows and seasons, allowing you to investigate Seasons which have a problem with their episodes.
+                </div>
+
+                <br />
+                <div class="inputContainer">
+                    <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                        <input is="emby-toggle" type="checkbox" id="enableFullStats" class="chkEnableFullStats" data-embytoggle="">
+                        <span class="toggleButtonLabel mdl-switch__label">Enable All Stats</span>
+                        <div class="mdl-switch__trackContainer">
+                            <div class="mdl-switch__track"></div>
+                            <div class="mdl-switch__thumb">
+                                <span class="mdl-switch__focus-helper"></span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="fieldDescription" style="width:45%">
+                        Disabling will show only statistics for TV Shows and Seasons that do not have 100% detection success
+                    </div>
+                    <div class="fieldDescription" style="width:45%">
+                        Enabling will show statistics for all TV Shows and Seasons (Good and Bad)
+                    </div>
+                </div>
+
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h3 class="sectionTitle" style="margin-right:3%">Update Statistics:</h3>
+                    <button is="emby-button" style="width:15%" type="submit" class="runStatsTaskBtn raised button-submit block emby-button">
+                        <span>GET STATS</span>
+                    </button>
+                </div>
+
+                <hr />
+
+                <div class="StatsResults scrollY" style="max-height: 50em; margin:0 2em 2em 2em">
+                    <table class="tblStatsResults table detailTable" style="width: 100%;">
+                        <thead>
+                            <tr style="text-align: left; color: mediumseagreen; padding-bottom: 2em;">
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Has Issue</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">TV Show</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Season</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">No. Episodes</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Duration</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Results</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Comments</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="tblStatsResultBody"></tbody>
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>

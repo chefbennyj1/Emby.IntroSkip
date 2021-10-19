@@ -279,6 +279,11 @@ namespace IntroSkip.Data
             {
                 result.Confirmed = reader.GetBoolean(index);
             }
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.Processed = reader.GetBoolean(index);
+            }
 
 
             return result;

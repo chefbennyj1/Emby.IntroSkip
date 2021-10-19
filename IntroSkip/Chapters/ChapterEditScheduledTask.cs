@@ -111,7 +111,7 @@ namespace IntroSkip.Chapters
 
             foreach (TitleSequenceResult episode in dbResults.Items)
             {
-                                if (config.EnableChapterInsertion && episode.HasSequence && !episode.Confirmed)
+                if (config.EnableChapterInsertion && episode.HasSequence)
                 {
                     long id = episode.InternalId;
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);

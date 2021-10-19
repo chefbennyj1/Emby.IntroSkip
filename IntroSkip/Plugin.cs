@@ -47,6 +47,16 @@ namespace IntroSkip
             },
             new PluginPageInfo
             {
+                Name = "ChapterEditorConfigurationPage",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.html",
+            },
+            new PluginPageInfo
+            {
+                Name = "ChapterEditorConfigurationPageJS",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.js"
+            },
+            new PluginPageInfo
+            {
                 Name = "AdvancedSettingsConfigurationPage",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.AdvancedSettingsConfigurationPage.html",
             },
@@ -57,14 +67,15 @@ namespace IntroSkip
             },
             new PluginPageInfo
             {
-                Name = "ChapterEditorConfigurationPage",
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.html",
+                Name = "StatsConfigurationPage",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.StatsConfigurationPage.html",
             },
             new PluginPageInfo
             {
-                Name = "ChapterEditorConfigurationPageJS",
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ChapterEditorConfigurationPage.js"
-            }
+                Name = "StatsConfigurationPageJS",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.StatsConfigurationPage.js"
+            },
+
 
         };
     }
