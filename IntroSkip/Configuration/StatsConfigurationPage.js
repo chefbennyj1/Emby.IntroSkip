@@ -22,7 +22,7 @@
             ];
         }
 
-        function waitdlg2(view) {
+        function waitdlg(view) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
                 size: 'small'
@@ -44,7 +44,11 @@
             html += '<div class="formDialogContent" style="margin:2em">';
             html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
 
-            html += `<h3 class="sectionTitle">${"Please wait while the stats are loaded"}</h3>`;
+            html += `<h3 class="sectionTitle">${"Please wait while the stats are loaded....."}</h3>`;
+
+            html += '<button is="emby-button" type="button" class="btnCancel submit raised button-submit" style="width:20%; margin-left:5%; justify-content: center;">';
+            html += '<span>OK</span>';
+            html += '</button>';
 
             /*Cancel
             html += '<button is="emby-button" type="button" class="btnCancel submit raised button-cancel">';
@@ -56,16 +60,15 @@
 
             dlg.innerHTML = html;
             
-            /*dlg.querySelectorAll('.btnCancel').forEach(btn => {
+            dlg.querySelectorAll('.btnCancel').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     dialogHelper.close(dlg);
                 });
-            });*/
+            });
 
             dialogHelper.open(dlg);
 
             reloadItems(view);
-            dialogHelper.close(dlg);
         }
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
@@ -79,9 +82,9 @@
         }
 
         //really doesn't like async methods
-        /*async function getSeasonStatistics() {
+        async function getAsyncSeasonStatistics() {
             return await ApiClient.getJSON(ApiClient.getUrl(`GetSeasonStatistics`));
-        }*/
+        }
 
         function HasIssueIcon(confirmed) {
             return (confirmed ?
@@ -89,17 +92,26 @@
                 "stroke='black' stroke-width='1' fill='mediumseagreen'");
         }
 
-        async function reloadItems(view) {
+        function reloadItems(view) {
             view.querySelector('.tblStatsResultBody').innerHTML = '';
             var statisticsResultTable = view.querySelector('.tblStatsResultBody');
             
-            await getSeasonStatistics().then(statResults => {
+            getSeasonStatistics().then(statResults => {
                 statResults.forEach(statItem => {
                     statisticsResultTable.innerHTML += renderTableRowHtml(statItem);
                 });
-                
             });
-            //sortTable(view);
+        }
+
+        async function asyncReloadItems(view) {
+            view.querySelector('.tblStatsResultBody').innerHTML = '';
+            var statisticsResultTable = view.querySelector('.tblStatsResultBody');
+
+            getSeasonStatistics().then(statResults => {
+                statResults.forEach(async (statItem) => {
+                    statisticsResultTable.innerHTML += await renderTableRowHtml(statItem);
+                });
+            });
         }
 
         
@@ -151,7 +163,7 @@
 
                     //elements
                     var runStatsTaskBtn = view.querySelector('.runStatsTaskBtn');
-                    //var enableFullStats = view.querySelector('.chkEnableFullStats');
+                    var enableFullStats = view.querySelector('.chkEnableFullStats');
 
 
                     //Full Stats Option
@@ -172,7 +184,7 @@
                     //Get Statistics on button click
                     runStatsTaskBtn.addEventListener('click', (e) => {
                         e.preventDefault();
-                        waitdlg2(view);
+                        waitdlg(view);
                         //reloadItems(view);
                         
                     });
