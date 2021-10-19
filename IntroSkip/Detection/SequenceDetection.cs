@@ -5,27 +5,24 @@
  */
 
 using IntroSkip.AudioFingerprinting;
-using MediaBrowser.Controller.Entities;
+using IntroSkip.Sequence;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 // ReSharper disable ComplexConditionExpression
 
-namespace IntroSkip.TitleSequence
+namespace IntroSkip.Detection
 {
-    public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
+    public class SequenceDetection : SequenceResult, IServerEntryPoint
 
     {
-        public static TitleSequenceDetection Instance { get; private set; }
-        //private static ILogger Log { get; set; }
+        public static SequenceDetection Instance { get; private set; }
 
-        public TitleSequenceDetection(ILogManager logMan)
+        public SequenceDetection(ILogManager logMan)
         {
-            //Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
 
@@ -130,7 +127,7 @@ namespace IntroSkip.TitleSequence
                 catch (Exception ex)
                 {
                     //Logger.Info("Get Best Offset Error: " + ex.Message);
-                    throw new TitleSequenceInvalidDetectionException(ex.Message);
+                    throw new SequenceInvalidDetectionException(ex.Message);
                 }
             }
 
@@ -146,7 +143,6 @@ namespace IntroSkip.TitleSequence
             List<uint> offsetCorrectedF1 = new List<uint>();
             if (offset >= 0)
             {
-                //offset = offset * -1;
                 offsetCorrectedF1.AddRange(fingerprint1.GetRange(offset, fingerprint1.Count - offset));
                 offsetCorrectedF2.AddRange(fingerprint2.GetRange(0, fingerprint2.Count - offset));
 
@@ -189,7 +185,7 @@ namespace IntroSkip.TitleSequence
         }
 
         // Look at next elements in the array and determine if they also fall below the upper limit
-        private static bool nextOnesAreAlsoSmall(List<double> hammingDistances, int index, int upperLimit)
+        private static bool nextOnesAreAlsoSmall(IReadOnlyList<double> hammingDistances, int index, int upperLimit)
         {
             if (index + 3 < hammingDistances.Count())
             {
@@ -203,50 +199,83 @@ namespace IntroSkip.TitleSequence
             return false;
         }
 
-        public List<TitleSequenceResult> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input, QueryResult<TitleSequenceResult> result)
-        {
+        public Tuple<SequenceResult, SequenceResult> DetectTitleSequence(SequenceResult episode1InputKey, SequenceResult episode2InputKey)
+        {            
 
-            var episode1InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
-
-            var episode2InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode2Input.InternalId);
-
-            if (episode1InputKey is null)
+            if (episode1InputKey.TitleSequenceFingerprint is null)
             {
-
                 throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
-            if (episode2InputKey is null)
+            if (episode2InputKey.TitleSequenceFingerprint is null)
             {
-
                 throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
             if (episode1InputKey.Duration != episode2InputKey.Duration)
             {
-
                 throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
             }
 
+            //Find intro
+            var introFingerprint1     = episode1InputKey.TitleSequenceFingerprint;
+            var introFingerprint2     = episode2InputKey.TitleSequenceFingerprint;
+            var introEncodingDuration = episode1InputKey.Duration * 60; //Both episodes should have the same encoding duration in seconds
 
-            var introDto = CompareFingerprint(episode1InputKey, episode2InputKey);
+            var intros = CompareFingerprint(introFingerprint1, introFingerprint2, introEncodingDuration);
 
+            episode1InputKey.HasTitleSequence   = true;
+            episode1InputKey.TitleSequenceStart = intros[0];
+            episode1InputKey.TitleSequenceEnd   = intros[1];
 
-            return introDto;
+            episode2InputKey.HasTitleSequence   = true;
+            episode2InputKey.TitleSequenceStart = intros[2];
+            episode2InputKey.TitleSequenceEnd   = intros[3];
+
+            return Tuple.Create(episode1InputKey, episode2InputKey);
 
         }
 
-
-        private List<TitleSequenceResult> CompareFingerprint(TitleSequenceResult episode1, TitleSequenceResult episode2)
+        public Tuple<SequenceResult, SequenceResult> DetectEndCreditSequence(SequenceResult episode1InputKey, SequenceResult episode2InputKey, long episode1Runtime, long episode2Runtime)
         {
+            
+            if (episode1InputKey.EndCreditFingerprint is null)
+            {
+                throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
+            }
 
-            var duration = episode1.Duration * 60; //Both episodes should have the same encoding duration
+            if (episode2InputKey.EndCreditFingerprint is null)
+            {
+                throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
+            }
+
+            if (episode1InputKey.Duration != episode2InputKey.Duration) //Both episodes should have the same encoding duration in seconds
+            {
+                throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
+            }
+
+            //Find credits
+            var endCreditFingerprint1     = episode1InputKey.EndCreditFingerprint;
+            var endCreditFingerprint2     = episode2InputKey.EndCreditFingerprint;
+            var endCreditEncodingDuration = 3 * 60; //End credit encoding duration in seconds (3 minutes of the end of the show).
+
+            var credits = CompareFingerprint(endCreditFingerprint1, endCreditFingerprint2, endCreditEncodingDuration);
+
+            episode1InputKey.HasEndCreditSequence   = true;
+            episode1InputKey.EndCreditSequenceStart = TimeSpan.FromTicks(episode1Runtime) - TimeSpan.FromSeconds(endCreditEncodingDuration) + credits[0];
+            episode1InputKey.EndCreditSequenceEnd   = TimeSpan.FromTicks(episode1Runtime) - TimeSpan.FromSeconds(endCreditEncodingDuration) + credits[1];
+
+            episode2InputKey.HasEndCreditSequence   = true;
+            episode2InputKey.EndCreditSequenceStart = TimeSpan.FromTicks(episode2Runtime) - TimeSpan.FromSeconds(endCreditEncodingDuration) + credits[2];
+            episode2InputKey.EndCreditSequenceEnd   = TimeSpan.FromTicks(episode2Runtime) - TimeSpan.FromSeconds(endCreditEncodingDuration) + credits[3];
 
 
-            var fingerprint1 = episode1.Fingerprint;
-            var fingerprint2 = episode2.Fingerprint;
+            return Tuple.Create(episode1InputKey, episode2InputKey);
 
+        }
 
+        private List<TimeSpan> CompareFingerprint(List<uint> fingerprint1, List<uint> fingerprint2, double duration)
+        {
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
             if (fingerprint1.Count % 2 != 0)
             {
@@ -255,79 +284,66 @@ namespace IntroSkip.TitleSequence
             }
 
             int offset = GetBestOffset(fingerprint1, fingerprint2);
+            
 
-
-            var tup1 = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
-            var f1 = tup1.Item1;
-            var f2 = tup1.Item2;
+            var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
 
             // ReSharper disable once TooManyChainedReferences
             List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
            
 
-            //Added for Sam to test upper threshold changes
-            var config = Plugin.Instance.Configuration;
             var (start, end) = FindContiguousRegion(hammingDistances, 8);
 
 
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
-            var offsetInSeconds = offset * secondsPerSample;
+            var offsetInSeconds   = offset * secondsPerSample;
             var commonRegionStart = start * secondsPerSample;
-            var commonRegionEnd = (end * secondsPerSample);
+            var commonRegionEnd   = (end * secondsPerSample);
 
-            var firstFileRegionStart = 0.0;
-            var firstFileRegionEnd = 0.0;
+            var firstFileRegionStart  = 0.0;
+            var firstFileRegionEnd    = 0.0;
             var secondFileRegionStart = 0.0;
-            var secondFileRegionEnd = 0.0;
+            var secondFileRegionEnd   = 0.0;
 
             if (offset >= 0)
             {
-                firstFileRegionStart = commonRegionStart + offsetInSeconds;
-                firstFileRegionEnd = commonRegionEnd + offsetInSeconds;
+                firstFileRegionStart  = commonRegionStart + offsetInSeconds;
+                firstFileRegionEnd    = commonRegionEnd + offsetInSeconds;
                 secondFileRegionStart = commonRegionStart;
-                secondFileRegionEnd = commonRegionEnd;
+                secondFileRegionEnd   = commonRegionEnd;
             }
             else
             {
-                firstFileRegionStart = commonRegionStart;
-                firstFileRegionEnd = commonRegionEnd;
+                firstFileRegionStart  = commonRegionStart;
+                firstFileRegionEnd    = commonRegionEnd;
                 secondFileRegionStart = commonRegionStart - offsetInSeconds;
-                secondFileRegionEnd = commonRegionEnd - offsetInSeconds;
+                secondFileRegionEnd   = commonRegionEnd - offsetInSeconds;
             }
 
 
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
-            {
-                
-                throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
+            {                
+                throw new SequenceInvalidDetectionException("Episode detection failed to find a reasonable start and end time.");
             }
+
             if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
-            {
-                
-                throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
+            {                
+                throw new SequenceInvalidDetectionException("Episode common region is deemed too short to be considered a sequence.");
 
             }
             else if (start == 0 && end == 0)
             {
-                throw new TitleSequenceInvalidDetectionException("Episode common region are both 00:00:00.");
+                throw new SequenceInvalidDetectionException("Episode common region are both 00:00:00.");
             }
-
-
-            episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd));
-
-
-            episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd));
-
-            return new List<TitleSequenceResult>()
+            
+            return new List<TimeSpan>()
             {
-                episode1,
-                episode2
+                TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart)),             //<--Episode 1 sequence start
+                TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd)),             //<--Episode 1 sequence end
+                TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart)),            //<--Episode 2 sequence start
+                TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd))             //<--Episode 2 sequence end              
             };
 
 

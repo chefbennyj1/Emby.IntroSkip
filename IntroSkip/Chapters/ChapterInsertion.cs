@@ -4,9 +4,9 @@ using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using MediaBrowser.Model.Entities;
- using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
+using IntroSkip.Sequence;
 
 namespace IntroSkip.Chapters
 {
@@ -30,7 +30,7 @@ namespace IntroSkip.Chapters
             Instance = this;
         }
 
-        public void InsertIntroChapters(long id, TitleSequenceResult titleSequence)
+        public void InsertIntroChapters(long id, SequenceResult titleSequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
 

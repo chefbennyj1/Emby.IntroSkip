@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using IntroSkip.TitleSequence;
+using IntroSkip.Sequence;
 using MediaBrowser.Controller;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
@@ -36,8 +36,8 @@ namespace IntroSkip.Data
 
                 string[] queries =
                 {
-                     "create table if not exists TitleSequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, HasSequence TEXT, Fingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",
-                     "create index if not exists idx_TitleSequenceResults on TitleSequenceResults(ResultId)"
+                     "create table if not exists SequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, EndCreditSequenceStart TEXT, EndCreditSequenceEnd TEXT, HasTitleSequence TEXT, HasEndCreditSequence TEXT, TitleSequenceFingerprint TEXT, EndCreditFingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",
+                     "create index if not exists idx_TitleSequenceResults on SequenceResults(ResultId)"
                 };
 
                 connection.RunQueries(queries);
@@ -46,7 +46,7 @@ namespace IntroSkip.Data
         }
 
 
-        public void SaveResult(TitleSequenceResult result, CancellationToken cancellationToken)
+        public void SaveResult(SequenceResult result, CancellationToken cancellationToken)
         {
             if (result == null)
             {
@@ -61,15 +61,19 @@ namespace IntroSkip.Data
                 {
                     connection.RunInTransaction(db =>
                     {
-                        var commandText = "replace into TitleSequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @HasSequence, @Fingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed, @Processed)";
+                        var commandText = "replace into SequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, TitleSequenceFingerprint, EndCreditFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @EndCreditSequenceStart, @EndCreditSequenceEnd, @HasTitleSequence, @HasEndCreditSequence, @TitleSequenceFingerprint, @EndCreditFingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed, @Processed)";
 
                         using (var statement = db.PrepareStatement(commandText))
                         {
                             statement.TryBind("@ResultId", result.InternalId);
                             statement.TryBind("@TitleSequenceStart", result.TitleSequenceStart.ToString());
                             statement.TryBind("@TitleSequenceEnd", result.TitleSequenceEnd.ToString());
-                            statement.TryBind("@HasSequence", result.HasSequence);
-                            statement.TryBind("@Fingerprint", string.Join("|", result.Fingerprint.ToArray()));
+                            statement.TryBind("@EndCreditSequenceStart", result.EndCreditSequenceStart.ToString());
+                            statement.TryBind("@EndCreditSequenceEnd", result.EndCreditSequenceEnd.ToString());
+                            statement.TryBind("@HasTitleSequence", result.HasTitleSequence);
+                            statement.TryBind("@HasEndCreditSequence", result.HasEndCreditSequence);
+                            statement.TryBind("@TitleSequenceFingerprint", string.Join("|", result.TitleSequenceFingerprint.ToArray()));
+                            statement.TryBind("@EndCreditFingerprint", string.Join("|", result.EndCreditFingerprint.ToArray()));
                             statement.TryBind("@Duration", result.Duration.ToString());
                             statement.TryBind("@SeriesId", result.SeriesId);
                             statement.TryBind("@SeasonId", result.SeasonId);
@@ -111,7 +115,7 @@ namespace IntroSkip.Data
                 {
                     connection.RunInTransaction(db =>
                     {
-                        using (var statement = db.PrepareStatement("delete from TitleSequenceResults where ResultId = @ResultId"))
+                        using (var statement = db.PrepareStatement("delete from SequenceResults where ResultId = @ResultId"))
                         {
                             statement.TryBind("@ResultId", Convert.ToInt64(id));
                             statement.MoveNext();
@@ -130,7 +134,7 @@ namespace IntroSkip.Data
                 {
                     connection.RunInTransaction(db =>
                     {
-                        var commandText = "delete from TitleSequenceResults";
+                        var commandText = "delete from SequenceResults";
 
                         db.Execute(commandText);
 
@@ -142,8 +146,8 @@ namespace IntroSkip.Data
         }
 
 
-        //BaseTitleSequence
-        public QueryResult<BaseTitleSequence> GetBaseTitleSequenceResults(TitleSequenceResultQuery query)
+        //BaseSequence
+        public QueryResult<BaseSequence> GetBaseTitleSequenceResults(SequenceResultQuery query)
         {
             if (query == null)
             {
@@ -157,17 +161,17 @@ namespace IntroSkip.Data
                     var commandText = string.Empty;
                     if (query.SeasonInternalId.HasValue)
                     {
-                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
                     }
                     else
                     {
-                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults";
                     }
 
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
-                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM TitleSequenceResults ORDER BY SeasonId desc LIMIT {0})",
+                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM SequenceResults ORDER BY SeasonId desc LIMIT {0})",
                             query.StartIndex.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
@@ -178,23 +182,23 @@ namespace IntroSkip.Data
                         commandText += " LIMIT " + query.Limit.Value.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    var list = new List<BaseTitleSequence>();
+                    var list = new List<BaseSequence>();
 
                     using (var statement = connection.PrepareStatement(commandText))
                     {
                         foreach (var row in statement.ExecuteQuery())
                         {
-                            list.Add(GetBaseTitleSequenceResult(row));
+                            list.Add(GetBaseSequenceResult(row));
                         }
                     }
 
                     int count;
-                    using (var statement = connection.PrepareStatement("select count (ResultId) from TitleSequenceResults"))
+                    using (var statement = connection.PrepareStatement("select count (ResultId) from SequenceResults"))
                     {
                         count = statement.ExecuteQuery().First().GetInt(0);
                     }
 
-                    return new QueryResult<BaseTitleSequence>()
+                    return new QueryResult<BaseSequence>()
                     {
                         Items = list.ToArray(),
                         TotalRecordCount = count
@@ -202,7 +206,7 @@ namespace IntroSkip.Data
                 }
             }
         }
-        public BaseTitleSequence GetBaseTitleSequence(string id)
+        public BaseSequence GetBaseTitleSequence(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -213,13 +217,13 @@ namespace IntroSkip.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults where ResultId=@ResultId"))
                     {
                         statement.TryBind("@ResultId", id);
 
                         foreach (var row in statement.ExecuteQuery())
                         {
-                            return GetBaseTitleSequenceResult(row);
+                            return GetBaseSequenceResult(row);
                         }
                     }
 
@@ -228,11 +232,11 @@ namespace IntroSkip.Data
             }
 
         }
-        public BaseTitleSequence GetBaseTitleSequenceResult(IResultSet reader)
+        public BaseSequence GetBaseSequenceResult(IResultSet reader)
         {
             var index = 0;
 
-            var result = new BaseTitleSequence
+            var result = new BaseSequence
             {
                 InternalId = reader.GetInt64(index)
             };
@@ -252,9 +256,26 @@ namespace IntroSkip.Data
             index++;
             if (!reader.IsDBNull(index))
             {
-                result.HasSequence = reader.GetBoolean(index);
+                result.EndCreditSequenceStart = TimeSpan.Parse(reader.GetString(index));
             }
 
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.EndCreditSequenceEnd = TimeSpan.Parse(reader.GetString(index));
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasTitleSequence = reader.GetBoolean(index);
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasEndCreditSequence = reader.GetBoolean(index);
+            }
 
             index++;
             if (!reader.IsDBNull(index))
@@ -285,7 +306,7 @@ namespace IntroSkip.Data
         }
 
         //TitleSequenceResult - Full Result including FIngerprint and duration
-        public QueryResult<TitleSequenceResult> GetResults(TitleSequenceResultQuery query)
+        public QueryResult<SequenceResult> GetResults(SequenceResultQuery query)
         {
             if (query == null)
             {
@@ -299,17 +320,17 @@ namespace IntroSkip.Data
                     var commandText = string.Empty;
                     if (query.SeasonInternalId.HasValue)
                     {
-                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, TitleSequenceFingerprint, EndCreditFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
                     }
                     else
                     {
-                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults";
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, TitleSequenceFingerprint, EndCreditFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults";
                     }
 
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
-                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM TitleSequenceResults ORDER BY SeasonId desc LIMIT {0})",
+                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM SequenceResults ORDER BY SeasonId desc LIMIT {0})",
                             query.StartIndex.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
@@ -320,7 +341,7 @@ namespace IntroSkip.Data
                         commandText += " LIMIT " + query.Limit.Value.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    var list = new List<TitleSequenceResult>();
+                    var list = new List<SequenceResult>();
 
                     using (var statement = connection.PrepareStatement(commandText))
                     {
@@ -331,12 +352,12 @@ namespace IntroSkip.Data
                     }
 
                     int count;
-                    using (var statement = connection.PrepareStatement("select count (ResultId) from TitleSequenceResults"))
+                    using (var statement = connection.PrepareStatement("select count (ResultId) from SequenceResults"))
                     {
                         count = statement.ExecuteQuery().First().GetInt(0);
                     }
 
-                    return new QueryResult<TitleSequenceResult>()
+                    return new QueryResult<SequenceResult>()
                     {
                         Items = list.ToArray(),
                         TotalRecordCount = count
@@ -344,7 +365,7 @@ namespace IntroSkip.Data
                 }
             }
         }
-        public TitleSequenceResult GetResult(string id)
+        public SequenceResult GetResult(string id)
         {
 
             if (string.IsNullOrEmpty(id))
@@ -356,7 +377,7 @@ namespace IntroSkip.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, HasSequence, Fingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from TitleSequenceResults where ResultId=@ResultId"))
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, EndCreditSequenceStart, EndCreditSequenceEnd, HasTitleSequence, HasEndCreditSequence, TitleSequenceFingerprint, EndCreditFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults where ResultId=@ResultId"))
                     {
                         statement.TryBind("@ResultId", id);
 
@@ -370,11 +391,11 @@ namespace IntroSkip.Data
                 }
             }
         }
-        public TitleSequenceResult GetResult(IResultSet reader)
+        public SequenceResult GetResult(IResultSet reader)
         {
             var index = 0;
 
-            var result = new TitleSequenceResult
+            var result = new SequenceResult
             {
                 InternalId = reader.GetInt64(index)
             };
@@ -394,13 +415,37 @@ namespace IntroSkip.Data
             index++;
             if (!reader.IsDBNull(index))
             {
-                result.HasSequence = reader.GetBoolean(index);
+                result.EndCreditSequenceStart = TimeSpan.Parse(reader.GetString(index));
             }
 
             index++;
             if (!reader.IsDBNull(index))
             {
-                result.Fingerprint = ToUintList(reader.GetString(index).Split('|'));
+                result.EndCreditSequenceEnd = TimeSpan.Parse(reader.GetString(index));
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasTitleSequence = reader.GetBoolean(index);
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasEndCreditSequence = reader.GetBoolean(index);
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.TitleSequenceFingerprint = ToUintList(reader.GetString(index).Split('|'));
+            }
+
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.EndCreditFingerprint = ToUintList(reader.GetString(index).Split('|'));
             }
 
             index++;

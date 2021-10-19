@@ -1,6 +1,6 @@
-﻿namespace IntroSkip.TitleSequence
+﻿namespace IntroSkip.Sequence
 {
-    public class TitleSequenceResultQuery
+    public class SequenceResultQuery
     {
         public int? StartIndex { get; set; }
         public int? Limit { get; set; }

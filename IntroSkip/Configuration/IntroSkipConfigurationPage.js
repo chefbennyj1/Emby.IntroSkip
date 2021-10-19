@@ -1,7 +1,7 @@
 define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
     function (loading, dialogHelper, mainTabsManager) {
 
-        const pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
+        //const pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
         var iso8601DurationRegex = /(-)?P(?:([.,\d]+)Y)?(?:([.,\d]+)M)?(?:([.,\d]+)W)?(?:([.,\d]+)D)?T(?:([.,\d]+)H)?(?:([.,\d]+)M)?(?:([.,\d]+)S)?/;
 
         window.parseISO8601Duration = function (iso8601Duration) {
@@ -87,6 +87,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return url;
         }
 
+        ApiClient.getSeriesCompletedData = function (id) {
+            return this.getJSON(this.getUrl(`SeriesSequenceCompletedData?InternalId=${id}`));
+        }
+
         ApiClient.getPrimaryImageUrl = function (id) {
             var url = this.getUrl(`Items/${id}/Images/Primary?maxHeight=327&amp;maxWidth=236&amp;quality=90`);
             return url;
@@ -112,13 +116,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     name: 'Advanced'
                 }];
         }
-         
-        function titleSequenceStatusIcon(confirmed) {
-            return (confirmed ?
-                "stroke='black' stroke-width='1' fill='var(--theme-primary-color)'" :
-                "stroke='black' stroke-width='1' fill='orange'");
-        }
-
+        
+        
         async function getSeries() {
             return await ApiClient.getJSON(ApiClient.getUrl('Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName'));
         }
@@ -158,7 +157,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function getIntros(seasonId) {
-            return await ApiClient.getJSON(ApiClient.getUrl(`SeasonTitleSequences?SeasonId=${seasonId}`));
+            return await ApiClient.getJSON(ApiClient.getUrl(`SeasonSequences?SeasonId=${seasonId}`));
         }
 
         async function getExtractedThumbImage(hasIntro, id, imageFrame, isStart) {
@@ -180,12 +179,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var endTimespan   = parseISO8601Duration(intro.TitleSequenceEnd);
 
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
-
-            //html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
-            //html += '<svg width="30" height="30">';
-            //html += '<circle cx="15" cy="15" r="10"' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
-            //html += '</svg>';
-            //html += '</td>';
+             
 
             html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) + '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
             html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
@@ -196,8 +190,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             html += '<div class="selectContainer" style="top:40px">';
             html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
-            html += '<option value="true" ' + (intro.HasSequence ? 'selected' : "") + '>true</option>';
-            html += '<option value="false" ' + (!intro.HasSequence ? 'selected' : "") + '>false</option>';
+            html += '<option value="true" ' + (intro.HasTitleSequence ? 'selected' : "") + '>true</option>';
+            html += '<option value="false" ' + (!intro.HasTitleSequence ? 'selected' : "") + '>false</option>';
             html += '</select>';
             html += '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
             html += '</div>';
@@ -206,7 +200,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
             var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-            var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
+            var hasIntro = intro.HasTitleSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
 
             html += '<td style="position:relative" data-title="Start" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp" contenteditable>${start}</div>`;
@@ -230,10 +224,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         }
          
-        async function reloadItems(titleSequences, view) {
+        async function reloadItems(sequences, view) {
             view.querySelector('.introResultBody').innerHTML = '';
-            titleSequences.forEach(async (intro) => {
-                var html = await getTableRowHtml(intro);
+            sequences.forEach(async (sequence) => {
+                var html = await getTableRowHtml(sequence);
                 view.querySelector('.introResultBody').innerHTML += html;
 
                 view.querySelectorAll('.editTimestamp').forEach(edit => {
@@ -248,7 +242,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         var seasonSelect = view.querySelector('#selectEmbySeason');
                         var seasonId     = seasonSelect[seasonSelect.selectedIndex].value;
                         var result       = await getIntros(seasonId);
-                        await reloadItems(result.TitleSequences, view);
+                        await reloadItems(result.Sequences, view);
                     });
                 });                
 
@@ -331,14 +325,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             async function clearAll(seasonId, page) {
                 ApiClient.deleteSeasonData(seasonId).then(async () => {
                     var result = await getIntros(seasonId); 
-                    await reloadItems(result.TitleSequences, page);
+                    await reloadItems(result.Sequences, page);
                 });
             }
 
             async function confirmAll(seasonId, page) {
                 ApiClient.saveSeasonalIntros(seasonId).then(async () => {
                     var result = await getIntros(seasonId);
-                    await reloadItems(result.TitleSequences, page);
+                    await reloadItems(result.Sequences, page);
                 });
                 
             }
@@ -380,7 +374,35 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }
             }
         }
-            
+        
+        
+        async function renderStatChartData(Chart, series, view) {
+
+            try {
+                var data = await ApiClient.getSeriesCompletedData(series.Id);
+
+                var ctx = view.querySelector('#seriesStat').getContext("2d");
+                var chartOptions = {
+                    type: 'pie',
+                    label: series.Name,
+                    data: {
+                        labels: ['Detected', 'Not Detected'],
+                        datasets: [
+                            {
+                                data: [data[0], data[1]],
+                                backgroundColor: ["var(--theme-primary-color)", "white"],
+                                borderColor: ["var(--theme-primary-color)", "var(--theme-primary-color)"],
+                                borderWidth: 1
+                            }
+                        ]
+                    }
+                }
+                var myChart = new Chart(ctx, chartOptions);
+            } catch (err) {
+               
+            }
+        }
+
         return function (view) {
             view.addEventListener('viewshow', async () => {
                 
@@ -388,7 +410,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 const isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
                 if (!isMobile) {
-                    view.querySelector('.detailLogo').classList.remove('hide');
+                    view.querySelector('.series_stat').classList.remove('hide');
                 }
 
                 mainTabsManager.setTabs(this, 0, getTabs);
@@ -411,7 +433,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }
 
                 seriesId = seriesSelect[seriesSelect.selectedIndex].value;
-                view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                //view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+
+                require([Dashboard.getConfigurationResourceUrl('Chart.js')],
+                    async (chart) => {
+                        await renderStatChartData(chart, series.Items.find(s => s.Id == seriesId), view);
+                    });
+
 
                 var seasons = await getSeasons(seriesId);
 
@@ -428,7 +456,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 //Get the intros for the season
                 var result = await getIntros(seasonId);
                 if (result) {
-                    if (result.TitleSequences) {
+                    if (result.Sequences) {
                         var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
                         if (removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -440,8 +468,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                         view.querySelector('.averageTitleSequenceTime').innerText = `00:${averageLength.minutes}:${averageLength.seconds}`;
 
-                        var titleSequences = result.TitleSequences;
-                        await reloadItems(titleSequences, view);
+                        var sequences = result.Sequences;
+                        await reloadItems(sequences, view);
 
                     } else {
 
@@ -466,7 +494,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     var introResult = await getIntros(seasonId);
                     if (introResult) {
-                        if (introResult.TitleSequences) {
+                        if (introResult.Sequences) {
                             const length = parseISO8601Duration(introResult.CommonEpisodeTitleSequenceLength);
 
                             if (removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -477,7 +505,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                                 `Reset ${seasonSelect[seasonSelect.selectedIndex].innerHTML} Data`;
 
                             view.querySelector('.averageTitleSequenceTime').innerText = `00:${length.minutes}:${length.seconds}`;
-                            const sequences = introResult.TitleSequences;
+                            const sequences = introResult.Sequences;
                             await reloadItems(sequences, view);
                         } else {
                             view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
@@ -497,7 +525,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     seriesId = seriesSelect[seriesSelect.selectedIndex].value;
 
-                    view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                    //view.querySelector('.detailLogo').innerHTML = `<img style="width:225px" src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+
+                    series = await getSeries();
+                    require([Dashboard.getConfigurationResourceUrl('Chart.js')],
+                        async (chart) => {
+                            await renderStatChartData(chart, series.Items.find(s => s.Id == seriesId), view);
+                        });
+
 
                     var seasons = await getSeasons(seriesId);
                     seasons.Items.forEach(season => {
@@ -515,7 +550,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     var result = await getIntros(seasonId);
                     if (result) {
-                        if (result.TitleSequences) {
+                        if (result.Sequences) {
                             var averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
                             if (removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -525,8 +560,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                                 `Reset ${seasonSelect[seasonSelect.selectedIndex].innerText}Data`;
 
                             view.querySelector('.averageTitleSequenceTime').innerText = `00:${averageLength.minutes}:${averageLength.seconds}`;
-                            var titleSequences = result.TitleSequences;
-                            await reloadItems(titleSequences, view);
+                            var sequences = result.Sequences;
+                            await reloadItems(sequences, view);
                         } else {
                             view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
                             if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
@@ -546,9 +581,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     e.preventDefault();
                     confirm_dlg(view, "ConfirmAll");
                 });
-
-                
-                
 
                 loading.hide();
 

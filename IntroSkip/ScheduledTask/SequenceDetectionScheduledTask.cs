@@ -6,19 +6,20 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Data;
+using IntroSkip.Detection;
 
 // ReSharper disable once TooManyDependencies
 // ReSharper disable three TooManyChainedReferences
 // ReSharper disable twice ComplexConditionExpression
 
-namespace IntroSkip.TitleSequence
+namespace IntroSkip.ScheduledTask
 {
-    public class TitleSequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
+    public class SequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
        
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
+        public SequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             TaskManager = taskManager;
@@ -34,23 +35,25 @@ namespace IntroSkip.TitleSequence
                 progress.Report(100.0);
                 return;
             }
+                       
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
             
             var config = Plugin.Instance.Configuration;
-            if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
+            if (!config.FastDetect) Log.Debug($"DETECTION Confidence is: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
             
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+
             try
             {
                 
-                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
+                SequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
                 
             }
             catch (Exception ex)
             {
-                Log.Warn(ex.Message);
+                //Log.Warn(ex.Message);
             }
 
             var repo = (IDisposable) repository;
@@ -70,9 +73,9 @@ namespace IntroSkip.TitleSequence
             };
         }
 
-        public string Name => "Episode Title Sequence Detection";
+        public string Name => "Episode Sequence Detection";
         public string Key => "Intro Skip Options";
-        public string Description => "Detect start and finish times of episode title sequences to allow for a 'skip' option";
+        public string Description => "Detect start and finish times of episode title sequences and end credits to allow for a 'skip' and 'start now' option";
         public string Category => "Intro Skip";
         public bool IsHidden => false;
         public bool IsEnabled => true;

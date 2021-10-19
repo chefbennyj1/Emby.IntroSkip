@@ -33,13 +33,22 @@ namespace IntroSkip.AudioFingerprinting
             Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
-        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration)
+        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration, bool IsIntroSequence = true)
         {
             var separator              = FileSystem.DirectorySeparatorChar;
-            var fingerprintBinFileName = $"{episode.Parent.InternalId} - {episode.InternalId}.bin";
+            var fingerprintBinFileName = $"{(IsIntroSequence ? "IntroSequence" : "EndSequence")} - {episode.Parent.InternalId} - {episode.InternalId}.bin";
             var fingerprintBinFilePath = $"{GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
-            ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken);
+           
+            Log.Debug($"FINGERPRINT: Beginning Audio fingerprint { fingerprintBinFileName}");
+
+            duration = IsIntroSequence ? duration : 3; //If we are attempting End credit detection only encode the last 3 minutes of the episode
+
+            var encodingStartTime = IsIntroSequence ? "00:00:00" : TimeSpan.FromTicks(episode.RunTimeTicks.Value).Add(-TimeSpan.FromMinutes(3)).ToString();
+
+            Log.Debug($"{episode.Parent.Parent.Name} {episode.Parent.Name} Episode {episode.IndexNumber} - Extracting {(IsIntroSequence ? "Intro" : "Credit")} fingerprint...");
+            ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, encodingStartTime, duration, cancellationToken);
+            
 
             Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
@@ -56,7 +65,9 @@ namespace IntroSkip.AudioFingerprinting
             return fingerprints;
         }
 
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, string titleSequenceStart = "00:00:00")
+     
+
+        private void ExtractFingerprintBinaryData(string input, string output, string encodingStartTime, int duration, CancellationToken cancellationToken)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -82,7 +93,7 @@ namespace IntroSkip.AudioFingerprinting
              */
             var args = new[]
             {
-                $"-ss {titleSequenceStart}",
+                $"-accurate_seek -ss {encodingStartTime}",
                 $"-t 00:{duration}:00",
                 $"-i \"{input}\"",
                 "-ac 1",
@@ -131,20 +142,16 @@ namespace IntroSkip.AudioFingerprinting
                         }
                         catch { }
                     }
-                    //Log.Info(processOutput);
                 }
-
-                //Log.Info($"Chroma-print binary extraction successful: { input }");
-
             }
         }
 
         private List<uint> SplitByteData(string bin, BaseItem item)
         {
-            Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
+            Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print. - {bin}");
             if (!FileSystem.FileExists(bin))
             {
-                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");
+                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} {bin} file doesn't exist.");
                 throw new Exception("bin file doesn't exist");
             }
             var fingerprint = new List<uint>();

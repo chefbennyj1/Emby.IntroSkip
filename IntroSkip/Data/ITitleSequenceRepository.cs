@@ -1,19 +1,20 @@
 ﻿using System;
-using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Querying;
 using System.Threading;
+using IntroSkip.Sequence;
 
 namespace IntroSkip.Data
 {
     public interface ITitleSequenceRepository : IDisposable
     {
+        void Initialize();
         /// <summary>
         /// Saves the result.
         /// </summary>
         /// <param name="result">The result.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task.</returns>
-        void SaveResult(TitleSequenceResult result, CancellationToken cancellationToken);
+        void SaveResult(SequenceResult result, CancellationToken cancellationToken);
 
         /// <summary>
         /// Deletes the specified identifier.
@@ -27,14 +28,14 @@ namespace IntroSkip.Data
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
-        QueryResult<BaseTitleSequence> GetBaseTitleSequenceResults(TitleSequenceResultQuery query);
+        QueryResult<BaseSequence> GetBaseTitleSequenceResults(SequenceResultQuery query);
 
         /// <summary>
         /// Get title sequence base item
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        BaseTitleSequence GetBaseTitleSequence(string id);
+        BaseSequence GetBaseTitleSequence(string id);
 
         void Vacuum();
 
@@ -43,13 +44,13 @@ namespace IntroSkip.Data
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>TitleSequenceResult.</returns>
-        TitleSequenceResult GetResult(string id);
+        SequenceResult GetResult(string id);
         /// <summary>
         /// Gets the results.
         /// </summary>
         /// <param name="query">The query.</param>
         /// <returns>IEnumerable{TitleSequenceResult}.</returns>
-        QueryResult<TitleSequenceResult> GetResults(TitleSequenceResultQuery query);
+        QueryResult<SequenceResult> GetResults(SequenceResultQuery query);
 
         /// <summary>
         /// Deletes all.

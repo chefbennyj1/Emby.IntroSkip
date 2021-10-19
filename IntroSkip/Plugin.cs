@@ -37,6 +37,11 @@ namespace IntroSkip
         {
             new PluginPageInfo
             {
+                Name = "Chart.js",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.Chart.js",
+            },
+            new PluginPageInfo
+            {
                 Name = "IntroSkipConfigurationPage",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.html",
             },

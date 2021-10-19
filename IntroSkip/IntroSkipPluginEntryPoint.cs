@@ -1,6 +1,5 @@
 ﻿
 using IntroSkip.Data;
-using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
@@ -10,28 +9,24 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.TV;
 
 namespace IntroSkip
 {
     public class IntroSkipPluginEntryPoint : IServerEntryPoint
     {
-        public static IntroSkipPluginEntryPoint Instance { get; set; }
-        private ITitleSequenceRepository Repository { get; set; }
-        private static ILibraryManager LibraryManager { get; set; }
-        private static ITaskManager TaskManager { get; set; }
+        public static IntroSkipPluginEntryPoint Instance  { get; private set; }
+        private static ILibraryManager LibraryManager     { get; set; }
+        private static ITaskManager TaskManager           { get; set; }
         private static IServerConfigurationManager Config { get; set; }
-        private static ILogger Logger { get; set; }
-        private static IJsonSerializer _json { get; set; }
+        private static ILogger Logger                     { get; set; }
+        private static IJsonSerializer JsonSerializer     { get; set; }
 
         //Handling new items added to the library
         private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
        
-        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
+        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer jsonSerializer, ILibraryManager libraryManager, ITaskManager taskManager)
         {
-            _json          = json;
+            JsonSerializer = jsonSerializer;
             Config         = config;
             LibraryManager = libraryManager;
             TaskManager    = taskManager;
@@ -44,8 +39,8 @@ namespace IntroSkip
             LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
             
             TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
-            var repo = Repository as IDisposable;
-            repo?.Dispose();
+            //var repo = Repository as IDisposable;
+            //repo?.Dispose();
             ItemsAddedTimer.Dispose();
             
         }
@@ -68,7 +63,7 @@ namespace IntroSkip
                 //Run the Detection task after fingerprinting
                 case "Episode Audio Fingerprinting":
                     if (!Plugin.Instance.Configuration.EnableIntroDetectionAutoRun) return;
-                    TaskManager.Execute(TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection"),
+                    TaskManager.Execute(TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Sequence Detection"),
                         new TaskOptions());
                     break;
 
@@ -129,7 +124,7 @@ namespace IntroSkip
 
         public ITitleSequenceRepository GetRepository()
         {
-            var repo = new SqliteTitleSequenceRepository(Logger, Config.ApplicationPaths, _json);
+            var repo = new SqliteTitleSequenceRepository(Logger, Config.ApplicationPaths, JsonSerializer);
 
             repo.Initialize();
 
