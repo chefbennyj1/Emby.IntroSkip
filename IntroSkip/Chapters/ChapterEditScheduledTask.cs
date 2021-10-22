@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using IntroSkip.TitleSequence;
+using IntroSkip.Sequence;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Logging;
@@ -105,13 +105,13 @@ namespace IntroSkip.Chapters
             var config = Plugin.Instance.Configuration;
 
             var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<TitleSequenceResult> dbResults = Repository.GetResults(new TitleSequenceResultQuery());
+            QueryResult<SequenceResult> dbResults = Repository.GetResults(new SequenceResultQuery());
 
             ChapterInsertion.ChapterErrors.Clear();
 
-            foreach (TitleSequenceResult episode in dbResults.Items)
+            foreach (SequenceResult episode in dbResults.Items)
             {
-                                if (config.EnableChapterInsertion && episode.HasSequence && !episode.Confirmed)
+                if (config.EnableChapterInsertion && episode.HasTitleSequence)
                 {
                     long id = episode.InternalId;
                     Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);

@@ -11,12 +11,15 @@ namespace IntroSkip.Configuration
         public int MaxDegreeOfParallelism               { get; set; } = 2; //Default
         public double DetectionConfidence               { get; set; } = 0.60; //Default
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
+        public double BlackDetectionPixelThreshold      { get; set; } = 0.10; //Default
+        public double BlackDetectionSecondIntervals     { get; set; } = 0.05; //Default
         public bool EnableItemAddedTaskAutoRun          { get; set; } = false;
         public bool EnableIntroDetectionAutoRun         { get; set; } = false;
         public bool EnableChapterInsertion              { get; set; }  //give the user the option to insert the chapter points into their library.
         public bool EnableAutomaticImageExtraction      { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
         public List<long> IgnoredList                   { get; set; }
         public bool EnableEndCreditChapterInsertion     { get; set; } = false;
+        public bool EnableFullStatistics                { get; set; } = false;
 
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;

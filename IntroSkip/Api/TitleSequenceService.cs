@@ -1,5 +1,4 @@
 ﻿using IntroSkip.Data;
-using IntroSkip.TitleSequence;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
@@ -11,13 +10,14 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using IntroSkip.Configuration;
+using IntroSkip.Sequence;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Querying;
-
-// ReSharper disable TooManyChainedReferences
-// ReSharper disable MethodNameNotMeaningful
 
 namespace IntroSkip.Api
 {
@@ -74,6 +74,12 @@ namespace IntroSkip.Api
 
         }
 
+        [Route("/GetSeasonStatistics", "GET", Summary = "Get Statics by Season")]
+        public class SeasonStatisticsRequest : IReturn<string> 
+        {
+            //No args to pass - all code is done in the request below
+        }
+
         [Route("/UpdateTitleSequence", "POST", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
@@ -112,7 +118,9 @@ namespace IntroSkip.Api
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            
+
+            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
         }
 
@@ -173,16 +181,16 @@ namespace IntroSkip.Api
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
-            ITitleSequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<TitleSequenceResult> dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
-            List<TitleSequenceResult> titleSequences = dbResults.Items.ToList();
+            ISequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            QueryResult<SequenceResult> dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            List<SequenceResult> titleSequences = dbResults.Items.ToList();
 
 
             foreach (var episode in titleSequences)
             {
                 // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
                 episode.Confirmed = true;
-                episode.Fingerprint = episode.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                episode.TitleSequenceFingerprint = episode.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
                 try
                 {
                     repository.SaveResult(episode, CancellationToken.None);
@@ -211,7 +219,7 @@ namespace IntroSkip.Api
         public void Post(UpdateTitleSequenceRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var dbResults = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
 
 
@@ -220,9 +228,9 @@ namespace IntroSkip.Api
             // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
-            titleSequence.HasSequence = request.HasSequence;
+            titleSequence.HasTitleSequence = request.HasSequence;
             titleSequence.Confirmed = request.Confirmed;
-            titleSequence.Fingerprint = titleSequence.Fingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+            titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
 
             try
             {
@@ -242,7 +250,7 @@ namespace IntroSkip.Api
         public void Post(ScanSeriesRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            TitleSequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
+            SequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
             DisposeRepository(repository);
         }
 
@@ -251,7 +259,7 @@ namespace IntroSkip.Api
         public string Delete(RemoveSeasonDataRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var seasonResult = repository.GetResults(new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId });
+            var seasonResult = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = seasonResult.Items.ToList();
             foreach (var item in seasonResult.Items)
             {
@@ -277,14 +285,15 @@ namespace IntroSkip.Api
         {
             // ReSharper disable twice UnusedAutoPropertyAccessor.Local
             public TimeSpan CommonEpisodeTitleSequenceLength { get; set; }
-            public List<BaseTitleSequence> TitleSequences { get; set; }
+            public List<BaseSequence> TitleSequences { get; set; }
         }
 
         public string Get(SeasonTitleSequenceRequest request)
         {
 
+
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var query = new TitleSequenceResultQuery() { SeasonInternalId = request.SeasonId };
+            var query = new SequenceResultQuery() { SeasonInternalId = request.SeasonId };
             var dbResults = repository.GetBaseTitleSequenceResults(query);
 
             var titleSequences = dbResults.Items.ToList();
@@ -323,14 +332,164 @@ namespace IntroSkip.Api
             catch
             {
                 DisposeRepository(repository);
-                return JsonSerializer.SerializeToString(new BaseTitleSequence()); //Empty
+                return JsonSerializer.SerializeToString(new BaseSequence()); //Empty
             }
 
         }
 
-        private TimeSpan CalculateCommonTitleSequenceLength(List<BaseTitleSequence> season)
+       public string Get(SeasonStatisticsRequest request)
         {
-            var titleSequences = season.Where(intro => intro.HasSequence);
+            PluginConfiguration config = Plugin.Instance.Configuration;
+            ReturnedDetectionStatsList.Clear();
+            GetDetectionStatistics();
+            if (!config.EnableFullStatistics)
+            {
+                ReturnedDetectionStatsList.RemoveAll(x => !x.HasIssue);
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+            else
+            {
+                ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+            }
+
+            foreach (var stat in ReturnedDetectionStatsList)
+            {
+                Log.Info("STATISTICS: DETECTIONS STATISTICS have started for {0}: {1}", stat.TVShowName, stat.Season);
+                Log.Debug("STATISTICS: Season ID: {0}", stat.SeasonId.ToString());
+                Log.Debug("STATISTICS: No of Episodes:{0}", stat.EpisodeCount.ToString());
+                Log.Debug("STATISTICS: No of detected Episodes:{0}", stat.HasSeqCount.ToString());
+                Log.Info("STATISTICS: DETECTION SUCCESS = {0}%", stat.PercentDetected.ToString(CultureInfo.InvariantCulture));
+                Log.Info("STATISTICS: HAS ISSUE = {0}", stat.HasIssue.ToString());
+            }
+            return JsonSerializer.SerializeToString(ReturnedDetectionStatsList);
+        }
+       
+
+        public static List<DetectionStats> ReturnedDetectionStatsList = new List<DetectionStats>();
+        
+        public void GetDetectionStatistics()
+        {
+            var seriesList = new InternalItemsQuery()
+            {
+                Recursive = true,
+                IncludeItemTypes = new[] { "Series" },
+                IsVirtualItem = false,
+            };
+
+            var seriesItems = LibraryManager.GetItemList(seriesList);
+            //var seriesItemsCount = seriesItems.Count();
+            
+            Log.Info("STATISTICS: Series Count = {0}", seriesItems.Length.ToString());
+            List<long> seasonIds = new List<long>();
+            foreach (var season in seriesItems)
+            {
+                var seasonInternalItemQuery = new InternalItemsQuery()
+                {
+                    Parent = season,
+                    Recursive = true,
+                    IncludeItemTypes = new[] { "Season" },
+                    IsVirtualItem = false,
+                };
+                BaseItem[] seasonItems = LibraryManager.GetItemList(seasonInternalItemQuery);
+
+                foreach (var id in seasonItems)
+                {
+                    seasonIds.Add(id.InternalId);
+                    
+                }
+            }
+            Log.Info("STATISTICS: No of Seasons to process = {0}", seasonIds.Count.ToString());
+
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            try
+            {
+                foreach (var season in seasonIds)
+                {
+                    var query = new SequenceResultQuery() { SeasonInternalId = season };
+                    var dbResults = repository.GetBaseTitleSequenceResults(query);
+
+                    var seasonItem = LibraryManager.GetItemById(season);
+                    var detectedSequences = dbResults.Items.ToList();
+
+                    TimeSpan commonDuration;
+                    try
+                    {
+                        commonDuration = CalculateCommonTitleSequenceLength(detectedSequences);
+                    }
+                    catch
+                    {
+                        commonDuration = new TimeSpan(0, 0, 0);
+                    }
+
+
+                    int hasIntroCount = 0;
+                    int totalEpisodeCount = 0;
+
+                    foreach (var episode in detectedSequences)
+                    {
+                        totalEpisodeCount++;
+
+                        if (episode.HasTitleSequence)
+                        {
+                            hasIntroCount++;
+                        }
+                        else
+                        {
+                            hasIntroCount += 0;
+                        }
+                    }
+
+                    //Hoping not using this will increase performance massively.
+                    if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
+                    {
+                        ReturnedDetectionStatsList.Add(new DetectionStats
+                        {
+                            Date = DateTime.Now,
+                            SeasonId = seasonItem.InternalId,
+                            TVShowName = seasonItem.Parent.Name,
+                            Season = seasonItem.Name,
+                            EpisodeCount = totalEpisodeCount,
+                            HasSeqCount = hasIntroCount,
+                            PercentDetected = 100,
+                            IntroDuration = commonDuration,
+                            Comment = "Looks Good",
+                            HasIssue = false
+                        });
+                    }
+
+                    else
+                    {
+                        int x = hasIntroCount;
+                        int y = totalEpisodeCount;
+                        double percentage = Math.Round((double)x / y * 100);
+                        
+                        ReturnedDetectionStatsList.Add(new DetectionStats
+                        {
+                            Date = DateTime.Now,
+                            SeasonId = seasonItem.InternalId,
+                            TVShowName = seasonItem.Parent.Name,
+                            Season = seasonItem.Name,
+                            EpisodeCount = totalEpisodeCount,
+                            HasSeqCount = hasIntroCount,
+                            PercentDetected = percentage,
+                            IntroDuration = commonDuration,
+                            Comment = "Needs Attention",
+                            HasIssue = true
+                        });
+                    }
+                }
+
+                DisposeRepository(repository);
+            }
+            catch(Exception e)
+            {
+                Log.Warn("STATISTICS: ******* ISSUE CREATING STATS FOR INTROSKIP *********");
+            }
+        }
+
+        private TimeSpan CalculateCommonTitleSequenceLength(List<BaseSequence> season)
+        {
+            var titleSequences = season.Where(intro => intro.HasTitleSequence);
             var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
             int maxCount = enumerableSequences.Max(g => g.Count());
@@ -346,7 +505,7 @@ namespace IntroSkip.Api
             return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
         }
 
-        private void DisposeRepository(ITitleSequenceRepository repository)
+        private void DisposeRepository(ISequenceRepository repository)
         {
             // ReSharper disable once UsePatternMatching
             var repo = repository as IDisposable;
@@ -358,16 +517,16 @@ namespace IntroSkip.Api
         /// </summary>
         /// <param name="repository"></param>
         /// <returns></returns>
-        private List<long> GetSeasonalIntroVariance(ITitleSequenceRepository repository)
+        private List<long> GetSeasonalIntroVariance(ISequenceRepository repository)
         {
-            var dbResults          = repository.GetBaseTitleSequenceResults(new TitleSequenceResultQuery());
+            var dbResults          = repository.GetBaseTitleSequenceResults(new SequenceResultQuery());
             var baseTitleSequences = dbResults.Items;
             var seasonalGroups     = baseTitleSequences.GroupBy(sequence => sequence.SeasonId);
             var abnormalities      = new List<long>();
             foreach (var group in seasonalGroups)
             {
-                if (group.All(item => item.HasSequence || !item.HasSequence)) continue; //If they all have sequence data continue
-                if (group.Any(item => item.HasSequence)) //Some of these items have sequence data and some do not.
+                if (group.All(item => item.HasTitleSequence || !item.HasTitleSequence)) continue; //If they all have sequence data continue
+                if (group.Any(item => item.HasTitleSequence)) //Some of these items have sequence data and some do not.
                 {
                     abnormalities.Add(group.Key);
                 }

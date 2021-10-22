@@ -1,6 +1,5 @@
 ﻿
 using IntroSkip.Data;
-using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
@@ -19,7 +18,7 @@ namespace IntroSkip
     public class IntroSkipPluginEntryPoint : IServerEntryPoint
     {
         public static IntroSkipPluginEntryPoint Instance { get; set; }
-        private ITitleSequenceRepository Repository { get; set; }
+        private ISequenceRepository Repository { get; set; }
         private static ILibraryManager LibraryManager { get; set; }
         private static ITaskManager TaskManager { get; set; }
         private static IServerConfigurationManager Config { get; set; }
@@ -127,9 +126,9 @@ namespace IntroSkip
             }
         }
 
-        public ITitleSequenceRepository GetRepository()
+        public ISequenceRepository GetRepository()
         {
-            var repo = new SqliteTitleSequenceRepository(Logger, Config.ApplicationPaths, _json);
+            var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json);
 
             repo.Initialize();
 

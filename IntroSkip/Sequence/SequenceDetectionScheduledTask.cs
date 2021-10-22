@@ -1,24 +1,23 @@
-﻿using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Tasks;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using IntroSkip.Data;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Tasks;
 
 // ReSharper disable once TooManyDependencies
 // ReSharper disable three TooManyChainedReferences
 // ReSharper disable twice ComplexConditionExpression
 
-namespace IntroSkip.TitleSequence
+namespace IntroSkip.Sequence
 {
-    public class TitleSequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
+    public class SequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
        
-        public TitleSequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
+        public SequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             TaskManager = taskManager;
@@ -44,7 +43,7 @@ namespace IntroSkip.TitleSequence
             try
             {
                 
-                TitleSequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
+                SequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
                 
             }

@@ -4,28 +4,28 @@
  * Intro detection algorithm is derived from VictorBitca/matcher, which was originally written in Go. https://github.com/VictorBitca/matcher *
  */
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using IntroSkip.AudioFingerprinting;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 // ReSharper disable ComplexConditionExpression
 
-namespace IntroSkip.TitleSequence
+namespace IntroSkip.Sequence
 {
-    public class TitleSequenceDetection : TitleSequenceResult, IServerEntryPoint
-
+    public class TitleSequenceDetection : SequenceResult, IServerEntryPoint
     {
         public static TitleSequenceDetection Instance { get; private set; }
-        //private static ILogger Log { get; set; }
+        private static ILogger Log { get; set; }
 
         public TitleSequenceDetection(ILogManager logMan)
         {
-            //Log = logMan.GetLogger(Plugin.Instance.Name);
+            Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
         }
 
@@ -130,7 +130,7 @@ namespace IntroSkip.TitleSequence
                 catch (Exception ex)
                 {
                     //Logger.Info("Get Best Offset Error: " + ex.Message);
-                    throw new TitleSequenceInvalidDetectionException(ex.Message);
+                    throw new SequenceInvalidDetectionException(ex.Message);
                 }
             }
 
@@ -203,7 +203,7 @@ namespace IntroSkip.TitleSequence
             return false;
         }
 
-        public List<TitleSequenceResult> DetectTitleSequence(BaseItem episode1Input, BaseItem episode2Input, QueryResult<TitleSequenceResult> result)
+        public List<SequenceResult> DetectSequences(BaseItem episode1Input, BaseItem episode2Input, QueryResult<SequenceResult> result, Stopwatch stopWatch)
         {
 
             var episode1InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
@@ -224,27 +224,68 @@ namespace IntroSkip.TitleSequence
 
             if (episode1InputKey.Duration != episode2InputKey.Duration)
             {
-
                 throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
             }
 
 
-            var introDto = CompareFingerprint(episode1InputKey, episode2InputKey);
+            //Scan for Title Sequence, then for credit sequences
+            var introDto  = new List<SequenceResult>(); //<-- Default empty
+            var creditDto = new List<SequenceResult>(); //<-- Default empty
+            try
+            {
+                introDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: true);  //<--we'll change here
+                Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} title sequence detection took {stopWatch.Elapsed.Seconds} seconds.");
+            }
+            catch { }
 
+            try
+            {
+                creditDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: false); //<-- we'll change here
+                Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} credit sequence detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
+            }
+            catch { }
 
-            return introDto;
+            if (!introDto.Any() && creditDto.Any()) throw new SequenceInvalidDetectionException();
+            
+
+            if (creditDto.Any(item => item.HasCreditSequence))
+            {
+                episode1InputKey.HasCreditSequence   = creditDto[0].HasCreditSequence;
+                episode1InputKey.CreditSequenceStart = creditDto[0].CreditSequenceStart;
+                episode1InputKey.CreditSequenceEnd   = TimeSpan.FromTicks(episode1Input.RunTimeTicks.Value);
+
+                episode2InputKey.HasCreditSequence   = creditDto[1].HasCreditSequence;
+                episode2InputKey.CreditSequenceStart = creditDto[1].CreditSequenceStart;
+                episode2InputKey.CreditSequenceEnd   = TimeSpan.FromTicks(episode2Input.RunTimeTicks.Value);
+            }
+            if (introDto.Any(item => item.HasTitleSequence))
+            {
+                episode1InputKey.HasTitleSequence   = introDto[0].HasTitleSequence;
+                episode1InputKey.TitleSequenceStart = introDto[0].TitleSequenceStart;
+                episode1InputKey.TitleSequenceEnd   = introDto[0].TitleSequenceEnd;
+
+                episode2InputKey.HasTitleSequence   = introDto[1].HasTitleSequence;
+                episode2InputKey.TitleSequenceStart = introDto[1].TitleSequenceStart;
+                episode2InputKey.TitleSequenceEnd   = introDto[1].TitleSequenceEnd;
+            }
+
+            return new List<SequenceResult>()
+            {
+                episode1InputKey,
+                episode2InputKey
+            };
 
         }
 
 
-        private List<TitleSequenceResult> CompareFingerprint(TitleSequenceResult episode1, TitleSequenceResult episode2)
+        private List<SequenceResult> CompareFingerprint(SequenceResult episode1, SequenceResult episode2, BaseItem episode1Input, BaseItem episode2Input, bool isTitleSequence)
         {
 
-            var duration = episode1.Duration * 60; //Both episodes should have the same encoding duration
+            var duration = isTitleSequence ? episode1.Duration * 60 : 3 * 60; //Both episodes should have the same encoding duration
+            
 
-
-            var fingerprint1 = episode1.Fingerprint;
-            var fingerprint2 = episode2.Fingerprint;
+            var fingerprint1 = isTitleSequence ? episode1.TitleSequenceFingerprint : episode1.CreditSequenceFingerprint;
+            var fingerprint2 = isTitleSequence ? episode2.TitleSequenceFingerprint : episode2.CreditSequenceFingerprint;
 
 
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
@@ -256,10 +297,7 @@ namespace IntroSkip.TitleSequence
 
             int offset = GetBestOffset(fingerprint1, fingerprint2);
 
-
-            var tup1 = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
-            var f1 = tup1.Item1;
-            var f2 = tup1.Item2;
+            var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
 
             // ReSharper disable once TooManyChainedReferences
             List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
@@ -272,59 +310,68 @@ namespace IntroSkip.TitleSequence
 
             double secondsPerSample = Convert.ToDouble(duration) / fingerprint1.Count;
 
-            var offsetInSeconds = offset * secondsPerSample;
-            var commonRegionStart = start * secondsPerSample;
-            var commonRegionEnd = (end * secondsPerSample);
+            var offsetInSeconds       = offset * secondsPerSample;
+            var commonRegionStart     = start * secondsPerSample;
+            var commonRegionEnd       = (end * secondsPerSample);
 
-            var firstFileRegionStart = 0.0;
-            var firstFileRegionEnd = 0.0;
+            var firstFileRegionStart  = 0.0;
+            var firstFileRegionEnd    = 0.0;
             var secondFileRegionStart = 0.0;
-            var secondFileRegionEnd = 0.0;
+            var secondFileRegionEnd   = 0.0;
 
             if (offset >= 0)
             {
-                firstFileRegionStart = commonRegionStart + offsetInSeconds;
-                firstFileRegionEnd = commonRegionEnd + offsetInSeconds;
+                firstFileRegionStart  = commonRegionStart + offsetInSeconds;
+                firstFileRegionEnd    = commonRegionEnd + offsetInSeconds;
                 secondFileRegionStart = commonRegionStart;
-                secondFileRegionEnd = commonRegionEnd;
+                secondFileRegionEnd   = commonRegionEnd;
             }
             else
             {
-                firstFileRegionStart = commonRegionStart;
-                firstFileRegionEnd = commonRegionEnd;
+                firstFileRegionStart  = commonRegionStart;
+                firstFileRegionEnd    = commonRegionEnd;
                 secondFileRegionStart = commonRegionStart - offsetInSeconds;
-                secondFileRegionEnd = commonRegionEnd - offsetInSeconds;
+                secondFileRegionEnd   = commonRegionEnd - offsetInSeconds;
             }
 
 
             // Check for impossible situation, or if the common region is deemed too short to be considered an intro
             if (start < 0 || end < 0)
             {
-                
-                throw new TitleSequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
+                throw new SequenceInvalidDetectionException("Episode detection failed to find a reasonable intro start and end time.");
             }
             if (commonRegionEnd - commonRegionStart < (Plugin.Instance.Configuration.TitleSequenceLengthThreshold))
             {
                 
-                throw new TitleSequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
+                throw new SequenceInvalidDetectionException("Episode common region is deemed too short to be considered an intro.");
 
             }
             else if (start == 0 && end == 0)
             {
-                throw new TitleSequenceInvalidDetectionException("Episode common region are both 00:00:00.");
+                throw new SequenceInvalidDetectionException("Episode common region are both 00:00:00.");
             }
 
+            if (isTitleSequence)
+            {
+                episode1.HasTitleSequence   = true;
+                episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart));
+                episode1.TitleSequenceEnd   = TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd));
 
-            episode1.HasSequence = true;
-            episode1.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(firstFileRegionStart));
-            episode1.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(firstFileRegionEnd));
 
+                episode2.HasTitleSequence   = true;
+                episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart));
+                episode2.TitleSequenceEnd   = TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd));
+            }
+            else
+            {
+                episode1.HasCreditSequence   = true;
+                episode1.CreditSequenceStart = TimeSpan.FromTicks(episode1Input.RunTimeTicks.Value) - TimeSpan.FromSeconds(duration) + TimeSpan.FromSeconds(Math.Round(firstFileRegionStart));
 
-            episode2.HasSequence = true;
-            episode2.TitleSequenceStart = TimeSpan.FromSeconds(Math.Floor(secondFileRegionStart));
-            episode2.TitleSequenceEnd = TimeSpan.FromSeconds(Math.Ceiling(secondFileRegionEnd));
+                episode2.HasCreditSequence   = true;
+                episode2.CreditSequenceStart = TimeSpan.FromTicks(episode2Input.RunTimeTicks.Value) - TimeSpan.FromSeconds(duration) + TimeSpan.FromSeconds(Math.Round(secondFileRegionStart));
+            }
 
-            return new List<TitleSequenceResult>()
+            return new List<SequenceResult>()
             {
                 episode1,
                 episode2
