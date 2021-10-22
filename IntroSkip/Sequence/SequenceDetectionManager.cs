@@ -565,7 +565,9 @@ namespace IntroSkip.Sequence
 
             //Look for a black screen close to where the fingerprint found comparisons in our bestResult.
             var offset = bestResult.CreditSequenceStart.Add(-TimeSpan.FromMinutes(1));
+
             var upperLimit = bestResult.CreditSequenceStart.Add(TimeSpan.FromSeconds(45));
+
             var blackDetection = VideoBlackDetectionManager.Instance.Analyze(bestResult.InternalId, offset, upperLimit, cancellationToken);
             
             if (blackDetection != null || blackDetection != TimeSpan.Zero)
