@@ -33,13 +33,17 @@ namespace IntroSkip.AudioFingerprinting
             Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
-        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration)
+        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration, bool isTitleSequence = true)
         {
             var separator              = FileSystem.DirectorySeparatorChar;
-            var fingerprintBinFileName = $"{episode.Parent.InternalId} - {episode.InternalId}.bin";
+            var fingerprintBinFileName = $"{(isTitleSequence ? "title_sequence" : "credit_sequence")} {episode.Parent.InternalId} - {episode.InternalId}.bin";
             var fingerprintBinFilePath = $"{GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
 
-            ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken);
+            var sequenceEncodingStart = isTitleSequence
+                ? TimeSpan.Zero
+                : TimeSpan.FromTicks(episode.RunTimeTicks.Value) - TimeSpan.FromMinutes(3); 
+
+            ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
 
             Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
@@ -56,7 +60,7 @@ namespace IntroSkip.AudioFingerprinting
             return fingerprints;
         }
 
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, string titleSequenceStart = "00:00:00")
+        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -82,7 +86,7 @@ namespace IntroSkip.AudioFingerprinting
              */
             var args = new[]
             {
-                $"-ss {titleSequenceStart}",
+                $"-ss {sequenceEncodingStart}",
                 $"-t 00:{duration}:00",
                 $"-i \"{input}\"",
                 "-ac 1",
@@ -131,6 +135,9 @@ namespace IntroSkip.AudioFingerprinting
                         }
                         catch { }
                     }
+
+
+
                     //Log.Info(processOutput);
                 }
 
