@@ -3,8 +3,8 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using IntroSkip.Sequence;
 using MediaBrowser.Model.Entities;
- using IntroSkip.TitleSequence;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 
@@ -30,7 +30,7 @@ namespace IntroSkip.Chapters
             Instance = this;
         }
 
-        public void InsertIntroChapters(long id, TitleSequenceResult titleSequence)
+        public void InsertIntroChapters(long id, SequenceResult sequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
 
@@ -65,8 +65,8 @@ namespace IntroSkip.Chapters
                             ConvertTicksToTime(chap.StartPositionTicks));
                     }
 
-                    long insertStart = titleSequence.TitleSequenceStart.Ticks;
-                    long insertEnd = titleSequence.TitleSequenceEnd.Ticks;
+                    long insertStart = sequence.TitleSequenceStart.Ticks;
+                    long insertEnd = sequence.TitleSequenceEnd.Ticks;
 
                     string introStartString = "Title Sequence";
                     string introEndString = "Intro End";
