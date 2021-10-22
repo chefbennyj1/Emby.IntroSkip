@@ -37,14 +37,31 @@
                             </label>
                             <div class="fieldDescription">
                                 When enabled (Default), detect title sequences with shorter scan times, but less specific results.<br />
-                                When disabled, get more specific results by comparing the best possible outcomes, but with longer scan times.
+                                When disabled, get more specific results by calculating sampling weights to get the best possible outcomes, but with longer scan times.<br />
+                                Find end credits start times by scanning for blank screens, in contiguous regions, close to the credit audio.
                             </div>
                         </div>
 
-                        <!-- HIDDEN MENU OPTION FOR DETECTION CONFIDENCE-->
+                        <!-- MENU OPTION FOR BLACK FRAME DETECTION INTERVALS-->
                         <div class="inputContainer hide">
-                            <label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceSamplingWeightConfidence">Detection confidence:</label>
-                            <input type="number" id="txtTitleSequenceSamplingWeightConfidence" min="0.00" max="1.00" step="0.01" label="Detection confidence:" class="emby-input">
+                            <label class="inputLabel inputLabelUnfocused" for="txtBlackDetectionPixelThreshold">Black frame detection pixel threshold (Experimental):</label>
+                            <input type="number" id="txtBlackDetectionPixelThreshold" min="0.00" max="1.00" step="0.01" label="Black frame pixel threshold:" class="emby-input">
+                            <div class="fieldDescription">
+                                End credit sequence, black frame detection maximum pixel threshold. Blackness threshold of the pixels in the frame. (Default: 0.10)
+                            </div>
+                        </div>
+                        <div class="inputContainer hide">
+                            <label class="inputLabel inputLabelUnfocused" for="txtBlackDetectionSecondInterval">Black frame detection intervals (Experimental):</label>
+                            <input type="number" id="txtBlackDetectionSecondInterval" min="0.00" max="2.00" step="0.01" label="Black frame detection intervals:" class="emby-input">
+                            <div class="fieldDescription">
+                                End credit sequence, black frame detection intervals (seconds). How many seconds to skip in-between checks. (Default: 0.05)
+                            </div>
+                        </div>
+
+                        <!-- MENU OPTION FOR SEQUENCE DETECTION CONFIDENCE-->
+                        <div class="inputContainer hide">
+                            <label class="inputLabel inputLabelUnfocused" for="txtSequenceSamplingWeightConfidence">Detection confidence:</label>
+                            <input type="number" id="txtSequenceSamplingWeightConfidence" min="0.00" max="1.00" step="0.01" label="Detection confidence:" class="emby-input">
                             <div class="fieldDescription">
                                 Title sequence detection confidence. Anything under this number will be considered a low confidence, and be incorrect. (Default: 0.60)
                             </div>

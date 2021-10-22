@@ -106,8 +106,12 @@
 
                 var chkEnableFastDetect = view.querySelector('#enableFastDetect');
 
-                var confidenceInput = view.querySelector('#txtTitleSequenceSamplingWeightConfidence');
-                
+                var confidenceInput = view.querySelector('#txtSequenceSamplingWeightConfidence');
+
+                var blackDetectPixelThreshold = view.querySelector('#txtBlackDetectionPixelThreshold');
+
+                var blackDetectInterval = view.querySelector('#txtBlackDetectionSecondInterval');
+
                 //enable detection task auto run when fingerprinting is complete
                 var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
 
@@ -125,8 +129,14 @@
 
                     confidenceInput.value = config.DetectionConfidence;
 
+                    blackDetectInterval.value = config.BlackDetectionSecondIntervals;
+
+                    blackDetectPixelThreshold.value = config.BlackDetectionPixelThreshold;
+
                     if (!chkEnableFastDetect.checked) {
                         confidenceInput.closest('.inputContainer').classList.remove('hide');
+                        blackDetectInterval.closest('.inputContainer').classList.remove('hide');
+                        blackDetectPixelThreshold.closest('.inputContainer').classList.remove('hide');
                     }
 
                     if (config.IgnoredList) {
@@ -184,9 +194,21 @@
                                 if (confidenceInput.closest('.inputContainer').classList.contains('hide')) {
                                     confidenceInput.closest('.inputContainer').classList.remove('hide');
                                 }
+                                if (blackDetectInterval.closest('.inputContainer').classList.contains('hide')) {
+                                    blackDetectInterval.closest('.inputContainer').classList.remove('hide');
+                                }
+                                if (blackDetectPixelThreshold.closest('.inputContainer').classList.contains('hide')) {
+                                    blackDetectPixelThreshold.closest('.inputContainer').classList.remove('hide');
+                                }
                             } else {
                                 if (!confidenceInput.closest('.inputContainer').classList.contains('hide')) {
                                     confidenceInput.closest('.inputContainer').classList.add('hide');
+                                }
+                                if (!blackDetectInterval.closest('.inputContainer').classList.contains('hide')) {
+                                    blackDetectInterval.closest('.inputContainer').classList.add('hide');
+                                }
+                                if (!blackDetectPixelThreshold.closest('.inputContainer').classList.contains('hide')) {
+                                    blackDetectPixelThreshold.closest('.inputContainer').classList.add('hide');
                                 }
                             }
                             
@@ -198,6 +220,22 @@
                     elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         config.DetectionConfidence = confidenceInput.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                blackDetectInterval.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.BlackDetectionSecondIntervals = blackDetectInterval.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                blackDetectPixelThreshold.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.BlackDetectionPixelThreshold = blackDetectPixelThreshold.value;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });

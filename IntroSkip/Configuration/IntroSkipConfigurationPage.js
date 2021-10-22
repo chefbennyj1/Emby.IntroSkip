@@ -143,7 +143,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         InternalId: id,
         TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
         TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
-        HasSequence: row.cells[5].querySelector('select').value,
+        HasTitleSequence: row.cells[5].querySelector('select').value,
         Confirmed: intro.Confirmed = true,
         SeasonId: intro.SeasonId
       }
@@ -200,13 +200,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
       //Index 5
       html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
       //Index 6
-      html += '<td data-title="HasSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
+      html += '<td data-title="HasTitleSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
 
 
       html += '<div class="selectContainer" style="top:40px">';
       html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
-      html += '<option value="true" ' + (intro.HasSequence ? 'selected' : "") + '>true</option>';
-      html += '<option value="false" ' + (!intro.HasSequence ? 'selected' : "") + '>false</option>';
+      html += '<option value="true" ' + (intro.HasTitleSequence ? 'selected' : "") + '>true</option>';
+      html += '<option value="false" ' + (!intro.HasTitleSequence ? 'selected' : "") + '>false</option>';
       html += '</select>';
       html += '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
       html += '</div>';
@@ -215,7 +215,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
       var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
       var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-      var hasIntro = intro.HasSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
+      var hasIntro = intro.HasTitleSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
 
       html += '<td style="position:relative" data-title="Start" class="detailTableBodyCell fileCell">';
       html += `<div class="editTimestamp" contenteditable>${start}</div>`;
