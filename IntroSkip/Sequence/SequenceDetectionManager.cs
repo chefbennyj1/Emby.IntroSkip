@@ -538,7 +538,20 @@ namespace IntroSkip.Sequence
             var confidence = weightedResults.Keys.Max();
 
             //Look for a black screen close to where the fingerprint found comparisons in our bestResult.
-            var runtime = TimeSpan.FromTicks(item.RunTimeTicks.Value);
+            var runtime = TimeSpan.Zero;
+            if (item.RunTimeTicks.HasValue)
+            {
+                runtime = TimeSpan.FromTicks(item.RunTimeTicks.Value);
+            }
+            else
+            {
+                Log.Warn($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber} has no runtime metadata. Exiting...");
+                bestResult.HasCreditSequence = false; 
+                confidence = 0.0;
+                bestResult.Processed = true;
+                return Tuple.Create(confidence, bestResult); 
+            }
+            
 
             var offset = runtime > TimeSpan.FromMinutes(35)
                 ? bestResult.CreditSequenceStart.Add(-TimeSpan.FromSeconds(35))
@@ -564,29 +577,32 @@ namespace IntroSkip.Sequence
             {
                 var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit); //The first result found in our contiguous region.
 
-                Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
-                          $"\nCredit sequence audio detection start          : {creditSequenceAudioDetectionStart}." +
-                          $"\nBlack frame detected within contiguous regions : {blackDetection}." +
-                          $"\nMoving sequence start to                       : {blackDetection}.");
-                bestResult.CreditSequenceStart = blackDetection;
-                bestResult.Processed = true;
-                confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same a black frame detection we are perfect.
+                if (!Equals(blackDetection, TimeSpan.Zero))
+                {
+                    Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
+                              $"\nCredit sequence audio detection start          : {creditSequenceAudioDetectionStart}." +
+                              $"\nBlack frame detected within contiguous regions : {blackDetection}." +
+                              $"\nMoving sequence start to                       : {blackDetection}.");
+                    bestResult.CreditSequenceStart = blackDetection;
+                    confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same a black frame detection we are perfect.
+                }
             }
             else
             {
-                Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode: {item.IndexNumber}:" +
+                Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
                           $"\nCredit sequence audio detection start: {creditSequenceAudioDetectionStart}." +
                           "\nNo black frame detected within contiguous regions.");
-
             }
 
-            if (bestResult.CreditSequenceStart == TimeSpan.Zero)
+            if (Equals(bestResult.CreditSequenceStart, TimeSpan.Zero))
             {
                 bestResult.HasCreditSequence = false; //<-- this is impossible. So we are incorrect with our result.
                 confidence = 0.0;
-                bestResult.Processed = true;
             }
-            return Tuple.Create(confidence, bestResult); 
+
+            bestResult.Processed = true;
+            return Tuple.Create(confidence, bestResult);
+            
         }
 
 
@@ -608,8 +624,6 @@ namespace IntroSkip.Sequence
                 IncludeItemTypes = new[] { "Episode" },
                 Recursive = true
             });
-
-
 
             if (episodeQuery.Items.Any(item => item.IsVirtualItem || item.IsUnaired)) return false;
 
