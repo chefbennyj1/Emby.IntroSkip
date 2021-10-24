@@ -87,9 +87,9 @@ namespace IntroSkip.VideoBlackDetect
 
                     var substrings = processOutput.Split(':');
 
-                    var blackFrameStart = TimeSpan.FromSeconds(Convert.ToDouble(substrings[1].Split(' ')[0]));
+                    var blackFrameStart    = TimeSpan.FromSeconds(Convert.ToDouble(substrings[1].Split(' ')[0]));
 
-                    var blackFrameEnd = TimeSpan.FromSeconds(Convert.ToDouble(substrings[2].Split(' ')[0]));
+                    var blackFrameEnd      = TimeSpan.FromSeconds(Convert.ToDouble(substrings[2].Split(' ')[0]));
 
                     var blackFrameDuration = TimeSpan.FromSeconds(Convert.ToDouble(substrings[3].Split(' ')[0]));
                     
