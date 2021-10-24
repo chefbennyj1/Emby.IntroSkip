@@ -33,15 +33,17 @@ namespace IntroSkip.AudioFingerprinting
             Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
-        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, int duration, bool isTitleSequence = true)
+        public List<uint> GetAudioFingerprint(BaseItem episode, CancellationToken cancellationToken, TimeSpan duration, bool isTitleSequence = true)
         {
             var separator              = FileSystem.DirectorySeparatorChar;
             var fingerprintBinFileName = $"{(isTitleSequence ? "title_sequence" : "credit_sequence")} {episode.Parent.InternalId} - {episode.InternalId}.bin";
             var fingerprintBinFilePath = $"{GetEncodingDirectory()}{separator}{fingerprintBinFileName}";
+            var titleEncodingSequenceStart  = TimeSpan.Zero;
+            
 
             var sequenceEncodingStart = isTitleSequence
-                ? TimeSpan.Zero
-                : TimeSpan.FromTicks(episode.RunTimeTicks.Value) - TimeSpan.FromMinutes(3); 
+                ? titleEncodingSequenceStart
+                : TimeSpan.FromTicks(episode.RunTimeTicks.Value) - duration; 
 
             ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
 
@@ -60,7 +62,7 @@ namespace IntroSkip.AudioFingerprinting
             return fingerprints;
         }
 
-        private void ExtractFingerprintBinaryData(string input, string output, int duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
+        private void ExtractFingerprintBinaryData(string input, string output, TimeSpan duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -87,7 +89,7 @@ namespace IntroSkip.AudioFingerprinting
             var args = new[]
             {
                 $"-ss {sequenceEncodingStart}",
-                $"-t 00:{duration}:00",
+                $"-t {duration}",
                 $"-i \"{input}\"",
                 "-ac 1",
                 "-acodec pcm_s16le", 
