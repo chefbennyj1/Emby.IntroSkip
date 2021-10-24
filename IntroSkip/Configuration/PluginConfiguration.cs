@@ -11,7 +11,7 @@ namespace IntroSkip.Configuration
         public int MaxDegreeOfParallelism               { get; set; } = 2; //Default
         public double DetectionConfidence               { get; set; } = 0.60; //Default
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
-        public double BlackDetectionPixelThreshold      { get; set; } = 0.10; //Default
+        public double BlackDetectionPixelThreshold      { get; set; } = 0.00; //Default
         public double BlackDetectionSecondIntervals     { get; set; } = 0.05; //Default
         public bool EnableItemAddedTaskAutoRun          { get; set; } = false;
         public bool EnableIntroDetectionAutoRun         { get; set; } = false;

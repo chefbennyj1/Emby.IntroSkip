@@ -49,7 +49,7 @@ namespace IntroSkip.Sequence
             }
             catch (Exception ex)
             {
-                Log.Warn(ex.Message);
+                //Log.Warn(ex.Message);
             }
 
             var repo = (IDisposable) repository;

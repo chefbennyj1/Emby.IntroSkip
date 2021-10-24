@@ -33,7 +33,7 @@ namespace IntroSkip.VideoBlackDetect
             Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
-        public TimeSpan Analyze(long internalId, TimeSpan offset, TimeSpan upperLimit, CancellationToken cancellationToken)
+        public List<TimeSpan> Analyze(long internalId, CancellationToken cancellationToken)
         {
             var episode             = LibraryManager.GetItemById(internalId);
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
@@ -47,9 +47,8 @@ namespace IntroSkip.VideoBlackDetect
             var args = new[]
             {
                 $"-accurate_seek -ss {start}",
-                $"-t {runtime}",
                 $"-i \"{input}\"",
-                $"-vf \"blackdetect=d={config.BlackDetectionSecondIntervals}:pix_th={config.BlackDetectionPixelThreshold}\"",
+                $"-vf \"blackdetect=d={config.BlackDetectionSecondIntervals}:pix_th=0.0\"",
                 "-an -f null -"
             };
 
@@ -69,7 +68,9 @@ namespace IntroSkip.VideoBlackDetect
                 
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
                 string processOutput = null;
-                
+
+               
+
                 while ((processOutput = process.StandardError.ReadLine()) != null)
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -83,28 +84,28 @@ namespace IntroSkip.VideoBlackDetect
 
                     if (!processOutput.Contains("blackdetect")) continue;
 
-                    var startSubstring     = processOutput.Split(':')[1];
-                    var beginning          = TimeSpan.FromSeconds(Convert.ToDouble(startSubstring.Split(' ')[0]));
-                    var blackScreenResult  = TimeSpan.FromTicks(episode.RunTimeTicks.Value) - TimeSpan.FromMinutes(3) + beginning;
-                    blackDetections.Add(blackScreenResult);
+                    var substrings = processOutput.Split(':');
+
+                    var blackFrameStart = TimeSpan.FromSeconds(Convert.ToDouble(substrings[1].Split(' ')[0]));
+
+                    var blackFrameEnd = TimeSpan.FromSeconds(Convert.ToDouble(substrings[2].Split(' ')[0]));
+
+                    var blackFrameDuration = TimeSpan.FromSeconds(Convert.ToDouble(substrings[3].Split(' ')[0]));
+                    
+                    if (blackFrameDuration > TimeSpan.FromSeconds(1.4))
+                    {
+                        var blackScreenResult  = runtime - TimeSpan.FromMinutes(3) + blackFrameStart;
+
+                        blackDetections.Add(blackScreenResult);
+                    }
+                    
 
                 }
 
             }
+            
+            return blackDetections;
 
-            if (!blackDetections.Any()) return TimeSpan.Zero;
-
-            //Create a contiguous region to look for black frames in
-            var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit);
-                
-
-            if (blackDetection != null)
-            {
-                Log.Debug($"{episode.Parent.Parent.Name} {episode.Parent.Name} Episode: {episode.IndexNumber} - found black detection within contiguous regions: {blackDetection}");
-                return blackDetection;
-            }
-
-            return TimeSpan.Zero;
         }
 
         public void Dispose()

@@ -234,14 +234,14 @@ namespace IntroSkip.Sequence
             try
             {
                 introDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: true);  //<--we'll change here
-                Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} title sequence detection took {stopWatch.Elapsed.Seconds} seconds.");
+                //Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} title sequence detection took {stopWatch.Elapsed.Seconds} seconds.");
             }
             catch { }
 
             try
             {
                 creditDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: false); //<-- we'll change here
-                Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} credit sequence detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
+                //Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} credit sequence detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
             }
             catch { }
 
@@ -280,6 +280,7 @@ namespace IntroSkip.Sequence
 
         private List<SequenceResult> CompareFingerprint(SequenceResult episode1, SequenceResult episode2, BaseItem episode1Input, BaseItem episode2Input, bool isTitleSequence)
         {
+            //var creditEncodingDuration = TimeSpan.FromTicks(episode1Input.RunTimeTicks.Value) > TimeSpan.FromMinutes(35) ? 3 : 1.5;
 
             var duration = isTitleSequence ? episode1.Duration * 60 : 3 * 60; //Both episodes should have the same encoding duration
             

@@ -207,7 +207,7 @@ namespace IntroSkip.AudioFingerprinting
                                List<uint> creditSequenceAudioFingerPrintData = null;
                                try
                                {
-                                   titleSequenceAudioFingerPrintData = AudioFingerprintManager.Instance.GetAudioFingerprint(episode, cancellationToken, duration);
+                                   titleSequenceAudioFingerPrintData = AudioFingerprintManager.Instance.GetAudioFingerprint(episode, cancellationToken, TimeSpan.FromMinutes(duration));
                                }
                                catch (Exception ex)
                                {
@@ -218,7 +218,10 @@ namespace IntroSkip.AudioFingerprinting
 
                                try
                                {
-                                   creditSequenceAudioFingerPrintData = AudioFingerprintManager.Instance.GetAudioFingerprint(episode, cancellationToken, 3, isTitleSequence: false);
+                                   //var encodingDuration = TimeSpan.FromTicks(episode.RunTimeTicks.Value) > TimeSpan.FromMinutes(35) 
+                                   //    ? TimeSpan.FromMinutes(3) : TimeSpan.FromMinutes(1.5);
+
+                                   creditSequenceAudioFingerPrintData = AudioFingerprintManager.Instance.GetAudioFingerprint(episode, cancellationToken, TimeSpan.FromMinutes(3), isTitleSequence: false);
                                }
                                catch (Exception ex)
                                {
