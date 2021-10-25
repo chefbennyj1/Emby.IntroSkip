@@ -2,7 +2,6 @@
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using IntroSkip.Sequence;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Controller.Library;
