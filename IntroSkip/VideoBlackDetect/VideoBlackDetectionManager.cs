@@ -2,36 +2,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using IntroSkip.Sequence;
-using MediaBrowser.Common.Configuration;
-using MediaBrowser.Controller.Library;
+ using System.Threading;
+ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Plugins;
-using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
 
-namespace IntroSkip.VideoBlackDetect
+ namespace IntroSkip.VideoBlackDetect
 {
     public class VideoBlackDetectionManager : IServerEntryPoint
     {
         public static VideoBlackDetectionManager Instance { get; private set; }
-        private IFileSystem FileSystem                 { get; }
-        private IApplicationPaths ApplicationPaths     { get; }
-        private char Separator                         { get; }
+       
         private IFfmpegManager FfmpegManager           { get; }
-        private ILogger Log                            { get; }
         private ILibraryManager LibraryManager         { get; }
-        public VideoBlackDetectionManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager, IApplicationPaths applicationPaths, ILibraryManager libraryManager)
+        public VideoBlackDetectionManager(IFfmpegManager ffmpeg, ILibraryManager libraryManager)
         {
             Instance         = this;
-            FileSystem       = file;
             FfmpegManager    = ffmpeg;
-            ApplicationPaths = applicationPaths;
             LibraryManager   = libraryManager;
-            Separator        = FileSystem.DirectorySeparatorChar;
-            Log              = logManager.GetLogger(Plugin.Instance.Name);
         }
 
         public List<TimeSpan> Analyze(long internalId, CancellationToken cancellationToken)
@@ -39,17 +27,15 @@ namespace IntroSkip.VideoBlackDetect
             var episode             = LibraryManager.GetItemById(internalId);
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath          = ffmpegConfiguration.EncoderPath;
-            var config              = Plugin.Instance.Configuration;
             //TODO: If runtime is null handle it. Library scan needs to run.
             var runtime             = TimeSpan.FromTicks(episode.RunTimeTicks.Value);
-            var start               = runtime - TimeSpan.FromMinutes(3);
             var input               = episode.Path;
             
             var args = new[]
             {
-                $"-accurate_seek -ss {start}",
+                $"-sseof -{TimeSpan.FromMinutes(3)}",
                 $"-i \"{input}\"",
-                $"-vf \"blackdetect=d={config.BlackDetectionSecondIntervals}:pix_th=0.0\"",
+                "-vf \"blackdetect=d=1:pix_th=0.0\"",
                 "-an -f null -"
             };
 
@@ -92,14 +78,12 @@ namespace IntroSkip.VideoBlackDetect
                     var blackFrameEnd      = TimeSpan.FromSeconds(Convert.ToDouble(substrings[2].Split(' ')[0]));
 
                     var blackFrameDuration = TimeSpan.FromSeconds(Convert.ToDouble(substrings[3].Split(' ')[0]));
-                    
-                    if (blackFrameDuration > TimeSpan.FromSeconds(1.4))
-                    {
-                        var blackScreenResult  = runtime - TimeSpan.FromMinutes(3) + blackFrameStart;
 
-                        blackDetections.Add(blackScreenResult);
-                    }
-                    
+                    var blackScreenResult = runtime - TimeSpan.FromMinutes(3) + blackFrameStart;
+
+                    blackDetections.Add(blackScreenResult);
+                   
+
 
                 }
 

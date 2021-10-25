@@ -159,7 +159,7 @@ namespace IntroSkip.Sequence
 
 
                         // All our processed episodes with sequences, or user confirmed information
-                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.HasTitleSequence || e.Confirmed || e.Processed).Select(y => y.InternalId).Distinct());
+                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.Confirmed || e.Processed).Select(y => y.InternalId).Distinct());
                         // A list of episodes with all our episodes containing sequence data removed from it. All that is left is what we need to process.
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
@@ -555,11 +555,11 @@ namespace IntroSkip.Sequence
 
             var offset = runtime > TimeSpan.FromMinutes(35)
                 ? bestResult.CreditSequenceStart.Add(-TimeSpan.FromSeconds(35))
-                : bestResult.CreditSequenceStart.Add(-TimeSpan.FromSeconds(5));
+                : bestResult.CreditSequenceStart.Add(-TimeSpan.FromSeconds(8));
 
             var upperLimit = runtime > TimeSpan.FromMinutes(35)
-                ? bestResult.CreditSequenceStart.Add(TimeSpan.FromSeconds(20))
-                : bestResult.CreditSequenceStart.Add(TimeSpan.FromSeconds(5));
+                ? bestResult.CreditSequenceStart.Add(TimeSpan.FromMinutes(1.5))
+                : bestResult.CreditSequenceStart.Add(TimeSpan.FromSeconds(8));
 
             var creditSequenceAudioDetectionStart = bestResult.CreditSequenceStart;
 
@@ -569,13 +569,27 @@ namespace IntroSkip.Sequence
             {
                 Log.Debug($"DETECTION Adjusting black frame detection for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}");
                 offset = runtime - TimeSpan.FromMinutes(2.1);
+                upperLimit = runtime;
             }
 
             var blackDetections = VideoBlackDetectionManager.Instance.Analyze(bestResult.InternalId, cancellationToken);
 
             if (blackDetections.Any())
             {
-                var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit); //The first result found in our contiguous region.
+                var contiguousBlackDetections = blackDetections.Where(d => d >= offset && d <= upperLimit).ToList(); //The results found in our contiguous region.
+
+                var narrowedBlackDetectionResults = contiguousBlackDetections.FirstOrDefault(d => d >= offset.Add(TimeSpan.FromSeconds(5)) && d <= upperLimit.Add(-TimeSpan.FromSeconds(20)));
+
+                var blackDetection = TimeSpan.Zero;
+
+                if (!Equals(narrowedBlackDetectionResults, TimeSpan.Zero))
+                {
+                    blackDetection = narrowedBlackDetectionResults;
+                }
+                else
+                {
+                    blackDetection = contiguousBlackDetections[2];
+                }
 
                 if (!Equals(blackDetection, TimeSpan.Zero))
                 {
@@ -586,6 +600,12 @@ namespace IntroSkip.Sequence
                     bestResult.CreditSequenceStart = blackDetection;
                     confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same a black frame detection we are perfect.
                 }
+                else
+                {
+                    Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
+                              $"\nCredit sequence audio detection start: {creditSequenceAudioDetectionStart}." +
+                              "\nNo black frame detected within contiguous regions.");
+                }
             }
             else
             {
@@ -594,10 +614,11 @@ namespace IntroSkip.Sequence
                           "\nNo black frame detected within contiguous regions.");
             }
 
-            if (Equals(bestResult.CreditSequenceStart, TimeSpan.Zero))
+            if (Equals(bestResult.CreditSequenceStart, TimeSpan.Zero)) //<-- this is impossible. So we are incorrect with our result.
             {
-                bestResult.HasCreditSequence = false; //<-- this is impossible. So we are incorrect with our result.
+                bestResult.HasCreditSequence = false; 
                 confidence = 0.0;
+                Log.Debug($"Unable to find credit sequence for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}");
             }
 
             bestResult.Processed = true;
@@ -605,6 +626,7 @@ namespace IntroSkip.Sequence
             
         }
 
+       
 
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, SequenceResult>> groups, bool longestCommonTimeSpan = false)
         {
