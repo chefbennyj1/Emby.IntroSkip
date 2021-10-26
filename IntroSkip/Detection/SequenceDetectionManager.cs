@@ -284,24 +284,24 @@ namespace IntroSkip.Detection
                                         continue;
                                     }
 
-                                    //if (!fastDetect)
-                                    //{
-                                    //    if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
-                                    //    {
-                                    //        var unmatchedSequence = repository.GetResult(unmatchedItem.InternalId.ToString());
-                                    //        unmatchedSequence.Processed = true;
-                                    //        repository.SaveResult(unmatchedSequence, cancellationToken);
+                                    if (!fastDetect)
+                                    {
+                                        if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
+                                        {
+                                            var unmatchedSequence = repository.GetResult(unmatchedItem.InternalId.ToString());
+                                            unmatchedSequence.Processed = true;
+                                            repository.SaveResult(unmatchedSequence, cancellationToken);
 
-                                    //    }
+                                        }
 
-                                    //    if (!episodeResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
-                                    //    {
-                                    //        var comparableSequence = repository.GetResult(episodeQuery.Items[episodeComparableIndex].InternalId.ToString());
-                                    //        comparableSequence.Processed = true;
-                                    //        repository.SaveResult(comparableSequence, cancellationToken);
+                                        if (!episodeResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
+                                        {
+                                            var comparableSequence = repository.GetResult(episodeQuery.Items[episodeComparableIndex].InternalId.ToString());
+                                            comparableSequence.Processed = true;
+                                            repository.SaveResult(comparableSequence, cancellationToken);
 
-                                    //    }
-                                    //}
+                                        }
+                                    }
                                     Log.Debug(
                                         $"Unable to match {unmatchedItem.Parent.Parent.Name} {unmatchedItem.Parent.Name} E: {unmatchedItem.IndexNumber} with E: {episodeQuery.Items[episodeComparableIndex].IndexNumber}");
 
@@ -595,8 +595,9 @@ namespace IntroSkip.Detection
             var creditSequenceAudioDetectionStart = bestResult.CreditSequenceStart;
 
             //End Credits for longer shows are NEVER 20 seconds long.
+            //End credits can not start at 00:00:00.
             //Change the offset to 2.1 minutes before the end of the show, to look for black frame
-            if (runtime > TimeSpan.FromMinutes(35) && common < TimeSpan.FromSeconds(20))
+            if (runtime > TimeSpan.FromMinutes(35) && common < TimeSpan.FromSeconds(20) || creditSequenceAudioDetectionStart == TimeSpan.Zero)
             {
                 Log.Debug($"DETECTION Adjusting black frame detection for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}");
                 offset = runtime - TimeSpan.FromMinutes(2.1);
