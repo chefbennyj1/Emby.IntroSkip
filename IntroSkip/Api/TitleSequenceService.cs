@@ -15,6 +15,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using IntroSkip.Configuration;
+using IntroSkip.Detection;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Querying;
@@ -23,18 +24,25 @@ namespace IntroSkip.Api
 {
     public class TitleSequenceService : IService, IHasResultFactory
     {
-        
+        public enum SequenceImageType
+        {
+            IntroStart  = 0,
+            IntroEnd    = 1,
+            CreditStart = 2,
+            CreditEnd   = 3
+        }
         [Route("/ExtractThumbImage", "GET", Summary = "Image jpg resource frame")]
         public class ExtractThumbImage : IReturn<object>
         {
-            [ApiMember(Name = "ImageFrame", Description = "The image frame to extract from the stream", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public string ImageFrame { get; set; }
+            [ApiMember(Name = "ImageFrameTimestamp", Description = "The image frame time stamp to extract from the stream", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+            public string ImageFrameTimestamp { get; set; }
 
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "long[]", ParameterType = "query", Verb = "GET")]
             public long InternalId { get; set; }
 
-            [ApiMember(Name = "IsStart", Description = "Is the Title SequenceStart", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "GET")]
-            public bool IsIntroStart { get; set; }
+            [ApiMember(Name = "SequenceImageType", Description = "IntroStart = 0, IntroEnd = 1, CreditStart = 2, CreditEnd = 3", IsRequired = true, DataType = "SequenceImageType", ParameterType = "query", Verb = "GET")]
+            public SequenceImageType SequenceImageType { get; set; }
+            
             public object Img { get; set; }
         }
 
@@ -51,7 +59,7 @@ namespace IntroSkip.Api
 
         }
 
-        [Route("/RemoveSeasonDataRequest", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
+        [Route("/RemoveSeasonData", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
         public class RemoveSeasonDataRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
@@ -59,14 +67,14 @@ namespace IntroSkip.Api
         }
         
 
-        [Route("/EpisodeTitleSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
+        [Route("/EpisodeSequence", "GET", Summary = "Episode Title Sequence Start and End Data")]
         public class EpisodeTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The Internal Id of the episode", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long InternalId { get; set; }
         }
 
-        [Route("/SeasonTitleSequences", "GET", Summary = "All Title Sequence Start and End Data by Season Id")]
+        [Route("/SeasonSequences", "GET", Summary = "All Title Sequence Start and End Data by Season Id")]
         public class SeasonTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
@@ -80,7 +88,7 @@ namespace IntroSkip.Api
             //No args to pass - all code is done in the request below
         }
 
-        [Route("/UpdateTitleSequence", "POST", Summary = "Episode Title Sequence Update Data")]
+        [Route("/UpdateSequence", "POST", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
@@ -88,19 +96,20 @@ namespace IntroSkip.Api
             
             [ApiMember(Name = "TitleSequenceStart", Description = "The episode title sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceStart { get; set; }
+
+            [ApiMember(Name = "CreditSequenceStart", Description = "The episode credit sequence start time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
+            public TimeSpan CreditSequenceStart { get; set; }
             
             [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceEnd { get; set; }
             
-            [ApiMember(Name = "HasSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
-            public bool HasSequence { get; set; }
+            [ApiMember(Name = "HasTitleSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            public bool HasTitleSequence { get; set; }
             
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
-            
             public long SeasonId { get; set; }
 
-            [ApiMember(Name = "Confirmed", Description = "Confirmed Items", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "POST")]
-            public bool Confirmed { get; set; }
+            
         }
 
         [Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
@@ -118,8 +127,6 @@ namespace IntroSkip.Api
         [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
         public class ConfirmAllSeasonIntrosRequest : IReturn<string>
         {
-            
-
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
         }
@@ -152,9 +159,20 @@ namespace IntroSkip.Api
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath          = ffmpegConfiguration.EncoderPath;
             var item                = LibraryManager.GetItemById(request.InternalId);
-            var requestFrame        = TimeSpan.Parse(request.ImageFrame);
-            requestFrame            = requestFrame.Add( TimeSpan.FromSeconds(request.IsIntroStart ? 7 : -7)); //<--back track the image frame so it isn't always a black screen.
-            var frame               = $"00:{requestFrame.Minutes}:{requestFrame.Seconds}"; 
+            var requestFrame        = TimeSpan.Parse(request.ImageFrameTimestamp);
+            switch(request.SequenceImageType)
+            {
+                case SequenceImageType.CreditStart:
+                case SequenceImageType.IntroStart:
+                    requestFrame += TimeSpan.FromSeconds(7); //<--push the image frame so it isn't always a black screen.
+                    break;
+                case SequenceImageType.CreditEnd:
+                case SequenceImageType.IntroEnd:
+                    requestFrame -= TimeSpan.FromSeconds(7); //<--back up the image frame so it isn't always a black screen.
+                    break;
+            }
+            
+            var frame               = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}"; 
             var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 -";
             var procStartInfo       = new ProcessStartInfo(ffmpegPath, args)
             {
@@ -221,17 +239,17 @@ namespace IntroSkip.Api
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
-
-
+            
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
 
-            // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
+            
             titleSequence.TitleSequenceStart = request.TitleSequenceStart;
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
-            titleSequence.HasTitleSequence = request.HasSequence;
-            titleSequence.Confirmed = request.Confirmed;
+            titleSequence.HasTitleSequence = request.HasTitleSequence;
+            titleSequence.CreditSequenceStart = request.CreditSequenceStart;
+            titleSequence.Confirmed = true;
             titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-
+            titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
             try
             {
                 repository.SaveResult(titleSequence, CancellationToken.None);

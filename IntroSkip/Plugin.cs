@@ -30,7 +30,6 @@ namespace IntroSkip
             xmlSerializer)
         {
             Instance = this;
-
         }
 
         public IEnumerable<PluginPageInfo> GetPages() => new[]

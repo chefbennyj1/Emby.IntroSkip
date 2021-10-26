@@ -16,6 +16,7 @@
 </PropertyGroup>
 
 <ItemGroup>
+  <None Remove="Configuration\4vhannfv.ltn~" />
   <None Remove="Configuration\StatsConfigurationPage.html" />
   <None Remove="Configuration\StatsConfigurationPage.js" />
 </ItemGroup>

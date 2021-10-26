@@ -1,24 +1,24 @@
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
-using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.AudioFingerprinting;
 using IntroSkip.Data;
 using IntroSkip.Sequence;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Tasks;
 
 // ReSharper disable ComplexConditionExpression
 // ReSharper disable TooManyChainedReferences
 
-namespace IntroSkip.AudioFingerprinting
+namespace IntroSkip.ScheduledTasks
 {
     public class AudioFingerprintScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
@@ -87,9 +87,12 @@ namespace IntroSkip.AudioFingerprinting
                     User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
                 };
 
-                if (config.IgnoredList.Count > 0)
+                if (!(config.IgnoredList is null))
                 {
-                    seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
+                    if (config.IgnoredList.Any())
+                    {
+                        seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
+                    }
                 }
 
 

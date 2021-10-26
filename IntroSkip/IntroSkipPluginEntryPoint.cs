@@ -41,7 +41,6 @@ namespace IntroSkip
         public void Dispose()
         {
             LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
-            
             TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
             var repo = Repository as IDisposable;
             repo?.Dispose();
@@ -57,7 +56,7 @@ namespace IntroSkip
             
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
 
-            Plugin.Instance.SaveConfiguration();
+            Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
         }
 
         private void TaskManagerOnTaskCompleted(object sender, TaskCompletionEventArgs e)

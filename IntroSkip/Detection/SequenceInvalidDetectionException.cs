@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IntroSkip.Sequence
+namespace IntroSkip.Detection
 {
     public class SequenceInvalidDetectionException : Exception
     {
