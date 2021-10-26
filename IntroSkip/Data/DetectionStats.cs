@@ -18,6 +18,8 @@ namespace IntroSkip.Data
         public int EpisodeCount         { get; set; }
         public int HasSeqCount          { get; set; }
         public double PercentDetected   { get; set; }
+
+        public double EndPercentDetected { get; set; }
         public DateTime Date            { get; set; }
         public bool HasIssue            { get; set; }
         public TimeSpan IntroDuration   { get; set; }

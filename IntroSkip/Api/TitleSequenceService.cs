@@ -441,6 +441,7 @@ namespace IntroSkip.Api
 
 
                     int hasIntroCount = 0;
+                    int hasEndCount = 0;
                     int totalEpisodeCount = 0;
 
                     foreach (var episode in detectedSequences)
@@ -451,6 +452,10 @@ namespace IntroSkip.Api
                         {
                             hasIntroCount++;
                         }
+                        if (episode.HasCreditSequence)
+                        {
+                            hasEndCount++;
+                        }
                         else
                         {
                             hasIntroCount += 0;
@@ -458,7 +463,7 @@ namespace IntroSkip.Api
                     }
 
                     //Hoping not using this will increase performance massively.
-                    if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
+                    if (totalEpisodeCount == hasIntroCount && totalEpisodeCount == hasEndCount || hasIntroCount == 0)
                     {
                         ReturnedDetectionStatsList.Add(new DetectionStats
                         {
@@ -479,8 +484,10 @@ namespace IntroSkip.Api
                     {
                         int x = hasIntroCount;
                         int y = totalEpisodeCount;
-                        double percentage = Math.Round((double)x / y * 100);
-                        
+                        int z = hasEndCount;
+                        double introPercentage = Math.Round((double)x / y * 100);
+                        double creditPercentage = Math.Round((double)z / y * 100);
+
                         ReturnedDetectionStatsList.Add(new DetectionStats
                         {
                             Date = DateTime.Now,
@@ -489,7 +496,8 @@ namespace IntroSkip.Api
                             Season = seasonItem.Name,
                             EpisodeCount = totalEpisodeCount,
                             HasSeqCount = hasIntroCount,
-                            PercentDetected = percentage,
+                            PercentDetected = introPercentage,
+                            EndPercentDetected = creditPercentage,
                             IntroDuration = commonDuration,
                             Comment = "Needs Attention",
                             HasIssue = true
