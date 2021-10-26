@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using IntroSkip.AudioFingerprinting;
+using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
@@ -16,14 +17,14 @@ using MediaBrowser.Model.Querying;
 
 // ReSharper disable ComplexConditionExpression
 
-namespace IntroSkip.Sequence
+namespace IntroSkip.Detection
 {
-    public class TitleSequenceDetection : SequenceResult, IServerEntryPoint
+    public class SequenceDetection : SequenceResult, IServerEntryPoint
     {
-        public static TitleSequenceDetection Instance { get; private set; }
+        public static SequenceDetection Instance { get; private set; }
         private static ILogger Log { get; set; }
 
-        public TitleSequenceDetection(ILogManager logMan)
+        public SequenceDetection(ILogManager logMan)
         {
             Log = logMan.GetLogger(Plugin.Instance.Name);
             Instance = this;
@@ -60,7 +61,7 @@ namespace IntroSkip.Sequence
         //    return setBits;
         //}
 
-        private static double GetHammingDistance(uint x, uint y)
+        private static double GetFastHammingDistance(uint x, uint y)
         {
             var i = x ^ y;
             i -= ((i >> 1) & 0x55555555);
@@ -82,7 +83,7 @@ namespace IntroSkip.Sequence
 
             foreach (var i in Enumerable.Range(0, f1.Count))
             {
-                var hammingDistance = GetHammingDistance(f1[i], f2[i]);
+                var hammingDistance = GetFastHammingDistance(f1[i], f2[i]);
                 dist += hammingDistance;
             }
 
@@ -301,7 +302,7 @@ namespace IntroSkip.Sequence
             var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
 
             // ReSharper disable once TooManyChainedReferences
-            List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetHammingDistance(f1[i], f2[i])).ToList();
+            List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetFastHammingDistance(f1[i], f2[i])).ToList();
            
 
             //Added for Sam to test upper threshold changes

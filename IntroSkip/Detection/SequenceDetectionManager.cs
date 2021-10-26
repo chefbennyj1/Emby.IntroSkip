@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Data;
+using IntroSkip.Sequence;
 using IntroSkip.VideoBlackDetect;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -16,7 +17,7 @@ using MediaBrowser.Model.Querying;
 
 // ReSharper disable TooManyChainedReferences
 
-namespace IntroSkip.Sequence
+namespace IntroSkip.Detection
 {
     public class SequenceDetectionManager : IServerEntryPoint
     {
@@ -215,7 +216,7 @@ namespace IntroSkip.Sequence
                                 {
 
                                     // The magic!
-                                    var sequenceDetection = TitleSequenceDetection.Instance;
+                                    var sequenceDetection = SequenceDetection.Instance;
 
                                     var stopWatch = new Stopwatch();
                                     stopWatch.Start();

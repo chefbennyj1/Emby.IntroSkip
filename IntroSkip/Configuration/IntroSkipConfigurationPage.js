@@ -7,9 +7,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
     window.parseISO8601Duration = function(iso8601Duration) {
       var matches = iso8601Duration.match(iso8601DurationRegex);
 
-      return {
-        minutes: matches[7] === undefined ? "00" : matches[7] < 10 ? `0${matches[7]}` : matches[7],
-        seconds: matches[8] === undefined ? "00" : matches[8] < 10 ? `0${matches[8]}` : matches[8]
+      return { 
+          hours: matches[6] === undefined ? "00" : matches[6] < 10 ? `0${matches[6]}` : matches[6],
+          minutes: matches[7] === undefined ? "00" : matches[7] < 10 ? `0${matches[7]}` : matches[7],
+          seconds: matches[8] === undefined ? "00" : matches[8] < 10 ? `0${matches[8]}` : matches[8]
       };
     };
 
@@ -31,7 +32,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
     // http://localhost:8096/emby/Items/12056/Refresh?MetadataRefreshMode=FullRefresh&ImageRefreshMode=ValidationOnly&ReplaceAllMetadata=true&ReplaceAllImages=false
 
     ApiClient.deleteSeasonData = function(seasonId) {
-      var url = this.getUrl(`RemoveSeasonDataRequest?SeasonId=${seasonId}`);
+      var url = this.getUrl(`RemoveSeasonData?SeasonId=${seasonId}`);
       return this.ajax({
         type: "DELETE",
         url: url
@@ -60,7 +61,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
     };
 
     ApiClient.updateTitleSequence = function(options) {
-      var url = this.getUrl('UpdateTitleSequence');
+      var url = this.getUrl('UpdateSequence');
       return this.ajax({
         type: "POST",
         url: url,
@@ -138,14 +139,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
     async function saveIntro(row, view) {
 
       var id = row.dataset.id;
-      var intro = await ApiClient.getJSON(ApiClient.getUrl('EpisodeTitleSequence?InternalId=' + id));
+      var intro = await ApiClient.getJSON(ApiClient.getUrl('EpisodeSequence?InternalId=' + id));
       var options = {
         InternalId: id,
-        TitleSequenceStart: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
-        TitleSequenceEnd: row.cells[7].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
-        HasTitleSequence: row.cells[5].querySelector('select').value,
-        Confirmed: intro.Confirmed = true,
-        SeasonId: intro.SeasonId
+        TitleSequenceStart: row.cells[5].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
+        TitleSequenceEnd: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
+        HasTitleSequence: row.cells[4].querySelector('select').value,
+        SeasonId: intro.SeasonId,
+        CreditSequenceStart: 'PT' + row.cells[7].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] + "S"
       }
 
       await ApiClient.updateTitleSequence(options);
@@ -162,11 +163,17 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
     }
 
     async function getIntros(seasonId) {
-      return await ApiClient.getJSON(ApiClient.getUrl(`SeasonTitleSequences?SeasonId=${seasonId}`));
+      return await ApiClient.getJSON(ApiClient.getUrl(`SeasonSequences?SeasonId=${seasonId}`));
     }
 
-    async function getExtractedThumbImage(hasIntro, id, imageFrame, isStart) {
-      var thumb = !hasIntro ? 'NoTitleSequenceThumbImage' : `ExtractThumbImage?InternalId=${id}&ImageFrame=${encodeURIComponent(imageFrame)}&IsIntroStart=${isStart}`;
+    //SequenceImageTypes:
+    //IntroStart  = 0
+    //IntroEnd    = 1
+    //CreditStart = 2
+    //CreditEnd   = 3
+
+    async function getExtractedThumbImage(hasSequence, id, imageFrameTimestamp, sequenceImageType) {
+      var thumb = !hasSequence ? 'NoTitleSequenceThumbImage' : `ExtractThumbImage?InternalId=${id}&ImageFrameTimestamp=${encodeURIComponent(imageFrameTimestamp)}&SequenceImageType=${sequenceImageType}`;
       return await ApiClient.getUrl(thumb);
     }
 
@@ -180,9 +187,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
       var html = '';
       var episode = result.Items[0];
-      var startTimespan = parseISO8601Duration(intro.TitleSequenceStart);
-      var endTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
-
+      var introStartTimespan = parseISO8601Duration(intro.TitleSequenceStart);
+      var introEndTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
+      var creditStartTimeSpan = parseISO8601Duration(intro.CreditSequenceStart);
       html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
 
       //html += '<td data-title="Confirmed" class="detailTableBodyCell fileCell">';
@@ -213,17 +220,27 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
       html += '</td">';
 
-      var start = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
-      var end = "00:" + endTimespan.minutes + ":" + endTimespan.seconds;
-      var hasIntro = intro.HasTitleSequence || (endTimespan.minutes !== '00' && endTimespan.seconds !== '00');
-
-      html += '<td style="position:relative" data-title="Start" class="detailTableBodyCell fileCell">';
-      html += `<div class="editTimestamp" contenteditable>${start}</div>`;
-      html += `<img class="startThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, start, true)}"/>`;
+      var introStart  = "00:" + introStartTimespan.minutes + ":" + introStartTimespan.seconds;
+      var introEnd    = "00:" + introEndTimespan.minutes   + ":" + introEndTimespan.seconds;
+      var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
+      
+      var hasIntro  = intro.HasTitleSequence  || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00');  //<-- looks like we have to check those minute and second values too.
+      var hasCredit = intro.HasCreditSequence || (creditStart.minutes !== '00');
+      
+      html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
+      html += `<div class="editTimestamp" contenteditable>${introStart}</div>`;
+      html += `<img class="introStartThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0)}"/>`;
       html += '</td>';
-      html += '<td style="position:relative" data-title="End" class="detailTableBodyCell fileCell">';
-      html += `<div class="editTimestamp" contenteditable>${end}</div>`;
-      html += `<img class="endThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, end, false)}"/>`;
+
+      html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
+      html += `<div class="editTimestamp" contenteditable>${introEnd}</div>`;
+      html += `<img class="introEndThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1)}"/>`;
+      html += '</td>';
+
+
+      html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
+      html += `<div class="editTimestamp" contenteditable>${creditStart}</div>`;
+      html += `<img class="creditStartThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
       html += '</td>';
 
       html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
@@ -261,13 +278,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
           });
         });
 
-        view.querySelectorAll('.startThumb').forEach(thumb => {
+        view.querySelectorAll('.introStartThumb').forEach(thumb => {
           thumb.addEventListener('click', (e) => {
             e.target.closest('td').querySelector('.editTimestamp').focus();
           });
         });
 
-        view.querySelectorAll('.endThumb').forEach(thumb => {
+        view.querySelectorAll('.introEndThumb').forEach(thumb => {
           thumb.addEventListener('click', (e) => {
             e.target.closest('td').querySelector('.editTimestamp').focus();
           });
@@ -460,6 +477,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             }
           }
         }
+
+
+        //We break DRY here by repeating our code. It could probably be refactored.
 
         seasonSelect.addEventListener('change', async (e) => {
           e.preventDefault();

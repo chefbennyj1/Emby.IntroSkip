@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Detection;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
 
@@ -10,7 +11,7 @@ using MediaBrowser.Model.Tasks;
 // ReSharper disable three TooManyChainedReferences
 // ReSharper disable twice ComplexConditionExpression
 
-namespace IntroSkip.Sequence
+namespace IntroSkip.ScheduledTasks
 {
     public class SequenceDetectionScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {

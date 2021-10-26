@@ -195,6 +195,7 @@ namespace IntroSkip.AudioFingerprinting
         {
             var encodingDir = GetEncodingDirectory();
             if (!FileSystem.DirectoryExists($"{encodingDir}")) FileSystem.CreateDirectory($"{encodingDir}");
+            
         }
     }
 }
