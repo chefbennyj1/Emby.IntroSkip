@@ -50,7 +50,7 @@ namespace IntroSkip.ScheduledTasks
             }
             catch (Exception ex)
             {
-                //Log.Warn(ex.Message);
+                //Log.ErrorException(ex.Message, ex);
             }
 
             var repo = (IDisposable) repository;
