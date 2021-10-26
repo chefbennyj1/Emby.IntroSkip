@@ -142,9 +142,24 @@ namespace IntroSkip.Detection
                             IsVirtualItem = false
                         });
 
+                        /*
+                         * Initially we're going to use dbEpisodes to locate all the unmatched items in the database.
+                         *
+                         * While 'FastDetect' is enabled, we'll only grab the first detection found by the algorithm
+                         * We use dbEpisodes to handle the sequence detections.
+                         * It is the dbEpisodes List we'll alter and save the first found detection to.
+                         * Then put the dbEpisodes items in to the Database.
+                         *
+                         *
+                         * If 'FastDetect' is disabled, we'll only use dbEpisodes to locate the unmatched items in the Database.
+                         * Then we create and use a ConcurrentDictionary ('episodeResults') to hold all our detection results
+                         * Key   = InternalId of the episode
+                         * Value = Concurrent List of detection results for the item.
+                         * 
+                         */
 
                         var dbEpisodes = dbResults.Items.ToList();
-
+                        
                         if (!dbEpisodes.Any()) //<-- this should not happen unless the fingerprint task was never run on this season. 
                         {
                             dbEpisodes = new List<SequenceResult>();
@@ -173,7 +188,7 @@ namespace IntroSkip.Detection
                         var fastDetect = Plugin.Instance.Configuration.FastDetect;
                         Log.Info($"Using Fast Detection : {(fastDetect ? "ON" : "OFF")} - Processing {unmatched.Count()} episode(s) for {series.Name} - {season.Name}.");
 
-                        //We'll only use this dictionary is fast detect is off. Probably shouldn't create it if not necessary.
+                        //We'll only use this dictionary if fast detect is off. Probably shouldn't create it if not necessary.
                         var episodeResults = new ConcurrentDictionary<long, ConcurrentBag<SequenceResult>>();
 
                         unmatched.AsParallel().WithCancellation(cancellationToken).WithDegreeOfParallelism(2).ForAll((unmatchedItem) =>
@@ -269,24 +284,24 @@ namespace IntroSkip.Detection
                                         continue;
                                     }
 
-                                    if (!fastDetect)
-                                    {
-                                        if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
-                                        {
-                                            var unmatchedSequence = repository.GetResult(unmatchedItem.InternalId.ToString());
-                                            unmatchedSequence.Processed = true;
-                                            repository.SaveResult(unmatchedSequence, cancellationToken);
+                                    //if (!fastDetect)
+                                    //{
+                                    //    if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
+                                    //    {
+                                    //        var unmatchedSequence = repository.GetResult(unmatchedItem.InternalId.ToString());
+                                    //        unmatchedSequence.Processed = true;
+                                    //        repository.SaveResult(unmatchedSequence, cancellationToken);
 
-                                        }
+                                    //    }
 
-                                        if (!episodeResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
-                                        {
-                                            var comparableSequence = repository.GetResult(episodeQuery.Items[episodeComparableIndex].InternalId.ToString());
-                                            comparableSequence.Processed = true;
-                                            repository.SaveResult(comparableSequence, cancellationToken);
+                                    //    if (!episodeResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
+                                    //    {
+                                    //        var comparableSequence = repository.GetResult(episodeQuery.Items[episodeComparableIndex].InternalId.ToString());
+                                    //        comparableSequence.Processed = true;
+                                    //        repository.SaveResult(comparableSequence, cancellationToken);
 
-                                        }
-                                    }
+                                    //    }
+                                    //}
                                     Log.Debug(
                                         $"Unable to match {unmatchedItem.Parent.Parent.Name} {unmatchedItem.Parent.Name} E: {unmatchedItem.IndexNumber} with E: {episodeQuery.Items[episodeComparableIndex].IndexNumber}");
 
@@ -301,6 +316,7 @@ namespace IntroSkip.Detection
                                 {
                                     Log.Debug(
                                         $"{unmatchedItem.Parent.Parent.Name} S: {unmatchedItem.Parent.IndexNumber} E: {unmatchedItem.IndexNumber} {ex.Message}");
+
 
                                 }
                                 catch (Exception ex)
@@ -341,6 +357,7 @@ namespace IntroSkip.Detection
                                     //var commonCreditSequenceDuration = TimeSpan.Zero;
 
                                     if (!episodeResults.Any()) continue;
+
                                     //All our results from every comparison
                                     var fullResults = new List<SequenceResult>();
                                     episodeResults.ToList().ForEach(item => fullResults.AddRange(item.Value));
@@ -358,68 +375,78 @@ namespace IntroSkip.Detection
                                     
                                     Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } intro is: { commonTitleSequenceDuration } - calculated from: { fullResults.Count } results");
                                     Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } credits is: { commonCreditSequenceDuration } - calculated from: { fullResults.Count } results");
-                                    //fullResults.Clear(); //<--Free up memory
 
+                                    var results = new ConcurrentBag<SequenceResult>();
                                     episodeResults
                                         .AsParallel()
                                         .WithDegreeOfParallelism(2)
                                         .WithCancellation(cancellationToken)
-                                        .ForAll(
-                                        item =>
+                                        .ForAll(item =>
                                         {
                                             var sequenceResult = repository.GetResult(item.Key.ToString());
+
+                                            var (titleSequenceConfidence, titleSequence)   = Tuple.Create(0.0, sequenceResult); //Default
+                                            var (creditSequenceConfidence, creditSequence) = Tuple.Create(0.0, sequenceResult); //Default
+
                                             try
                                             {
-                                                var (titleSequenceConfidence, titleSequence)   = Tuple.Create(0.0, item.Value.FirstOrDefault()); //Default
-                                                var (creditSequenceConfidence, creditSequence) = Tuple.Create(0.0, item.Value.FirstOrDefault()); //Default
-
-                                                try
-                                                {
-                                                    (titleSequenceConfidence, titleSequence) = GetBestTitleSequenceResult(commonTitleSequenceDuration, item.Value, cancellationToken);
-                                                }
-                                                catch { }
-
-                                                try
-                                                {
-                                                    (creditSequenceConfidence, creditSequence) = GetBestCreditSequenceResult(commonCreditSequenceDuration, item.Value, cancellationToken);
-                                                }
-                                                catch { }
-
-                                                
-                                                sequenceResult.HasCreditSequence = creditSequence.HasCreditSequence;
-                                                sequenceResult.CreditSequenceStart = creditSequence.CreditSequenceStart;
-                                                sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
-                                                sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
-                                                sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
-                                                //sequenceResult.CreditSequenceFingerprint.Clear();
-                                                //sequenceResult.TitleSequenceFingerprint.Clear();
-
-                                                //if (episodeQuery.TotalRecordCount > 1)
-                                                //{
-                                                sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
-                                                //}
-
-                                                repository.SaveResult(sequenceResult, cancellationToken);
-
-                                                var e = LibraryManager.GetItemById(sequenceResult.InternalId);
-                                                Log.Debug(
-                                                    $"\n\nBest result: {season.Parent.Name} - {season.Name} Episode: {e.IndexNumber} " +
-                                                    "\n----------------------------------------------------------------------------" +
-                                                    $"\nTITLE SEQUENCE START     : {sequenceResult.TitleSequenceStart} " +
-                                                    $"\nTITLE SEQUENCE END       : {sequenceResult.TitleSequenceEnd} " +
-                                                    $"\nCREDIT START             : {sequenceResult.CreditSequenceStart}" +
-                                                    $"\nCREDIT END               : {sequenceResult.CreditSequenceEnd}" +
-                                                    $"\nCREDIT CONFIDENCE        : {creditSequenceConfidence}" +
-                                                    $"\nTITLE SEQUENCE CONFIDENCE: {titleSequenceConfidence}\n");
+                                                (titleSequenceConfidence, titleSequence) =
+                                                    GetBestTitleSequenceResult(commonTitleSequenceDuration,
+                                                        item.Value, cancellationToken);
                                             }
-                                            catch (Exception)
+                                            catch
                                             {
-                                                //Something happens here a sequence has nothing in it. Could be the CommonTimespan function. it is unclear.
-                                                sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
-                                                
-                                                repository.SaveResult(sequenceResult, cancellationToken);
+
                                             }
+
+                                            try
+                                            {
+                                                (creditSequenceConfidence, creditSequence) =
+                                                    GetBestCreditSequenceResult(commonCreditSequenceDuration,
+                                                        item.Value, cancellationToken);
+                                            }
+                                            catch
+                                            {
+
+                                            }
+
+                                            sequenceResult.HasCreditSequence = creditSequence.HasCreditSequence;
+                                            sequenceResult.CreditSequenceStart = creditSequence.CreditSequenceStart;
+                                            sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
+                                            sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
+                                            sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
+                                            //sequenceResult.CreditSequenceFingerprint.Clear();
+                                            //sequenceResult.TitleSequenceFingerprint.Clear();
+
+                                            sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
+
+                                            //repository.SaveResult(sequenceResult, cancellationToken);
+                                            results.Add(sequenceResult);
+                                            var e = LibraryManager.GetItemById(sequenceResult.InternalId);
+                                           
+                                            
+                                            Log.Debug(
+                                                $"\nDETECTION processed {episodeResults.Count} compared items for {season.Parent.Name} { season.Name } Episode {e.IndexNumber}." +
+                                                $"\nBest result: {season.Parent.Name} - {season.Name} Episode {e.IndexNumber} " +
+                                                $"\nTITLE SEQUENCE START: {sequenceResult.TitleSequenceStart} " +
+                                                $"\nTITLE SEQUENCE END: {sequenceResult.TitleSequenceEnd} " +
+                                                $"\nCREDIT START: {sequenceResult.CreditSequenceStart}" +
+                                                $"\nCREDIT END: {sequenceResult.CreditSequenceEnd}" +
+                                                $"\nCREDIT CONFIDENCE: {creditSequenceConfidence}" +
+                                                $"\nTITLE SEQUENCE CONFIDENCE: {titleSequenceConfidence}\n");
+
+
                                         });
+
+                                    //Save to our database.
+                                    results.ToList().ForEach(result =>
+                                    {
+                                        try
+                                        {
+                                            repository.SaveResult(result, cancellationToken);
+                                        }
+                                        catch { }
+                                    });
 
                                     break;
                                 }
@@ -445,6 +472,8 @@ namespace IntroSkip.Detection
                 .WithCancellation(cancellationToken)
                 .ForAll(result =>
                 {
+                    //We're close enough to the beginning of the stream, we'll call it the beginning.
+                    //Make the end the common title sequence duration.
                     if (result.TitleSequenceStart - TimeSpan.FromSeconds(20) <= TimeSpan.Zero)
                     {
                         result.TitleSequenceStart = TimeSpan.Zero;
@@ -452,6 +481,7 @@ namespace IntroSkip.Detection
 
                     }
 
+                    //This episodes duration
                     var duration = result.TitleSequenceEnd - result.TitleSequenceStart;
 
                     var startGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceStart);
@@ -577,27 +607,27 @@ namespace IntroSkip.Detection
 
             if (blackDetections.Any())
             {
-                var contiguousBlackDetections = blackDetections.Where(d => d >= offset && d <= upperLimit).ToList(); //The results found in our contiguous region.
+                var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit); //The results found in our contiguous region.
 
-                var narrowedBlackDetectionResults = contiguousBlackDetections.FirstOrDefault(d => d >= offset.Add(TimeSpan.FromSeconds(5)) && d <= upperLimit.Add(-TimeSpan.FromSeconds(20)));
+                //var narrowedBlackDetectionResults = contiguousBlackDetections.FirstOrDefault(d => d >= offset.Add(TimeSpan.FromSeconds(5)) && d <= upperLimit.Add(-TimeSpan.FromSeconds(20)));
 
-                var blackDetection = TimeSpan.Zero;
+                //var blackDetection = TimeSpan.Zero;
 
-                if (!Equals(narrowedBlackDetectionResults, TimeSpan.Zero))
-                {
-                    blackDetection = narrowedBlackDetectionResults;
-                }
-                else
-                {
-                    blackDetection = contiguousBlackDetections[2];
-                }
+                //if (!Equals(narrowedBlackDetectionResults, TimeSpan.Zero))
+                //{
+                //    blackDetection = narrowedBlackDetectionResults;
+                //}
+                //else
+                //{
+                //    blackDetection = contiguousBlackDetections[2];
+                //}
 
                 if (!Equals(blackDetection, TimeSpan.Zero))
                 {
                     Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
-                              $"\nCredit sequence audio detection start          : {creditSequenceAudioDetectionStart}." +
-                              $"\nBlack frame detected within contiguous regions : {blackDetection}." +
-                              $"\nMoving sequence start to                       : {blackDetection}.");
+                              $"\nCredit sequence audio detection start: {creditSequenceAudioDetectionStart}." +
+                              $"\nBlack frame detected within contiguous regions: {blackDetection}." +
+                              $"\nMoving sequence start to: {blackDetection}.");
                     bestResult.CreditSequenceStart = blackDetection;
                     confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same a black frame detection we are perfect.
                 }

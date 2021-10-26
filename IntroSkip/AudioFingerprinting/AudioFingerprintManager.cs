@@ -47,7 +47,7 @@ namespace IntroSkip.AudioFingerprinting
 
             ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
 
-            Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
+            //Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
             List<uint> fingerprints = null;
             try
