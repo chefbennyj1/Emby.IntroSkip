@@ -241,7 +241,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
       html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
       html += `<div class="editTimestamp" contenteditable>${creditStart}</div>`;
       html += `<img class="creditStartThumb" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
-      html += '</td>';
+        html += '</td>';
+
+        html += '<td data-title="Recap Skip" class="detailTableBodyCell fileCell">';
+        html += '<svg width="30" height="30">';
+        html += '<circle cx="15" cy="15" r="10"' + titleSequenceStatusIcon(intro.Confirmed) + '" />';
+        html += '</svg>';
+        html += '</td>';
 
       html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
       html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
