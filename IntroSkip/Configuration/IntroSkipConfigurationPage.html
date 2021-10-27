@@ -27,6 +27,22 @@
 
                         </div>
 
+                        <div class="inputContainer">
+                            <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                                <input is="emby-toggle" type="checkbox" id="enableShowRecapSkip" class="chkenableShowRecapSkip" data-embytoggle="">
+                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Entire TV Show</span>
+                                <div class="mdl-switch__trackContainer">
+                                    <div class="mdl-switch__track"></div>
+                                    <div class="mdl-switch__thumb">
+                                        <span class="mdl-switch__focus-helper"></span>
+                                    </div>
+                                </div>
+                            </label>
+                            <div class="fieldDescription">
+                                If Enabled - will assume content before the Title Sequence Start is just a recap and skip this
+                            </div>
+                        </div>
+
                         <div style="align-items: center;">
                             <!-- Emby Season List -->
                             <div class="selectContainer">
@@ -41,8 +57,24 @@
                             </div>
                         </div>
 
+                        <div class="inputContainer">
+                            <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                                <input is="emby-toggle" type="checkbox" id="enableSeasonRecapSkip" class="chkenableSeasonRecapSkip" data-embytoggle="">
+                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Just the selected Season</span>
+                                <div class="mdl-switch__trackContainer">
+                                    <div class="mdl-switch__track"></div>
+                                    <div class="mdl-switch__thumb">
+                                        <span class="mdl-switch__focus-helper"></span>
+                                    </div>
+                                </div>
+                            </label>
+                            <div class="fieldDescription">
+                                If Enabled - will assume content before the Title Sequence Start is just a recap and skip this for the selected Season only
+                            </div>
+                        </div>
+
                         <br />
-                        <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
+                        <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button hide">
                             <span>Confirm All Season Intros are Correct</span>
                         </button>
                         <div class="fieldDescription">
@@ -88,6 +120,7 @@
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Recap Skip</th>
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>

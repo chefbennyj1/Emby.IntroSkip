@@ -103,9 +103,12 @@ namespace IntroSkip.Api
             [ApiMember(Name = "TitleSequenceEnd", Description = "The episode title sequence end time", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public TimeSpan TitleSequenceEnd { get; set; }
             
-            [ApiMember(Name = "HasTitleSequence", Description = "The episode has a sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            [ApiMember(Name = "HasTitleSequence", Description = "The episode has a title sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool HasTitleSequence { get; set; }
-            
+
+            [ApiMember(Name = "HasTitleSequence", Description = "The episode has a end credits", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            public bool HasCreditSequence { get; set; }
+
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
 
@@ -247,6 +250,7 @@ namespace IntroSkip.Api
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
             titleSequence.HasTitleSequence = request.HasTitleSequence;
             titleSequence.CreditSequenceStart = request.CreditSequenceStart;
+            titleSequence.HasCreditSequence = titleSequence.CreditSequenceStart != TimeSpan.FromSeconds(0)? true:false; //this was not getting updated when user clicked save
             titleSequence.Confirmed = true;
             titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
             titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
@@ -474,6 +478,7 @@ namespace IntroSkip.Api
                             EpisodeCount = totalEpisodeCount,
                             HasSeqCount = hasIntroCount,
                             PercentDetected = 100,
+                            EndPercentDetected = 100,
                             IntroDuration = commonDuration,
                             Comment = "Looks Good",
                             HasIssue = false
