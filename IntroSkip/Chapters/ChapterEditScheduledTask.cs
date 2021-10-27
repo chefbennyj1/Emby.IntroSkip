@@ -71,9 +71,31 @@ namespace IntroSkip.Chapters
             return chapterExecute;
         }
 
-        public bool IsHidden => false;
+        public bool IsHidden
+        {
+            get
+            {
+                var config = Plugin.Instance.Configuration;
+                if (config.EnableChapterInsertion)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
 
-        public bool IsEnabled => true;
+        public bool IsEnabled
+        {
+            get
+            {
+                var config = Plugin.Instance.Configuration;
+                if (config.EnableChapterInsertion)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
 
         public bool IsLogged => true;
 
