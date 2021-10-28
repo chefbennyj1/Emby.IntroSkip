@@ -18,16 +18,13 @@ namespace IntroSkip.Statistics
     {
         public ILibraryManager LibraryManager { get; set; }
         private ITaskManager TaskManager { get; }
-        private IItemRepository ItemRepo { get; }
         private ILogger Log { get; }
 
-        public StatsScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, IItemRepository itemRepo)
+        public StatsScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager)
         {
             LibraryManager = libraryManager;
             TaskManager = taskManager;
             Log = logManager.GetLogger(Plugin.Instance.Name);
-            ItemRepo = itemRepo;
-
         }
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
@@ -45,6 +42,7 @@ namespace IntroSkip.Statistics
             {
                 StatsManager.Instance.GetDetectionStatistics();
                 await Task.FromResult(true);
+                progress.Report(100.0);
             }
             catch (Exception ex)
             {

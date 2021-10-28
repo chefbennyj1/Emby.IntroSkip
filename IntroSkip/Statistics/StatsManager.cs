@@ -117,8 +117,11 @@ namespace IntroSkip.Statistics
                     }
 
                     //Hoping not using this will increase performance massively.
-                    if (totalEpisodeCount == hasIntroCount && totalEpisodeCount == hasEndCount || hasIntroCount == 0)
+                    if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
                     {
+                        int y = totalEpisodeCount;
+                        int z = hasEndCount;
+                        double creditPercentage = Math.Round((double)z / y * 100);
                         ReturnedDetectionStatsList.Add(new DetectionStats
                         {
                             Date = DateTime.Now,
@@ -128,7 +131,7 @@ namespace IntroSkip.Statistics
                             EpisodeCount = totalEpisodeCount,
                             HasSeqCount = hasIntroCount,
                             PercentDetected = 100,
-                            EndPercentDetected = 100,
+                            EndPercentDetected = creditPercentage,
                             IntroDuration = commonDuration,
                             Comment = "Looks Good",
                             HasIssue = false
@@ -164,13 +167,16 @@ namespace IntroSkip.Statistics
                 DisposeRepository(repository);
                 Log.Info("STATISTICS: Completed Statitics Successfully");
                 ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
+                //Sorts the Seasons and Tv Shows in Season order but not alphabetically for the Shows.
+                // List<DetectionStats> list = ReturnedDetectionStatsList.OrderBy(x => x.TVShowName).ThenBy(x => x.Season).ToList();
+                // ReturnedDetectionStatsList = list;
 
                 CreateStatisticsTextFile();
             }
-            catch (Exception ex)
+            catch (Exception thisIsPissingMeOffNow)
             {
                 Log.Warn("STATISTICS: ******* ISSUE CREATING STATS FOR INTROSKIP *********");
-                Log.ErrorException(ex.Message, ex);
+                Log.ErrorException(thisIsPissingMeOffNow.Message, thisIsPissingMeOffNow);
             }
         }
         private TimeSpan CalculateCommonTitleSequenceLength(List<BaseSequence> season)
@@ -181,13 +187,6 @@ namespace IntroSkip.Statistics
             int maxCount = enumerableSequences.Max(g => g.Count());
             var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
-        }
-        public static string ConvertTicksToTime(TimeSpan span)
-        {
-            TimeSpan time = span;
-            string output = time.ToString(@"hh\:mm\:ss");
-
-            return output;
         }
 
         private void DisposeRepository(ISequenceRepository repository)
