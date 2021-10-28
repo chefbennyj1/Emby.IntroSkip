@@ -27,7 +27,10 @@
 
                         </div>
 
-                        <!--<div class="inputContainer">
+
+                        <!-- Recap Skip Option - Hidden at the minute -->
+                        <div class="inputContainer hide">
+
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableShowRecapSkip" class="chkenableShowRecapSkip" data-embytoggle="">
                                 <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Entire TV Show</span>
@@ -39,9 +42,11 @@
                                 </div>
                             </label>
                             <div class="fieldDescription">
-                                If enabled - will assume content before the title sequence start is just a recap and skip this series.
+                                If Enabled - will assume content before the Title Sequence Start is just a recap and skip this
                             </div>
-                        </div>-->
+                        </div>
+                        
+
 
                         <div style="align-items: center;">
                             <!-- Emby Season List -->
@@ -57,10 +62,13 @@
                             </div>
                         </div>
 
-                        <!--<div class="inputContainer">
+
+                        <!-- Recap Skip Option - Hidden at the minute -->
+                        <div class="inputContainer hide">
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableSeasonRecapSkip" class="chkenableSeasonRecapSkip" data-embytoggle="">
-                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for just the selected Season</span>
+                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Just the selected Season</span>
+
                                 <div class="mdl-switch__trackContainer">
                                     <div class="mdl-switch__track"></div>
                                     <div class="mdl-switch__thumb">
@@ -71,27 +79,28 @@
                             <div class="fieldDescription">
                                 If Enabled - will assume content before the Title Sequence Start is just a recap and skip this for the selected Season only
                             </div>
-                        </div>-->
 
+                        </div>
                         <br />
-                       
                         <div class="confirmButtonContainer hide">
-                            <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button ">
+                            <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
                                 <span>Confirm All Season Intros are Correct</span>
                             </button>
                             <div class="fieldDescription">
                                 Confirm all intros for this season are correct.
                             </div>
                         </div>
-                        <br />
-                        <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
-                            <span>Rescan data</span>
-                        </button>
-                        <div class="fieldDescription">
-                            This will remove all Detection and Fingerprint data for this season (option to keep your edited intros).
-                        </div>
 
-                    </form>
+                            <br />
+                            <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
+                                <span>Rescan data</span>
+                            </button>
+                            <div class="fieldDescription">
+                                This will remove all Detection and Fingerprint data for this season (option to keep your edited intros).
+                            </div>
+                        
+
+</form>
 
                     <div class="detailLogo hide" style="margin-top: 2em; margin-right: 5em; position: absolute; right: 20%; opacity: 0;"></div>
                 </div>
@@ -122,7 +131,9 @@
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
+
                                 <!--<th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Has Recap</th>-->
+
                                 <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>
                                 <th class="detailTableHeaderCell" data-priority="1"></th>
