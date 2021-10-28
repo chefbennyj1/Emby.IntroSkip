@@ -144,7 +144,7 @@
 
             html += '<td data-title="Results" class="detailTableBodyCell fileCell">' + statElement.PercentDetected + "%" + '</td>';
 
-            html += '<td data-title="Results" class="detailTableBodyCell fileCell">' + statElement.EndPercentDetected + "%" + '</td>';
+            //html += '<td data-title="Results" class="detailTableBodyCell fileCell">' + statElement.EndPercentDetected + "%" + '</td>';
 
             html += '<td data-title="Comments" class="detailTableBodyCell fileCell">' + statElement.Comment + '</td>';
 
