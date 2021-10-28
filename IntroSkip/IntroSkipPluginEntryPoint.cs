@@ -101,12 +101,25 @@ namespace IntroSkip
 
         private static async void AllItemsAdded(object state)
         {
-            var libraryTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
+            var libraryTask   = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
+            var detectionTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
+            var fingerprintingTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting");
+            if (detectionTask?.State == TaskState.Running || fingerprintingTask?.State == TaskState.Running)
+            {
+                return;
+            }
+
             if (libraryTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
             {
                 ItemsAddedTimer.Change(10000, Timeout.Infinite); //Check back in 10 seconds
                 return;
             }
+
+            if (detectionTask?.State == TaskState.Running)
+            {
+                return;
+            }
+
 
             //Okay, we're ready for fingerprinting now - go ahead.
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
