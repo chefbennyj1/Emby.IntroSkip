@@ -1,6 +1,4 @@
-﻿
-using IntroSkip.Data;
-using MediaBrowser.Controller.Configuration;
+﻿using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
@@ -9,9 +7,7 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.TV;
+using IntroSkip.Data;
 
 namespace IntroSkip
 {

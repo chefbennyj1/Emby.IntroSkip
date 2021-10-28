@@ -16,4 +16,6 @@ namespace IntroSkip.Statistics
         public TimeSpan IntroDuration   { get; set; }
         public string Comment           { get; set; }
     }
+
 }
+
