@@ -7,7 +7,7 @@
                 <div class="inputContainer">
                     <label style="width: auto;" class="mdl-switch mdl-js-switch">
                         <input is="emby-toggle" type="checkbox" id="enableChapterInsertEvent" class="chkChapterInsertEvent" data-embytoggle="">
-                        <span class="toggleButtonLabel mdl-switch__label">Show Title Sequence Chapter Markers</span>
+                        <span class="toggleButtonLabel mdl-switch__label">Show Chapter Markers in Episodes</span>
                         <div class="mdl-switch__trackContainer">
                             <div class="mdl-switch__track"></div>
                             <div class="mdl-switch__thumb">
@@ -16,11 +16,11 @@
                         </div>
                     </label>
                     <div class="fieldDescription">
-                        This will create a Title Sequence Entries that will be shown in the Chapters Section of your Episodes
+                        This will create a Title Sequence and End Credit Chapter Entries that will be shown in the Chapters Section of your Episodes
                     </div>
                 </div>
 
-                <div class="inputContainer">
+                <div class="inputContainer hide">
                     <label style="width: auto;" class="mdl-switch mdl-js-switch">
                         <input is="emby-toggle" type="checkbox" id="enableChapterEndCreditEvent" class="chkChapterEndCreditEvent" data-embytoggle="">
                         <span class="toggleButtonLabel mdl-switch__label">Show End Credits Chapter Marker</span>
@@ -48,8 +48,7 @@
                         </div>
                     </label>
                     <div class="fieldDescription">
-                        This will Automatically run the Thumbnail Image Extraction Process once the Intro and End Credit Points have been inserted --
-                        This will only run the Chapter Entry Points that are selected Above
+                        This will Automatically run the Thumbnail Image Extraction Process once the Intro and End Credit Points have been inserted
                     </div>
                 </div>
 
@@ -60,6 +59,11 @@
                         <h2 style="margin: .4em 0; vertical-align: middle;">
                             Unprocessed Episode Intro Chapters: Bad/Incorrect Intro Chapters, needs user attention
                         </h2>
+                    </div>
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h3 class="detectionStatsLink" style="margin-right:3%">ChapterError File Location:</h3>
+                        <h4 class="detectionStatsLinkLocatin" style="margin-right:3%">C:\Users\{USERNAME}\AppData\Roaming\Emby-Server\programdata\plugins\configurations\IntroSkipInfo</h4>
+
                     </div>
                     <a is="emby-linkbutton" class="button-link" style="padding-bottom: 1em" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/&do=findComment&comment=1070247" target="_blank">Information on how to remove Bad/Incorrect Chapters</a>
                 </div>

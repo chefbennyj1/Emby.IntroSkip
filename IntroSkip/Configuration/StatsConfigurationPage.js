@@ -82,9 +82,9 @@
         }
 
         //really doesn't like async methods
-        async function getAsyncSeasonStatistics() {
-            return await ApiClient.getJSON(ApiClient.getUrl(`GetSeasonStatistics`));
-        }
+//        async function getAsyncSeasonStatistics() {
+//            return await ApiClient.getJSON(ApiClient.getUrl(`GetSeasonStatistics`));
+//        }
 
         function HasIssueIcon(confirmed) {
             return (confirmed ?
@@ -103,16 +103,16 @@
             });
         }
 
-        async function asyncReloadItems(view) {
-            view.querySelector('.tblStatsResultBody').innerHTML = '';
-            var statisticsResultTable = view.querySelector('.tblStatsResultBody');
-
-            getSeasonStatistics().then(statResults => {
-                statResults.forEach(async (statItem) => {
-                    statisticsResultTable.innerHTML += await renderTableRowHtml(statItem);
-                });
-            });
-        }
+//        async function asyncReloadItems(view) {
+//            view.querySelector('.tblStatsResultBody').innerHTML = '';
+//            var statisticsResultTable = view.querySelector('.tblStatsResultBody');
+//
+//            getSeasonStatistics().then(statResults => {
+//                statResults.forEach(async (statItem) => {
+//                    statisticsResultTable.innerHTML += await renderTableRowHtml(statItem);
+//                });
+//            });
+//        }
 
         
         function renderTableRowHtml(statElement) {
@@ -165,6 +165,7 @@
 
                     //elements
                     var runStatsTaskBtn = view.querySelector('.runStatsTaskBtn');
+                    //var getStatsFileBtn = view.querySelector('.getStatsFileBtn');
                     var enableFullStats = view.querySelector('.chkEnableFullStats');
 
 
@@ -173,6 +174,7 @@
                         //Chapter Insertion Option
                         enableFullStats.checked = config.EnableFullStatistics;
                     });
+                    
                     enableFullStats.addEventListener('change',
                         (e) => {
                             e.preventDefault();
@@ -188,8 +190,8 @@
                         e.preventDefault();
                         waitdlg(view);
                         //reloadItems(view);
-                        
                     });
+                    //waitdlg(view);
 
                     loading.hide();
             });
