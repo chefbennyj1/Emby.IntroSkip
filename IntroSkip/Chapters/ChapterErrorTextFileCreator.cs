@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.IO;
@@ -32,7 +28,7 @@ namespace IntroSkip.Chapters
         public string GetChapterErrorDir()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
-            return $"{configDir}{Separator}ChapterError";
+            return $"{configDir}{Separator}IntroSkipInfo";
         }
 
         public void JotErrorFilePaths()
@@ -41,11 +37,11 @@ namespace IntroSkip.Chapters
             Log.Debug("CHAPTER ERRORS TEXT FILE: Writing each episode to xml file");
 
             var errors = ChapterInsertion.Instance.ChapterErrors;
-            var filePath = $"{configDir}{Separator}ChapterError{Separator}ChapterErrorList.txt";
+            var filePath = $"{configDir}{Separator}IntroSkipInfo{Separator}ChapterErrorList.txt";
 
             
-            var filePathText = $"{configDir}/ChapterError{Separator}ChapterErrorList.txt";
-            var filePathXml = $"{configDir}/ChapterError{Separator}ChapterErrorList.xml";
+            var filePathText = $"{configDir}/IntroSkipInfo{Separator}ChapterErrorList.txt";
+            var filePathXml = $"{configDir}/IntroSkipInfo{Separator}ChapterErrorList.xml";
             
 
             if (errors == null)
@@ -54,7 +50,7 @@ namespace IntroSkip.Chapters
             }
             else
             {
-                using (StreamWriter writer = new StreamWriter(filePath, true))
+                using (StreamWriter writer = new StreamWriter(filePath, false))
                 {
                     foreach (var error in errors)
                     {

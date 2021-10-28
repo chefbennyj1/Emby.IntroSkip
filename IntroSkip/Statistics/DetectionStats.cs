@@ -1,14 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using IntroSkip.Chapters;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Persistence;
-using MediaBrowser.Model.Logging;
-using MediaBrowser.Model.Querying;
-using MediaBrowser.Model.Tasks;
 
-namespace IntroSkip.Data
+namespace IntroSkip.Statistics
 {
     public class DetectionStats
     {
@@ -18,7 +10,6 @@ namespace IntroSkip.Data
         public int EpisodeCount         { get; set; }
         public int HasSeqCount          { get; set; }
         public double PercentDetected   { get; set; }
-
         public double EndPercentDetected { get; set; }
         public DateTime Date            { get; set; }
         public bool HasIssue            { get; set; }

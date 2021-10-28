@@ -32,6 +32,7 @@ namespace IntroSkip.Chapters
         public void InsertIntroChapters(long id, SequenceResult sequence)
         {
             Log.Debug("CHAPTER INSERT: PASSED ID from TASK = {0}", id);
+            ChapterErrors.Clear();
 
             try
             {
@@ -91,9 +92,8 @@ namespace IntroSkip.Chapters
                         {
                             if (iCount == 0)
                             {
-                                Log.Warn(
-                                    "CHAPTER INSERT: {0} has NO chapters, so can't insert - Added To Bad Chapter List",
-                                    item.Name);
+                                Log.Warn("CHAPTER INSERT: {0} has NO chapters, so can't insert - Added To Bad Chapter List", item.Name);
+
                                 ChapterErrors.Add(new ChapterError()
                                 {
                                     Id = item
@@ -106,6 +106,21 @@ namespace IntroSkip.Chapters
                             }
                             else 
                             {
+                                if (sequence.HasCreditSequence && chapters.Exists(chapterPoint => chapterPoint.Name == endCredString) == false)
+                                {
+                                    Log.Debug("CHAPTER INSERT: Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
+                                        tvShowName, seasonName, episodeNo.ToString(), item.Name, ConvertTicksToTime(EndCredStart));
+
+                                    chapters.Add(new ChapterInfo
+                                    {
+                                        Name = endCredString,
+                                        StartPositionTicks = EndCredStart
+
+                                    });
+                                    chapters.Sort(CompareStartTimes);
+                                    //ItemRepository.SaveChapters(id, chapters);
+                                }
+
                                 //add the entry and lets arrange the chapter list
                                 //if the Title sequence doesn't start at 0, insert it
                                 if (insertStart != 0)
@@ -114,19 +129,6 @@ namespace IntroSkip.Chapters
                                     {
                                         Name = introStartString,
                                         StartPositionTicks = insertStart
-                                    });
-                                    chapters.Sort(CompareStartTimes);
-                                }
-
-                                if (sequence.HasCreditSequence && !chapters.Exists(chapterPoint => chapterPoint.Name == endCredString))
-                                {
-                                    Log.Debug("CHAPTER INSERT: Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
-                                        tvShowName, seasonName, episodeNo.ToString(), item.Name, ConvertTicksToTime(EndCredStart));
-                                    chapters.Add(new ChapterInfo
-                                    {
-                                        Name = endCredString,
-                                        StartPositionTicks = EndCredStart
-                                        
                                     });
                                     chapters.Sort(CompareStartTimes);
                                 }
@@ -163,9 +165,7 @@ namespace IntroSkip.Chapters
                                         FilePathString = item.Path
                                     });
 
-
-                                    Log.Warn(
-                                        "CHAPTER INSERT: Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}",
+                                    Log.Warn("CHAPTER INSERT: Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}",
                                         tvShowName, seasonName, episodeNo.ToString(), item.Name);
                                     Log.Warn("CHAPTER INSERT: {0} has been added to Bad Chapter List", item.Name);
                                 }
@@ -191,11 +191,16 @@ namespace IntroSkip.Chapters
                                     chapters.Sort(CompareStartTimes);
 
                                     //we need to put this in here otherwise having the SaveChapters outside of this scope will force the user to do another Thumbnail extract Task, everytime the ChapterEdit Task is run.
-                                    ItemRepository.SaveChapters(id, chapters);
-                                    Log.Debug(
-                                        "CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
-                                        tvShowName, seasonName, episodeNo, item.Name);
+                                    // ItemRepository.SaveChapters(id, chapters);
+                                    // Log.Debug(
+                                    //     "CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
+                                    //     tvShowName, seasonName, episodeNo, item.Name);
                                 }
+
+                                ItemRepository.SaveChapters(id, chapters);
+                                Log.Debug(
+                                    "CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
+                                    tvShowName, seasonName, episodeNo, item.Name);
                             }
                         }
                         catch (Exception e)
