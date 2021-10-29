@@ -7,12 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Logging;
 
 
 namespace IntroSkip.Statistics
-
 {
     public class StatsScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
@@ -35,7 +33,7 @@ namespace IntroSkip.Statistics
 
             while(detection != null && detection.State == TaskState.Running)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                 progress.Report(100.0);
             }
             try
@@ -74,14 +72,9 @@ namespace IntroSkip.Statistics
                 {
                     Type          = TaskTriggerInfo.TriggerInterval,
                     IntervalTicks = TimeSpan.FromHours(24).Ticks,
+                    TimeOfDayTicks = TimeSpan.FromHours(2).Ticks
                 }
             };
         }
-
-        
-
-        
-
-        
     }
 }

@@ -394,10 +394,10 @@ namespace IntroSkip.Api
                     TVShowName = "Please Run IntroSkip",
                     Season = "Statistics Task",
                     EpisodeCount = 0,
-                    IntroDuration = TimeSpan.Parse("00:11:59"),
+                    IntroDuration = TimeSpan.Parse("12:11:59"),
                     PercentDetected = 66.6,
                     //EndPercentDetected = 66.6,
-                    Comment = "Go Run the Statistics",
+                    Comment = "Go Run the STATISTICS TASK",
                     Date = Convert.ToDateTime(DateTime.Now)
                 });
             }
