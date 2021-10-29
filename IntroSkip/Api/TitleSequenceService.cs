@@ -202,7 +202,7 @@ namespace IntroSkip.Api
         }
 
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
+            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png".AsSpan(), "image/png"));
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
@@ -387,7 +387,8 @@ namespace IntroSkip.Api
             string statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
 
             if (FileSystem.FileExists(statsFilePath) == false)
-            {
+            {   //OMG this is hilarious :)
+
                 statsList.Add(new UIStats
                 {
                     HasIssue = true,
@@ -442,10 +443,11 @@ namespace IntroSkip.Api
             return mode;
         }
 
-        private object GetEmbeddedResourceStream(string resourceName, string contentType)
+        private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
+            var resourceNameAsString = resourceName.ToString();
+            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceNameAsString));
 
             return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
         }

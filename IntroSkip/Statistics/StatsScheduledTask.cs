@@ -28,13 +28,15 @@ namespace IntroSkip.Statistics
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             Log.Debug("STATISTICS: TASK IS STARTING");
-            //var config = Plugin.Instance.Configuration;
+            
             IScheduledTaskWorker detection = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
+            IScheduledTaskWorker fingerprinting = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting");
 
-            while(detection != null && detection.State == TaskState.Running)
+            if (detection?.State == TaskState.Running || fingerprinting?.State == TaskState.Running)
             {
-                Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                Log.Info("STATS: Task will wait until chroma-printing task,and detection task has completed.");
                 progress.Report(100.0);
+                return;
             }
             try
             {

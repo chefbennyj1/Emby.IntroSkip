@@ -472,7 +472,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             ], {
                 // timing options
                 duration: 1000,
-                fill: 'forwards'
+                fill: 'forwards',
+                delay: 100
             });
         }
         return function (view) {
