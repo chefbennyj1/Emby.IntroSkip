@@ -35,8 +35,6 @@ using MediaBrowser.Controller.Plugins;
             {
                 $"-sseof -{TimeSpan.FromMinutes(3)}",
                 $"-i \"{input}\"",
-                "-threads 1",
-                "-filter_threads 1",
                 "-preset ultrafast",
                 "-vf \"blackdetect=d=1:pix_th=0.0\"",
                 "-an -f null -"
@@ -48,19 +46,20 @@ using MediaBrowser.Controller.Plugins;
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
+                 
             };
             
             var blackDetections = new List<TimeSpan>();
 
             using (var process = new Process { StartInfo = procStartInfo })
             {
+                //process.PriorityClass = ProcessPriorityClass.BelowNormal; //This changes nothing with regards to high CPU usages
+               
                 process.Start();
                 
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
                 string processOutput = null;
-
-               
-
+                
                 while ((processOutput = process.StandardError.ReadLine()) != null)
                 {
                     if (cancellationToken.IsCancellationRequested)

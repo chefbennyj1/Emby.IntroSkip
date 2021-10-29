@@ -180,8 +180,34 @@
 
                 chkEnableFastDetect.addEventListener('change', (elem) => {
                     elem.preventDefault();
+                    var fastDetect = chkEnableFastDetect.checked;
+                    if (!fastDetect) {
+                        var message =
+                            "Fast Detect Off will result in near perfect results, at the expense of higher CPU usages.";
+                        require(['confirm'],
+                            function(confirm) {
+                                confirm(message, 'Fast Detect Off').then(function() {
+                                    enableFastDetect(fastDetect);
+                                }, function() {
+                                    chkEnableFastDetect.checked = true;
+                                });
+                            });
+                    } else {
+                        enableFastDetect(fastDetect);
+                    }
+                });
+
+                confidenceInput.addEventListener('change', (elem) => {
+                    elem.preventDefault();
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        var fastDetect = chkEnableFastDetect.checked;
+                        config.DetectionConfidence = confidenceInput.value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                    });
+                });
+
+                function enableFastDetect(fastDetect) {
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        
                         config.FastDetect = fastDetect;
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => {
                            
@@ -199,16 +225,7 @@
                             
                         });
                     });
-                });
-
-                confidenceInput.addEventListener('change', (elem) => {
-                    elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.DetectionConfidence = confidenceInput.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
-                });
-
+                }
                 fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     if (fingerprintMaxDegreeOfParallelism < 2) {

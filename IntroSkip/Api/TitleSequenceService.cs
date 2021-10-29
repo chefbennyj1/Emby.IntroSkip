@@ -202,7 +202,7 @@ namespace IntroSkip.Api
         }
 
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png", "image/png"));
+            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png".AsSpan(), "image/png"));
 
         public void Post(ConfirmAllSeasonIntrosRequest request)
         {
@@ -378,36 +378,51 @@ namespace IntroSkip.Api
 
        public string Get(SeasonStatisticsRequest request)
        {
+           
             PluginConfiguration config = Plugin.Instance.Configuration;
             List<UIStats> statsList = new List<UIStats>();
 
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("STATISTICS: SERVICE - Getting statistics for UI from Text file");
-            var statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
+            string statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
 
-            IEnumerable<string> lines = File.ReadLines(statsFilePath).Skip(1);
-
-
-
-            foreach (string line in lines)
-            {
-                Log.Info("STATISTICS: LINE = {0}", line);
-
-                var tempLine = line.Split('\t');
+            if (FileSystem.FileExists(statsFilePath) == false)
+            {   //OMG this is hilarious :)
                 statsList.Add(new UIStats
                 {
-                    HasIssue = Convert.ToBoolean(tempLine[0]),
-                    TVShowName = tempLine[1],
-                    Season = tempLine[2],
-                    EpisodeCount = Convert.ToInt32(tempLine[3]),
-                    IntroDuration = TimeSpan.Parse(tempLine[4]),
-                    PercentDetected = Convert.ToDouble(tempLine[5]),
-                    EndPercentDetected = Convert.ToDouble(tempLine[6]),
-                    Comment = tempLine[7],
-                    Date = Convert.ToDateTime(tempLine[8])
+                    HasIssue = true,
+                    TVShowName = "Please Run IntroSkip",
+                    Season = "Statistics Task",
+                    EpisodeCount = 0,
+                    IntroDuration = TimeSpan.Parse("00:11:59"),
+                    PercentDetected = 66.6,
+                    //EndPercentDetected = 66.6,
+                    Comment = "Go Run the Statistics",
+                    Date = Convert.ToDateTime(DateTime.Now)
                 });
             }
+            else
+            {
+                var lines = File.ReadLines(statsFilePath).Skip(1);
+                foreach (string line in lines)
+                {
+                    Log.Info("STATISTICS: LINE = {0}", line);
 
+                    var tempLine = line.Split('\t');
+                    statsList.Add(new UIStats
+                    {
+                        HasIssue = Convert.ToBoolean(tempLine[0]),
+                        TVShowName = tempLine[1],
+                        Season = tempLine[2],
+                        EpisodeCount = Convert.ToInt32(tempLine[3]),
+                        IntroDuration = TimeSpan.Parse(tempLine[4]),
+                        PercentDetected = Convert.ToDouble(tempLine[5]),
+                        //EndPercentDetected = Convert.ToDouble(tempLine[6]),
+                        Comment = tempLine[7],
+                        Date = Convert.ToDateTime(tempLine[8])
+                    });
+                }
+            }
             if (!config.EnableFullStatistics)
             {
                 statsList.RemoveAll(x => !x.HasIssue);
@@ -427,10 +442,11 @@ namespace IntroSkip.Api
             return mode;
         }
 
-        private object GetEmbeddedResourceStream(string resourceName, string contentType)
+        private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceName));
+            var resourceNameAsString = resourceName.ToString();
+            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceNameAsString));
 
             return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
         }

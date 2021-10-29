@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
@@ -45,14 +44,14 @@ namespace IntroSkip.AudioFingerprinting
                 ? titleEncodingSequenceStart
                 : TimeSpan.FromTicks(episode.RunTimeTicks.Value) - duration; 
 
-            ExtractFingerprintBinaryData($"{episode.Path}", fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
+            ExtractFingerprintBinaryData(episode.Path.AsSpan(), fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
 
             //Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
             List<uint> fingerprints = null;
             try
             {
-                fingerprints = SplitByteData($"{fingerprintBinFilePath}", episode);
+                fingerprints = SplitByteData(fingerprintBinFilePath.AsSpan(), episode);
             }
             catch (Exception) //<--it's logged already
             {
@@ -62,7 +61,7 @@ namespace IntroSkip.AudioFingerprinting
             return fingerprints;
         }
 
-        private void ExtractFingerprintBinaryData(string input, string output, TimeSpan duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
+        private void ExtractFingerprintBinaryData(ReadOnlySpan<char> input, string output, TimeSpan duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -90,7 +89,7 @@ namespace IntroSkip.AudioFingerprinting
             {
                 $"-ss {sequenceEncodingStart}",
                 $"-t {duration}",
-                $"-i \"{input}\"",
+                $"-i \"{input.ToString()}\"",
                 "-ac 1",
                 "-acodec pcm_s16le", 
                 "-ar 16000", //11025
@@ -148,16 +147,16 @@ namespace IntroSkip.AudioFingerprinting
             }
         }
 
-        private List<uint> SplitByteData(string bin, BaseItem item)
+        private List<uint> SplitByteData(ReadOnlySpan<char> bin, BaseItem item)
         {
             Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
-            if (!FileSystem.FileExists(bin))
+            if (!FileSystem.FileExists(bin.ToString()))
             {
                 Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");
                 throw new Exception("bin file doesn't exist");
             }
             var fingerprint = new List<uint>();
-            using (var b = new BinaryReader(File.Open(bin, FileMode.Open)))
+            using (var b = new BinaryReader(File.Open(bin.ToString(), FileMode.Open)))
             {
                 int length = (int)b.BaseStream.Length / sizeof(uint);
                 for (int i = 0; i < length; i++)
@@ -169,12 +168,12 @@ namespace IntroSkip.AudioFingerprinting
             return fingerprint;
         }
 
-        private void RemoveEpisodeFingerprintBinFile(string path, BaseItem item)
+        private void RemoveEpisodeFingerprintBinFile(ReadOnlySpan<char> path, BaseItem item)
         {
-            if (!FileSystem.FileExists(path)) return;
+            if (!FileSystem.FileExists(path.ToString())) return;
             try
             {
-                FileSystem.DeleteFile(path);
+                FileSystem.DeleteFile(path.ToString());
                 Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: .bin file removed.");
             }
             catch { }

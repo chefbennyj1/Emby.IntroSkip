@@ -377,66 +377,63 @@ namespace IntroSkip.Detection
                                     Log.Debug($"DETECTION: Common duration for  {season.Parent.Name} - { season.Name } credits is: { commonCreditSequenceDuration } - calculated from: { fullResults.Count } results");
 
                                     var results = new ConcurrentBag<SequenceResult>();
-                                    episodeResults
-                                        .AsParallel()
-                                        .WithDegreeOfParallelism(2)
-                                        .WithCancellation(cancellationToken)
-                                        .ForAll(item =>
+                                    
+                                    foreach(var item in episodeResults) //<-- We can't process this in parallel because there is no throttle when we run ffmpeg, and it pushes the CPU toooo much.
+                                    {
+                                        var sequenceResult = repository.GetResult(item.Key.ToString());
+
+                                        var (titleSequenceConfidence, titleSequence)   = Tuple.Create(0.0, sequenceResult); //Default
+                                        var (creditSequenceConfidence, creditSequence) = Tuple.Create(0.0, sequenceResult); //Default
+
+                                        try
                                         {
-                                            var sequenceResult = repository.GetResult(item.Key.ToString());
+                                            (titleSequenceConfidence, titleSequence) =
+                                                GetBestTitleSequenceResult(commonTitleSequenceDuration,
+                                                    item.Value, cancellationToken);
+                                        }
+                                        catch
+                                        {
 
-                                            var (titleSequenceConfidence, titleSequence)   = Tuple.Create(0.0, sequenceResult); //Default
-                                            var (creditSequenceConfidence, creditSequence) = Tuple.Create(0.0, sequenceResult); //Default
+                                        }
 
-                                            try
-                                            {
-                                                (titleSequenceConfidence, titleSequence) =
-                                                    GetBestTitleSequenceResult(commonTitleSequenceDuration,
-                                                        item.Value, cancellationToken);
-                                            }
-                                            catch
-                                            {
+                                        try
+                                        {
+                                            (creditSequenceConfidence, creditSequence) =
+                                                GetBestCreditSequenceResult(commonCreditSequenceDuration,
+                                                    item.Value, cancellationToken);
+                                        }
+                                        catch
+                                        {
 
-                                            }
+                                        }
 
-                                            try
-                                            {
-                                                (creditSequenceConfidence, creditSequence) =
-                                                    GetBestCreditSequenceResult(commonCreditSequenceDuration,
-                                                        item.Value, cancellationToken);
-                                            }
-                                            catch
-                                            {
+                                        sequenceResult.HasCreditSequence = creditSequence.HasCreditSequence;
+                                        sequenceResult.CreditSequenceStart = creditSequence.CreditSequenceStart;
+                                        sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
+                                        sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
+                                        sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
+                                        //sequenceResult.CreditSequenceFingerprint.Clear();
+                                        //sequenceResult.TitleSequenceFingerprint.Clear();
 
-                                            }
+                                        sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
 
-                                            sequenceResult.HasCreditSequence = creditSequence.HasCreditSequence;
-                                            sequenceResult.CreditSequenceStart = creditSequence.CreditSequenceStart;
-                                            sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
-                                            sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
-                                            sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
-                                            //sequenceResult.CreditSequenceFingerprint.Clear();
-                                            //sequenceResult.TitleSequenceFingerprint.Clear();
-
-                                            sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
-
-                                            //repository.SaveResult(sequenceResult, cancellationToken);
-                                            results.Add(sequenceResult);
-                                            var e = LibraryManager.GetItemById(sequenceResult.InternalId);
+                                        //repository.SaveResult(sequenceResult, cancellationToken);
+                                        results.Add(sequenceResult);
+                                        var e = LibraryManager.GetItemById(sequenceResult.InternalId);
                                            
                                             
-                                            Log.Debug(
-                                                $"\nDETECTION processed {episodeResults.Count} compared items for {season.Parent.Name} { season.Name } Episode {e.IndexNumber}." +
-                                                $"\nBest result: {season.Parent.Name} - {season.Name} Episode {e.IndexNumber} " +
-                                                $"\nTITLE SEQUENCE START: {sequenceResult.TitleSequenceStart} " +
-                                                $"\nTITLE SEQUENCE END: {sequenceResult.TitleSequenceEnd} " +
-                                                $"\nCREDIT START: {sequenceResult.CreditSequenceStart}" +
-                                                $"\nCREDIT END: {sequenceResult.CreditSequenceEnd}" +
-                                                $"\nCREDIT CONFIDENCE: {creditSequenceConfidence}" +
-                                                $"\nTITLE SEQUENCE CONFIDENCE: {titleSequenceConfidence}\n");
+                                        Log.Debug(
+                                            $"\nDETECTION processed {episodeResults.Count} compared items for {season.Parent.Name} { season.Name } Episode {e.IndexNumber}." +
+                                            $"\nBest result: {season.Parent.Name} - {season.Name} Episode {e.IndexNumber} " +
+                                            $"\nTITLE SEQUENCE START: {sequenceResult.TitleSequenceStart} " +
+                                            $"\nTITLE SEQUENCE END: {sequenceResult.TitleSequenceEnd} " +
+                                            $"\nCREDIT START: {sequenceResult.CreditSequenceStart}" +
+                                            $"\nCREDIT END: {sequenceResult.CreditSequenceEnd}" +
+                                            $"\nCREDIT CONFIDENCE: {creditSequenceConfidence}" +
+                                            $"\nTITLE SEQUENCE CONFIDENCE: {titleSequenceConfidence}\n");
 
 
-                                        });
+                                    };
 
                                     //Save to our database.
                                     results.ToList().ForEach(result =>
@@ -603,25 +600,14 @@ namespace IntroSkip.Detection
                 offset = runtime - TimeSpan.FromMinutes(2.1);
                 upperLimit = runtime;
             }
+            
 
             var blackDetections = VideoBlackDetectionManager.Instance.Analyze(bestResult.InternalId, cancellationToken);
 
             if (blackDetections.Any())
             {
                 var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit); //The results found in our contiguous region.
-
-                //var narrowedBlackDetectionResults = contiguousBlackDetections.FirstOrDefault(d => d >= offset.Add(TimeSpan.FromSeconds(5)) && d <= upperLimit.Add(-TimeSpan.FromSeconds(20)));
-
-                //var blackDetection = TimeSpan.Zero;
-
-                //if (!Equals(narrowedBlackDetectionResults, TimeSpan.Zero))
-                //{
-                //    blackDetection = narrowedBlackDetectionResults;
-                //}
-                //else
-                //{
-                //    blackDetection = contiguousBlackDetections[2];
-                //}
+                
 
                 if (!Equals(blackDetection, TimeSpan.Zero))
                 {
