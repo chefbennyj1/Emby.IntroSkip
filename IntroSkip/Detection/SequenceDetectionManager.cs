@@ -170,12 +170,18 @@ namespace IntroSkip.Detection
                         if (dbEpisodes.All(item => item.Processed))
                         {
                             Log.Debug($"{series.Name} {season.Name} have no new episodes to scan.");
+                            try
+                            {
+                                Clean(season, repository, cancellationToken);
+                            }
+                            catch { }
+
                             continue;
                         }
 
 
                         // All our processed episodes with sequences, or user confirmed information
-                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.Confirmed || e.Processed).Select(y => y.InternalId).Distinct());
+                        var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.Processed).Select(y => y.InternalId).Distinct());
                         // A list of episodes with all our episodes containing sequence data removed from it. All that is left is what we need to process.
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
@@ -412,9 +418,8 @@ namespace IntroSkip.Detection
                                         sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
                                         sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
                                         sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
-                                        //sequenceResult.CreditSequenceFingerprint.Clear();
-                                        //sequenceResult.TitleSequenceFingerprint.Clear();
-
+                                        sequenceResult.CreditSequenceFingerprint = creditSequence.CreditSequenceFingerprint ?? new List<uint>();
+                                        sequenceResult.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>();
                                         sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
 
                                         //repository.SaveResult(sequenceResult, cancellationToken);
@@ -442,15 +447,18 @@ namespace IntroSkip.Detection
                                         {
                                             repository.SaveResult(result, cancellationToken);
                                         }
-                                        catch { }
+                                        catch (Exception ex)
+                                        {
+                                            Log.ErrorException(ex.Message, ex);
+                                        }
                                     });
 
                                     break;
                                 }
                         }
                         //episodeResults.Clear();
-                        dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = season.InternalId });
-                        Clean(dbResults.Items.ToList(), season, repository, cancellationToken);
+                        //dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = season.InternalId });
+                        Clean(season, repository, cancellationToken);
                     }
 
                 });
@@ -655,7 +663,7 @@ namespace IntroSkip.Detection
             return longestCommonTimeSpan ? longest : mostCommon;
         }
 
-        private bool IsComplete(BaseItem season, List<SequenceResult> dbEpisodes)
+        private bool IsComplete(BaseItem season)
         {
             var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
             {
@@ -670,28 +678,26 @@ namespace IntroSkip.Detection
             return true;
         }
 
-        private void Clean(List<SequenceResult> dbEpisodes, BaseItem season, ISequenceRepository repo, CancellationToken cancellationToken)
+        private void Clean(BaseItem season, ISequenceRepository repo, CancellationToken cancellationToken)
         {
+            var dbEpisodes = repo.GetResults(new SequenceResultQuery(){ SeasonInternalId = season.InternalId });
             // The DB file gets really big with all the finger print data. If we can remove some, do it here.
-            if (dbEpisodes.All(result => result.Processed || result.Confirmed))
+            var vacuum = false;
+            if (dbEpisodes.Items.All(result => result.Processed))
             {
-                if (IsComplete(season, dbEpisodes))
+                if (IsComplete(season))
                 {
                     //Remove the fingerprint data for these episodes. The db will be vacuumed at the end of this task.
-                    foreach (var result in dbEpisodes)
+                    foreach (var result in dbEpisodes.Items)
                     {
+                        if (!result.CreditSequenceFingerprint.Any() || !result.TitleSequenceFingerprint.Any()) continue;
+                        
+                        if(!vacuum) vacuum = true;
+                            
                         try
                         {
-                            if (!(result.TitleSequenceFingerprint is null))
-                            {
-                                result.TitleSequenceFingerprint.Clear();                  //Empty fingerprint List                                                                                             
-                                
-                            }
-                            if (!(result.CreditSequenceFingerprint is null))
-                            {
-                                result.CreditSequenceFingerprint.Clear();                  //Empty fingerprint List                                                                                             
-                                
-                            }
+                            result.TitleSequenceFingerprint = new List<uint>();                  //Empty fingerprint List                                                                                             
+                            result.CreditSequenceFingerprint= new List<uint>();                 //Empty fingerprint List                                                                                            
 
                             repo.SaveResult(result, cancellationToken);  //Save it back to the db
                         }
@@ -702,7 +708,7 @@ namespace IntroSkip.Detection
                     }
                 }
 
-                repo.Vacuum();
+                if(vacuum) repo.Vacuum();
             }
         }
 
