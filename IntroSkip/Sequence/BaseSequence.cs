@@ -17,7 +17,7 @@ namespace IntroSkip.Sequence
         public bool Confirmed { get; set; }
         public bool Processed { get; set; } = false;
 
-        //public bool HasRecap { get; set; }
+        public bool HasRecap { get; set; }
 
     }
 }
