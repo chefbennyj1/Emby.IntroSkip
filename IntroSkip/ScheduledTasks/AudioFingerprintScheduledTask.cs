@@ -57,6 +57,8 @@ namespace IntroSkip.ScheduledTasks
             }
 
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            
+           
             //Sync repository Items
             try
             {
@@ -64,7 +66,7 @@ namespace IntroSkip.ScheduledTasks
                 var syncStopWatch = new Stopwatch();
                 syncStopWatch.Start();
                 Log.Info("Syncing Repository Items...");
-                RepositoryItemSync(repository);
+                RepositoryItemSync(repository, cancellationToken);
                 syncStopWatch.Stop();
                 Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
             }
@@ -355,7 +357,7 @@ namespace IntroSkip.ScheduledTasks
             };
         }
 
-        private void RepositoryItemSync(ISequenceRepository repository)
+        private void RepositoryItemSync(ISequenceRepository repository, CancellationToken cancellationToken)
         {
             var titleSequencesQuery = repository.GetBaseTitleSequenceResults(new SequenceResultQuery());
             var titleSequences = titleSequencesQuery.Items.ToList();
@@ -365,6 +367,8 @@ namespace IntroSkip.ScheduledTasks
 
             Log.Debug($"Library episodes count:        {libraryItems.Count}");
             Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
+
+
             if (libraryItems.Count >= titleSequences.Count) return; // if we are equal nothing has change, if emby is more we'll pick up the new stuff next.
 
             titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId))

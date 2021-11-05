@@ -36,7 +36,7 @@ namespace IntroSkip.Data
 
                 string[] queries =
                 {
-                     "create table if not exists SequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, CreditSequenceStart TEXT, CreditSequenceEnd TEXT, HasTitleSequence TEXT, HasCreditSequence TEXT, TitleSequenceFingerprint TEXT, CreditSequenceFingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT)",
+                     "create table if not exists SequenceResults (ResultId INT PRIMARY KEY, TitleSequenceStart TEXT, TitleSequenceEnd TEXT, CreditSequenceStart TEXT, CreditSequenceEnd TEXT, HasTitleSequence TEXT, HasCreditSequence TEXT, TitleSequenceFingerprint TEXT, CreditSequenceFingerprint TEXT, Duration TEXT, SeriesId INT, SeasonId INT, IndexNumber INT, Confirmed TEXT, Processed TEXT, HasRecap TEXT)",
                      "create index if not exists idx_SequenceResults on SequenceResults(ResultId)"
                 };
 
@@ -61,7 +61,7 @@ namespace IntroSkip.Data
                 {
                     connection.RunInTransaction(db =>
                     {
-                        var commandText = "replace into SequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @CreditSequenceStart, @CreditSequenceEnd, @HasTitleSequence, @HasCreditSequence, @TitleSequenceFingerprint, @CreditSequenceFingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed, @Processed)";
+                        var commandText = "replace into SequenceResults (ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap) values (@ResultId, @TitleSequenceStart, @TitleSequenceEnd, @CreditSequenceStart, @CreditSequenceEnd, @HasTitleSequence, @HasCreditSequence, @TitleSequenceFingerprint, @CreditSequenceFingerprint, @Duration, @SeriesId, @SeasonId, @IndexNumber, @Confirmed, @Processed, @HasRecap)";
 
                         using (var statement = db.PrepareStatement(commandText))
                         {
@@ -80,6 +80,7 @@ namespace IntroSkip.Data
                             statement.TryBind("@IndexNumber", result.IndexNumber);
                             statement.TryBind("@Confirmed", result.Confirmed);
                             statement.TryBind("@Processed", result.Processed);
+                            statement.TryBind("@HasRecap", result.HasRecap);
                             statement.MoveNext();
                         }
                     }, TransactionMode);
@@ -161,11 +162,11 @@ namespace IntroSkip.Data
                     var commandText = string.Empty;
                     if (query.SeasonInternalId.HasValue)
                     {
-                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
                     }
                     else
                     {
-                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults";
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults";
                     }
 
 
@@ -217,7 +218,7 @@ namespace IntroSkip.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults where ResultId=@ResultId"))
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults where ResultId=@ResultId"))
                     {
                         statement.TryBind("@ResultId", id);
 
@@ -305,6 +306,11 @@ namespace IntroSkip.Data
             {
                 result.Processed = reader.GetBoolean(index);
             }
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasRecap = reader.GetBoolean(index);
+            }
 
 
             return result;
@@ -325,11 +331,11 @@ namespace IntroSkip.Data
                     var commandText = string.Empty;
                     if (query.SeasonInternalId.HasValue)
                     {
-                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
+                        commandText = string.Format("SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults WHERE SeasonId = {0}", query.SeasonInternalId.Value.ToString());
                     }
                     else
                     {
-                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults";
+                        commandText = "SELECT ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults";
                     }
 
 
@@ -382,7 +388,7 @@ namespace IntroSkip.Data
             {
                 using (var connection = CreateConnection(true))
                 {
-                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed from SequenceResults where ResultId=@ResultId"))
+                    using (var statement = connection.PrepareStatement("select ResultId, TitleSequenceStart, TitleSequenceEnd, CreditSequenceStart, CreditSequenceEnd, HasTitleSequence, HasCreditSequence, TitleSequenceFingerprint, CreditSequenceFingerprint, Duration, SeriesId, SeasonId, IndexNumber, Confirmed, Processed, HasRecap from SequenceResults where ResultId=@ResultId"))
                     {
                         statement.TryBind("@ResultId", id);
 
@@ -489,6 +495,11 @@ namespace IntroSkip.Data
                 result.Processed = reader.GetBoolean(index);
             }
 
+            index++;
+            if (!reader.IsDBNull(index))
+            {
+                result.HasRecap = reader.GetBoolean(index);
+            }
 
             return result;
         }

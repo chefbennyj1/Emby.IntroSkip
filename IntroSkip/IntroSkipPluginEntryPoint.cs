@@ -139,7 +139,7 @@ namespace IntroSkip
             var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json);
 
             repo.Initialize();
-
+            
             return repo;
         }
     }

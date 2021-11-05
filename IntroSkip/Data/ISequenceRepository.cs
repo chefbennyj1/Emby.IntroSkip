@@ -58,8 +58,9 @@ namespace IntroSkip.Data
         void DeleteAll();
 
         //void CreateColumn(string name, string type);
+        //bool ColumnExists(string columnName);
 
-
+        //void CreateColumn(string columnName, string type);
 
     }
 }
