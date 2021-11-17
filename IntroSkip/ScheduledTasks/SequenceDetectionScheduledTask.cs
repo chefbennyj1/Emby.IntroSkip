@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Detection;
@@ -50,7 +51,8 @@ namespace IntroSkip.ScheduledTasks
             }
             catch (Exception ex)
             {
-                //Log.ErrorException(ex.Message, ex);
+                Log.ErrorException(ex.Message, ex);
+                
             }
 
             var repo = (IDisposable) repository;

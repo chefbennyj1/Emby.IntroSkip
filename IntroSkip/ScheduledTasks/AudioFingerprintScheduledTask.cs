@@ -122,7 +122,7 @@ namespace IntroSkip.ScheduledTasks
 
                 //We divide by two because we are going to split up the parallel function for both series and episodes.
                 var fpMax = config.FingerprintingMaxDegreeOfParallelism / 2;
-
+                var seriesIndex = 0;
                 Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = fpMax }, (series, state) =>
                  {
                      if (cancellationToken.IsCancellationRequested)
@@ -172,6 +172,8 @@ namespace IntroSkip.ScheduledTasks
                          var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                          var duration = GetEncodingDuration(averageRuntime);
 
+                         //If we are looking at the final series to process, increase the amount of episodes to process at once.
+                         if (seriesIndex == seriesQuery.Items.Count() - 1) fpMax *= 2; 
 
                          Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = (int)Math.Round((double)fpMax / 2, MidpointRounding.AwayFromZero) }, (episode, st) =>
                            {
@@ -255,9 +257,10 @@ namespace IntroSkip.ScheduledTasks
                                        TitleSequenceStart        = new TimeSpan(),
                                        TitleSequenceEnd          = new TimeSpan(),
                                        CreditSequenceStart       = new TimeSpan(),
-                                       CreditSequenceEnd         = TimeSpan.FromTicks(episode.RunTimeTicks.Value),
+                                       CreditSequenceEnd         = episode.RunTimeTicks.HasValue ? TimeSpan.FromTicks(episode.RunTimeTicks.Value) : new TimeSpan(),
                                        Confirmed                 = false,
-                                       Processed                 = false
+                                       Processed                 = false,
+                                       HasRecap                  = false
                                    }, cancellationToken);
 
                                    Log.Info(
@@ -278,6 +281,7 @@ namespace IntroSkip.ScheduledTasks
                      }
 
                      progress.Report((currentProgress += step) - 1);
+                     seriesIndex += 1;
                  });
             }
             catch (TaskCanceledException)

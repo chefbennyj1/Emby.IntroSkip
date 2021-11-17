@@ -61,10 +61,11 @@ namespace IntroSkip.Detection
                 User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
             };
 
-            if (config.IgnoredList.Count > 0)
-            {
-                seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
-            }
+            if (config.IgnoredList != null)
+                if(config.IgnoredList.Count > 0)
+                {
+                    seriesInternalItemQuery.ExcludeItemIds = config.IgnoredList.ToArray();
+                }
 
             var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 
@@ -218,7 +219,7 @@ namespace IntroSkip.Detection
 
                                 if (fastDetect)
                                 {
-                                    // If we have valid title sequence data for both items move on
+                                    // If we have valid title sequence data for both items move on - these items have been processed during this scan.
                                     if (dbEpisodes.Any(item => item.InternalId == unmatchedItem.InternalId) && dbEpisodes.Any(item => item.InternalId == comparableItem.InternalId))
                                     {
                                         var dbResultComparableItem = dbEpisodes.FirstOrDefault(i => i.InternalId == comparableItem.InternalId);
@@ -242,10 +243,12 @@ namespace IntroSkip.Detection
                                     var stopWatch = new Stopwatch();
                                     stopWatch.Start();
 
-                                    var sequences = sequenceDetection.DetectSequences(episodeQuery.Items[episodeComparableIndex], unmatchedItem, dbResults, stopWatch);
+                                    var sequences = sequenceDetection.DetectSequences(comparableItem, unmatchedItem, dbResults, stopWatch);
 
                                     if (!fastDetect)
                                     {
+
+                                        //Created the keys in the dictionary for the results if we don't have one yet.
                                         if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
                                         {
                                             episodeResults.TryAdd(unmatchedItem.InternalId, new ConcurrentBag<SequenceResult>());
@@ -256,6 +259,7 @@ namespace IntroSkip.Detection
                                             episodeResults.TryAdd(comparableItem.InternalId, new ConcurrentBag<SequenceResult>());
                                         }
 
+                                        //Add the result to the dictionary key
                                         episodeResults[unmatchedItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == unmatchedItem.InternalId));
                                         episodeResults[comparableItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == comparableItem.InternalId));
                                     }
@@ -373,7 +377,7 @@ namespace IntroSkip.Detection
                                     commonTitleSequenceDuration = CommonTimeSpan(titleSequenceDurationGroups);
 
 
-                                    //Group the title sequence results by the duration if the intro
+                                    //Group the title sequence results by the duration if the credits
                                     var creditSequenceDurationGroups = fullResults.GroupBy(i => i.CreditSequenceEnd - i.CreditSequenceStart);
                                     var commonCreditSequenceDuration = CommonTimeSpan(creditSequenceDurationGroups, longestCommonTimeSpan: true);
 
@@ -386,10 +390,11 @@ namespace IntroSkip.Detection
                                     
                                     foreach(var item in episodeResults) //<-- We can't process this in parallel because there is no throttle when we run ffmpeg, and it pushes the CPU toooo much.
                                     {
-                                        var sequenceResult = repository.GetResult(item.Key.ToString());
 
-                                        var (titleSequenceConfidence, titleSequence)   = Tuple.Create(0.0, sequenceResult); //Default
-                                        var (creditSequenceConfidence, creditSequence) = Tuple.Create(0.0, sequenceResult); //Default
+                                        var sequenceResult = repository.GetResult(item.Key.ToString());
+                                        const double defaultConfidenceScore = 0.0;
+                                        var (titleSequenceConfidence, titleSequence)   = Tuple.Create(defaultConfidenceScore, sequenceResult); //Default
+                                        var (creditSequenceConfidence, creditSequence) = Tuple.Create(defaultConfidenceScore, sequenceResult); //Default
 
                                         try
                                         {
@@ -399,7 +404,7 @@ namespace IntroSkip.Detection
                                         }
                                         catch
                                         {
-
+                                            //Will be default values
                                         }
 
                                         try
@@ -410,22 +415,22 @@ namespace IntroSkip.Detection
                                         }
                                         catch
                                         {
-
+                                            //Will be default values
                                         }
 
-                                        sequenceResult.HasCreditSequence = creditSequence.HasCreditSequence;
-                                        sequenceResult.CreditSequenceStart = creditSequence.CreditSequenceStart;
-                                        sequenceResult.HasTitleSequence = titleSequence.HasTitleSequence;
-                                        sequenceResult.TitleSequenceStart = titleSequence.TitleSequenceStart;
-                                        sequenceResult.TitleSequenceEnd = titleSequence.TitleSequenceEnd;
+                                        sequenceResult.HasCreditSequence         = creditSequence.HasCreditSequence;
+                                        sequenceResult.CreditSequenceStart       = creditSequence.CreditSequenceStart;
+                                        sequenceResult.HasTitleSequence          = titleSequence.HasTitleSequence;
+                                        sequenceResult.TitleSequenceStart        = titleSequence.TitleSequenceStart;
+                                        sequenceResult.TitleSequenceEnd          = titleSequence.TitleSequenceEnd;
                                         sequenceResult.CreditSequenceFingerprint = creditSequence.CreditSequenceFingerprint ?? new List<uint>();
-                                        sequenceResult.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>();
-                                        sequenceResult.Processed = true; //<-- now we won't process episodes again over and over
+                                        sequenceResult.TitleSequenceFingerprint  = titleSequence.TitleSequenceFingerprint ?? new List<uint>();
+                                        sequenceResult.Processed                 = true; //<-- now we won't process episodes again over and over
 
                                         //repository.SaveResult(sequenceResult, cancellationToken);
                                         results.Add(sequenceResult);
                                         var e = LibraryManager.GetItemById(sequenceResult.InternalId);
-                                           
+                                          
                                             
                                         Log.Debug(
                                             $"\nDETECTION processed {episodeResults.Count} compared items for {season.Parent.Name} { season.Name } Episode {e.IndexNumber}." +
@@ -640,7 +645,7 @@ namespace IntroSkip.Detection
                           "\nNo black frame detected within contiguous regions.");
             }
 
-            if (Equals(bestResult.CreditSequenceStart, TimeSpan.Zero)) //<-- this is impossible. So we are incorrect with our result.
+            if (bestResult.CreditSequenceStart == TimeSpan.Zero) //<-- this is impossible. So we are incorrect with our result.
             {
                 bestResult.HasCreditSequence = false; 
                 confidence = 0.0;

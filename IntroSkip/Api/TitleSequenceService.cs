@@ -170,6 +170,7 @@ namespace IntroSkip.Api
             switch(request.SequenceImageType)
             {
                 case SequenceImageType.CreditStart:
+                    break;
                 case SequenceImageType.IntroStart:
                     requestFrame += TimeSpan.FromSeconds(7); //<--push the image frame so it isn't always a black screen.
                     break;
