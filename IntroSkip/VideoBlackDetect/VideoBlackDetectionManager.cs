@@ -35,7 +35,6 @@ using MediaBrowser.Controller.Plugins;
             {
                 $"-sseof -{TimeSpan.FromMinutes(3)}",
                 $"-i \"{input}\"",
-                "-preset ultrafast",
                 "-vf \"blackdetect=d=1:pix_th=0.0\"",
                 "-an -f null -"
             };
