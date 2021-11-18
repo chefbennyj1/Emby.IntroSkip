@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Data;
+using IntroSkip.Ffprobe;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -207,6 +208,8 @@ namespace IntroSkip.ScheduledTasks
                                    }
                                }
 
+                               //var test = VideoDurationManager.Instance.CalculateRuntime(episode.Path, cancellationToken);
+                               //Log.Debug($"DURATION TEST {test}");
                                var stopWatch = new Stopwatch();
                                stopWatch.Start();
 
@@ -239,7 +242,7 @@ namespace IntroSkip.ScheduledTasks
 
                                //Something has happened where we didn't encode anything
                                if (titleSequenceAudioFingerPrintData is null && creditSequenceAudioFingerPrintData is null) return;
-
+                              
                                try
                                {
                                    Log.Info($"{series.Name} {seasonQuery.Items[seasonIndex].Name} Episode: {episode.IndexNumber} Credit and Title Sequence Fingerprinting Successful.");

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.Api;
 using IntroSkip.Detection;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
@@ -36,6 +37,8 @@ namespace IntroSkip.ScheduledTasks
                 return;
             }
 
+            
+
             Log.Info("DETECTION: Beginning Title Sequence Task");
             
             var config = Plugin.Instance.Configuration;
@@ -51,7 +54,7 @@ namespace IntroSkip.ScheduledTasks
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex.Message, ex);
+                //Log.ErrorException(ex.Message, ex);
                 
             }
 
