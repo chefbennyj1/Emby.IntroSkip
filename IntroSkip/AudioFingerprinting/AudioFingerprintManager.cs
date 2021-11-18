@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
@@ -20,8 +22,10 @@ namespace IntroSkip.AudioFingerprinting
         private char Separator                         { get; }
         private IFfmpegManager FfmpegManager           { get; }
         private ILogger Log                            { get; }
+        //While the ffmpeg process is being run inside a parallel loop, it is possible that it may not end correctly
+        //Keep track of all the ffmpeg processes, and make sure that they have ended correctly.
+        private ConcurrentDictionary<long, int> FfmpegProcessMonitor = new ConcurrentDictionary<long, int>();
 
-        
         public AudioFingerprintManager(IFileSystem file, IFfmpegManager ffmpeg, ILogManager logManager, IApplicationPaths applicationPaths)
         {
             Instance         = this;
@@ -44,7 +48,7 @@ namespace IntroSkip.AudioFingerprinting
                 ? titleEncodingSequenceStart
                 : TimeSpan.FromTicks(episode.RunTimeTicks.Value) - duration; 
 
-            ExtractFingerprintBinaryData(episode.Path.AsSpan(), fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
+            ExtractFingerprintBinaryData(episode, fingerprintBinFilePath, duration, cancellationToken, sequenceEncodingStart);
 
             //Task.Delay(300, cancellationToken); //Give enough time for ffmpeg to save the file.
 
@@ -58,13 +62,16 @@ namespace IntroSkip.AudioFingerprinting
                 
             }
 
+            
+
             return fingerprints;
         }
 
-        private void ExtractFingerprintBinaryData(ReadOnlySpan<char> input, string output, TimeSpan duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
+        private void ExtractFingerprintBinaryData(BaseItem item, string output, TimeSpan duration, CancellationToken cancellationToken, TimeSpan sequenceEncodingStart)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
+            var input = item.Path;
             /*
               gausssize, g
               Set the Gaussian filter window size. In range from 3 to 301, must be odd number. Default is 31. 
@@ -89,7 +96,7 @@ namespace IntroSkip.AudioFingerprinting
             {
                 $"-ss {sequenceEncodingStart}",
                 $"-t {duration}",
-                $"-i \"{input.ToString()}\"",
+                $"-i \"{input}\"",
                 "-ac 1",
                 "-acodec pcm_s16le", 
                 "-ar 16000", //11025
@@ -111,6 +118,11 @@ namespace IntroSkip.AudioFingerprinting
             using (var process = new Process { StartInfo = procStartInfo })
             {
                 process.Start();
+
+                //Add the ffmpeg process id to the concurrent dictionary.
+                //We have to check later that ffmpeg completed and ended properly.
+                FfmpegProcessMonitor.TryAdd(item.InternalId, process.Id);
+
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 //
@@ -170,11 +182,14 @@ namespace IntroSkip.AudioFingerprinting
 
         private void RemoveEpisodeFingerprintBinFile(ReadOnlySpan<char> path, BaseItem item)
         {
+
             if (!FileSystem.FileExists(path.ToString())) return;
             try
             {
                 FileSystem.DeleteFile(path.ToString());
                 Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: .bin file removed.");
+                EnsureFfmpegEol(item.InternalId);
+                
             }
             catch { }
         }
@@ -185,6 +200,29 @@ namespace IntroSkip.AudioFingerprinting
             return $"{configDir}{Separator}introEncoding";
         }
 
+        private bool EnsureFfmpegEol(long internalId)
+        {
+            var process = Process.GetProcesses()
+                .Where(p => p.Id == FfmpegProcessMonitor.FirstOrDefault(s => s.Key == internalId).Value).ToList().FirstOrDefault();
+
+            if (process is null)
+            {
+                //Log.Debug("Ffmpeg fingerprint instance exited successfully.");
+            }
+            else
+            {
+                Log.Warn("Ffmpeg fingerprint instance forced exiting...");
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+                
+                }
+            }
+            return FfmpegProcessMonitor.TryRemove(internalId, out int instance);
+        }
         public void Dispose()
         {
             
