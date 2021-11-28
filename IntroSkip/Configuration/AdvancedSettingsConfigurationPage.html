@@ -4,10 +4,14 @@
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
                 <div class="inputContainer">
 
-                    <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
-                        Title Sequence Detection Advanced Settings
-                    </h3>
+                    <!--<h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                        Advanced Settings
+                    </h3>-->
                     <form>
+
+                        <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                            Advanced Detection Settings
+                        </h3>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="txtFingerprintMaxDegreeOfParallelism">Maximum series to Chromaprint at once:</label>
                             <input type="number" id="txtFingerprintMaxDegreeOfParallelism" min="2" max="16" step="2" label="Maximum series to Chromaprint at once:" class="emby-input">
@@ -37,38 +41,12 @@
                             </label>
                             <div class="fieldDescription">
                                 When disabled (Recommended), get more specific results by calculating sampling weights to get the best possible outcomes, but with longer scan times.<br />
-                                Find end credits start times by scanning for blank screens, in contiguous regions, close to the credit audio.<br/>
+                                Find end credits start times by scanning for blank screens, in contiguous regions, close to the credit audio.<br />
                                 When enabled, detect title sequences with shorter scan times, but less specific results.
 
                             </div>
                         </div>
-
-                        <!-- MENU OPTION FOR BLACK FRAME DETECTION INTERVALS-->
-                        <!--<div class="inputContainer hide">
-                            <label class="inputLabel inputLabelUnfocused" for="txtBlackDetectionPixelThreshold">Black frame detection pixel threshold (Experimental):</label>
-                            <input type="number" id="txtBlackDetectionPixelThreshold" min="0.00" max="1.00" step="0.01" label="Black frame pixel threshold:" class="emby-input">
-                            <div class="fieldDescription">
-                                End credit sequence, black frame detection maximum pixel threshold. Blackness threshold of the pixels in the frame. (Default: 0.10)
-                            </div>
-                        </div>
-                        <div class="inputContainer hide">
-                            <label class="inputLabel inputLabelUnfocused" for="txtBlackDetectionSecondInterval">Black frame detection intervals (Experimental):</label>
-                            <input type="number" id="txtBlackDetectionSecondInterval" min="0.00" max="2.00" step="0.01" label="Black frame detection intervals:" class="emby-input">
-                            <div class="fieldDescription">
-                                End credit sequence, black frame detection intervals (seconds). How many seconds to skip in-between checks. (Default: 0.05)
-                            </div>
-                        </div>-->
-
-                        <!-- MENU OPTION FOR SEQUENCE DETECTION CONFIDENCE-->
-                        <div class="inputContainer hide">
-                            <label class="inputLabel inputLabelUnfocused" for="txtSequenceSamplingWeightConfidence">Detection confidence:</label>
-                            <input type="number" id="txtSequenceSamplingWeightConfidence" min="0.00" max="1.00" step="0.01" label="Detection confidence:" class="emby-input">
-                            <div class="fieldDescription">
-                                Title sequence detection confidence. Anything under this number will be considered a low confidence, and be incorrect. (Default: 0.60)
-                            </div>
-                        </div>
-
-
+                        
                         <div class="inputContainer">
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableItemAddedTaskAutoRun" class="chkEnableItemAddedTaskAutoRun" data-embytoggle="">
@@ -81,14 +59,14 @@
                                 </div>
                             </label>
                             <div class="fieldDescription">
-                                Trigger the chromaprinting task automatically when a new items are added to the library.
+                                Trigger the fingerprinting task automatically when a new items are added to the library.
                             </div>
                         </div>
 
                         <div class="inputContainer">
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableDetectionTaskAutoRun" class="chkEnableDetectionTaskAutoRun" data-embytoggle="">
-                                <span class="toggleButtonLabel mdl-switch__label">Run detection tasks when chromaprinting is complete</span>
+                                <span class="toggleButtonLabel mdl-switch__label">Run detection tasks when fingerprinting is complete</span>
                                 <div class="mdl-switch__trackContainer">
                                     <div class="mdl-switch__track"></div>
                                     <div class="mdl-switch__thumb">
@@ -97,20 +75,15 @@
                                 </div>
                             </label>
                             <div class="fieldDescription">
-                                Trigger the detection task automatically when chromaprinting is completed.
+                                Trigger the detection task automatically when fingerprinting is completed.
                             </div>
                         </div>
 
                         <hr />
 
-                        <div class="detailSectionHeader">
-                            <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
-                                TV Shows to exclude: <span class="excludeShowTitle"></span>
-                            </h3>
-                        </div>
                         <div style="display: flex">
                             <div style="flex-grow: 1;" class="selectContainer">
-                                <label class="selectLabel">Select</label>
+                                <label class="selectLabel">TV Shows</label>
                                 <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select pulse">
                                 </select>
                                 <div class="selectArrowContainer">
@@ -122,13 +95,23 @@
                             </div>
                             <button type="button" is="paper-icon-button-light" id="btnAddSeriesToIgnoreList" title="Ignore Series" aria-label="Ignore Series" class="emby-input-iconbutton paper-icon-button-light icon-button-conditionalfocuscolor" style="top: -45px"><i class="md-icon">add</i></button>
                         </div>
+                        <div class="detailSectionHeader">
+                            <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                                TV Shows to exclude: <span class="excludeShowTitle"></span>
+                            </h3>
+                        </div>
                         <!-- List of items to ignore -->
                         <div is="emby-itemscontainer" class="itemsContainer flex flex-grow centered padded-bottom-page padded-left padded-left-page padded-right vertical-list virtualItemsContainer" data-virtualscrolllayout="vertical-grid">
-                            <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible ignore-list" layout="vertical" style="min-height: 4224px;">
+                            <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible ignore-list" layout="vertical" style="min-height: 24px;">
 
 
                             </div>
                         </div>
+
+
+
+
+
                     </form>
                 </div>
             </div>

@@ -114,10 +114,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     name: 'Advanced'
                 },
                 {
+                    href: Dashboard.getConfigurationPageUrl('AutoSkipConfigurationPage'),
+                    name: 'Auto Skip'
+                },
+                {
                     href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
                     name: 'Stats'
-                }
-            ];
+                }];
         }
 
         function titleSequenceStatusIcon(confirmed) {
@@ -481,7 +484,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 loading.show();
 
-                const isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+                const isMobile = window.matchMedia("only screen and (max-width: 1676px)").matches;
                 if (!isMobile) {
                     view.querySelector('.detailLogo').classList.remove('hide');
                 }

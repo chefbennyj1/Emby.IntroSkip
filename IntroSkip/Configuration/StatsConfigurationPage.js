@@ -16,10 +16,13 @@
                     name: 'Advanced'
                 },
                 {
+                    href: Dashboard.getConfigurationPageUrl('AutoSkipConfigurationPage'),
+                    name: 'Auto Skip'
+                },
+                {
                     href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
                     name: 'Stats'
-                }
-            ];
+                }];
         }
 
         function waitdlg(view) {
@@ -161,7 +164,7 @@
 
                     loading.show();
                     //Set Menu Tabs, using # for zerobased index
-                    mainTabsManager.setTabs(this, 3, getTabs);
+                    mainTabsManager.setTabs(this, 4, getTabs);
 
                     //elements
                     var runStatsTaskBtn = view.querySelector('.runStatsTaskBtn');
