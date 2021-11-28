@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Data;
-using IntroSkip.Ffprobe;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;

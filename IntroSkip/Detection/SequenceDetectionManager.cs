@@ -522,7 +522,7 @@ namespace IntroSkip.Detection
                     }
 
                     var score = durationWeight + startWeight + endWeight;
-                    var avg = Math.Round(score / 3, 2, MidpointRounding.AwayFromZero);
+                    var avg = Math.Round(score / 3, 2, MidpointRounding.ToEven) - 0.1;
                     if (avg >= Plugin.Instance.Configuration.DetectionConfidence)
                     {
                         //Add a weight to each result, by adding up the differences between them. 
@@ -532,7 +532,7 @@ namespace IntroSkip.Detection
                 });
 
             var bestResult = weightedResults[weightedResults.Keys.Max()];
-            var confidence = weightedResults.Keys.Max();
+            var confidence = weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
             return Tuple.Create(confidence, bestResult); //<-- Take the result with the highest rank. 
 
         }
@@ -568,7 +568,7 @@ namespace IntroSkip.Detection
                     }
 
                     var score = durationWeight + startWeight;
-                    var avg = Math.Round(score / 2, 2, MidpointRounding.AwayFromZero);
+                    var avg = Math.Round(score / 2, 2, MidpointRounding.ToEven) - 0.1;
                     weightedResults.TryAdd(avg, result);
 
                 });
@@ -576,7 +576,7 @@ namespace IntroSkip.Detection
             var bestResult = weightedResults[weightedResults.Keys.Max()];
             var item = LibraryManager.GetItemById(bestResult.InternalId);
 
-            var confidence = weightedResults.Keys.Max();
+            var confidence = weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
 
             //Look for a black screen close to where the fingerprint found comparisons in our bestResult.
             var runtime = TimeSpan.Zero;

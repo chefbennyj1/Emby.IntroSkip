@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MediaBrowser.Model.Plugins;
 
 namespace IntroSkip.Configuration
@@ -16,13 +17,20 @@ namespace IntroSkip.Configuration
         public bool EnableItemAddedTaskAutoRun          { get; set; } = false;
         public bool EnableIntroDetectionAutoRun         { get; set; } = false;
         public bool EnableChapterInsertion              { get; set; }  //give the user the option to insert the chapter points into their library.
-        public bool EnableAutomaticImageExtraction      { get; set; } //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
+        public bool EnableAutomaticImageExtraction      { get; set; }  //give the user the option to automatically run Thumbnail image extraction process after the Chapter Points are created.
         public List<long> IgnoredList                   { get; set; }
         public bool EnableEndCreditChapterInsertion     { get; set; } = false;
         public bool EnableFullStatistics                { get; set; } = false;
-
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;
+        public bool EnableAutoSkipTitleSequence         { get; set; }
+        public bool ShowAutoTitleSequenceSkipMessage    { get; set; } = true;
+        public bool EnableAutoSkipEndCreditSequence     { get; set; }
+        public List<string> AutoSkipUsers               { get; set; }
+        
+        public PluginConfiguration()
+        {
 
+        }
     }
 }

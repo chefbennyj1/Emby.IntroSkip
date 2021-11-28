@@ -15,6 +15,10 @@
                     name: 'Advanced'
                 },
                 {
+                    href: Dashboard.getConfigurationPageUrl('AutoSkipConfigurationPage'),
+                    name: 'Auto Skip'
+                },
+                {
                     href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
                     name: 'Stats'
                 }];

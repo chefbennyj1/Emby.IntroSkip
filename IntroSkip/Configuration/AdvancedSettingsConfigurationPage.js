@@ -18,6 +18,10 @@
                     name: 'Advanced'
                 },
                 {
+                    href: Dashboard.getConfigurationPageUrl('AutoSkipConfigurationPage'),
+                    name: 'Auto Skip'
+                },
+                {
                     href: Dashboard.getConfigurationPageUrl('StatsConfigurationPage'),
                     name: 'Stats'
                 }];
@@ -96,50 +100,31 @@
 
                 mainTabsManager.setTabs(this, 2, getTabs);
 
-                var ignoreListElement = view.querySelector('.ignore-list');
-
+                var ignoreListElement                   = view.querySelector('.ignore-list');
                 //How many series to process at once
                 var titleSequenceMaxDegreeOfParallelism = view.querySelector('#txtTitleSequenceMaxDegreeOfParallelism');
-                var fingerprintMaxDegreeOfParallelism = view.querySelector('#txtFingerprintMaxDegreeOfParallelism');
+                var fingerprintMaxDegreeOfParallelism   = view.querySelector('#txtFingerprintMaxDegreeOfParallelism');
                 //enable ItemAdded Event Listeners
-                var chkEnableItemAddedTaskAutoRun = view.querySelector('#enableItemAddedTaskAutoRun');
-
-                var chkEnableFastDetect = view.querySelector('#enableFastDetect');
-
-                var confidenceInput = view.querySelector('#txtSequenceSamplingWeightConfidence');
-                 
-
+                var chkEnableItemAddedTaskAutoRun       = view.querySelector('#enableItemAddedTaskAutoRun');
+                var chkEnableFastDetect                 = view.querySelector('#enableFastDetect');
+               
                 //enable detection task auto run when fingerprinting is complete
-                var chkEnableDetectionTaskAutoRun = view.querySelector('#enableDetectionTaskAutoRun');
-
+                var chkEnableDetectionTaskAutoRun       = view.querySelector('#enableDetectionTaskAutoRun');
+                   
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
+                    fingerprintMaxDegreeOfParallelism.value   = config.FingerprintingMaxDegreeOfParallelism ? config.FingerprintingMaxDegreeOfParallelism : 2;
+                    chkEnableItemAddedTaskAutoRun.checked     = config.EnableItemAddedTaskAutoRun;
+                    chkEnableDetectionTaskAutoRun.checked     = config.EnableIntroDetectionAutoRun;
+                    chkEnableFastDetect.checked               = config.FastDetect;
                     
-                    fingerprintMaxDegreeOfParallelism.value = config.FingerprintingMaxDegreeOfParallelism ? config.FingerprintingMaxDegreeOfParallelism : 2;
-                    
-                    chkEnableItemAddedTaskAutoRun.checked = config.EnableItemAddedTaskAutoRun;
-
-                    chkEnableDetectionTaskAutoRun.checked = config.EnableIntroDetectionAutoRun;
-
-                    chkEnableFastDetect.checked = config.FastDetect;
-
-                    confidenceInput.value = config.DetectionConfidence;
-
-                   
-
-                    if (!chkEnableFastDetect.checked) {
-                        confidenceInput.closest('.inputContainer').classList.remove('hide');
-                        blackDetectInterval.closest('.inputContainer').classList.remove('hide');
-                        blackDetectPixelThreshold.closest('.inputContainer').classList.remove('hide');
-                    }
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
                     }
                 });
 
-                
                 //Our ignore list
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 getSeries().then(series => {
@@ -178,6 +163,8 @@
                     loading.hide();
                 });
 
+                
+
                 chkEnableFastDetect.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     var fastDetect = chkEnableFastDetect.checked;
@@ -197,35 +184,6 @@
                     }
                 });
 
-                confidenceInput.addEventListener('change', (elem) => {
-                    elem.preventDefault();
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        config.DetectionConfidence = confidenceInput.value;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
-                    });
-                });
-
-                function enableFastDetect(fastDetect) {
-                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                        
-                        config.FastDetect = fastDetect;
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => {
-                           
-                            if (!fastDetect) {
-                                if (confidenceInput.closest('.inputContainer').classList.contains('hide')) {
-                                    confidenceInput.closest('.inputContainer').classList.remove('hide');
-                                }
-                               
-                            } else {
-                                if (!confidenceInput.closest('.inputContainer').classList.contains('hide')) {
-                                    confidenceInput.closest('.inputContainer').classList.add('hide');
-                                }
-                               
-                            }
-                            
-                        });
-                    });
-                }
                 fingerprintMaxDegreeOfParallelism.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     if (fingerprintMaxDegreeOfParallelism < 2) {
@@ -260,6 +218,14 @@
                         ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
                     });
                 });
+
+                function enableFastDetect(fastDetect) {
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        config.FastDetect = fastDetect;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                    });
+                }
+
 
                 loading.hide();
             });

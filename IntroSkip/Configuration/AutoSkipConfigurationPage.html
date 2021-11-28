@@ -1,0 +1,72 @@
+﻿<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs AutoSkipConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/AutoSkipConfigurationPageJS">
+    <div class="content-primary">
+        <div class="verticalSection verticalSection">
+            <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+
+                <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                    Auto Skip
+                </h3>
+                <form>
+                    <!--Auto Skip feature-->
+                    <div class="inputContainer">
+                        <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                            <input is="emby-toggle" type="checkbox" id="autoSkipTitleSequence" class="chkAutoSkipTitleSequence" data-embytoggle="">
+                            <span class="toggleButtonLabel mdl-switch__label">Auto Skip Title Sequences</span>
+                            <div class="mdl-switch__trackContainer">
+                                <div class="mdl-switch__track"></div>
+                                <div class="mdl-switch__thumb">
+                                    <span class="mdl-switch__focus-helper"></span>
+                                </div>
+                            </div>
+                        </label>
+                        <div class="fieldDescription">
+                            Automatically skip intros for episodes that have title sequence data.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                            <input is="emby-toggle" type="checkbox" id="chkMessageOnAutoSkipTitleSequence" class="chkMessageOnAutoSkipTitleSequence" data-embytoggle="">
+                            <span class="toggleButtonLabel mdl-switch__label">Show Auto Skip Message</span>
+                            <div class="mdl-switch__trackContainer">
+                                <div class="mdl-switch__track"></div>
+                                <div class="mdl-switch__thumb">
+                                    <span class="mdl-switch__focus-helper"></span>
+                                </div>
+                            </div>
+                        </label>
+                        <div class="fieldDescription">
+                            Show a message on client screens when a title sequence has been successfully skipped.
+                        </div>
+                    </div>
+                    <hr />
+
+                    <div style="display: flex">
+                        <div style="flex-grow: 1;" class="selectContainer">
+                            <label class="selectLabel" for="selectEmbyUsers">Users:</label>
+                            <select is="emby-select" name="selectEmbyUsers" id="selectEmbyUsers" label="Users:" data-mini="true" class="emby-select-withcolor emby-select">
+                                <option value=""></option> <!--empty option-->
+                            </select>
+                            <div class="selectArrowContainer">
+                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                            </div>
+                            <div class="fieldDescription">
+                                Add this user account to the list of enabled accounts that utilize the Auto Skip feature.
+                            </div>
+                        </div>
+                        <button type="button" is="paper-icon-button-light" id="btnAddUserToAutoSkipList" title="Add to Auto Skip" aria-label="Add to Auto Skip" class="emby-input-iconbutton paper-icon-button-light icon-button-conditionalfocuscolor" style="top: -45px"><i class="md-icon">add</i></button>
+                    </div>
+
+                    <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                        Enabled User list
+                    </h3>
+                    <!-- List of user that opt in to Auto Skip -->
+                    <div is="emby-itemscontainer" class="itemsContainer flex flex-grow centered padded-bottom-page padded-left padded-left-page padded-right vertical-list virtualItemsContainer" data-virtualscrolllayout="vertical-grid">
+                        <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible user-list" layout="vertical" style="min-height: 24px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
