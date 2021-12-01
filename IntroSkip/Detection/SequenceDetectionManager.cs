@@ -523,13 +523,16 @@ namespace IntroSkip.Detection
 
                     var score = durationWeight + startWeight + endWeight;
                     var avg = Math.Round(score / 3, 2, MidpointRounding.ToEven) - 0.1;
-                    if (avg >= Plugin.Instance.Configuration.DetectionConfidence)
-                    {
+                    //if (avg >= Plugin.Instance.Configuration.DetectionConfidence)
+                    //{
                         //Add a weight to each result, by adding up the differences between them. 
                         weightedResults.TryAdd(avg, result);
-                    }
+                    //}
 
                 });
+
+            //Log.Debug($"HIGHEST SCORE: {weightedResults.Keys.Max()}");
+            //Log.Debug($"COMMON SCORE:  {CommonScore(weightedResults)}");
 
             var bestResult = weightedResults[weightedResults.Keys.Max()];
             var confidence = weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
@@ -657,6 +660,13 @@ namespace IntroSkip.Detection
             
         }
 
+
+        private double CommonScore(ConcurrentDictionary<double, SequenceResult> results)
+        {
+            //In most cases our highest score is the same as the most common score.
+            //Keep this function here in case in the future we need to look at the most common scoring weights.
+            return results.GroupBy(i => i.Key).OrderByDescending(group => group.Count()).Select(group => group.Key).First();
+        }
        
 
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, SequenceResult>> groups, bool longestCommonTimeSpan = false)

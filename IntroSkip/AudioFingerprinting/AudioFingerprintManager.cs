@@ -164,7 +164,7 @@ namespace IntroSkip.AudioFingerprinting
             Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber}: Extracting chunks from binary chroma-print.");
             if (!FileSystem.FileExists(bin.ToString()))
             {
-                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist.");
+                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist. Ensure FFMPEG can handle Chromprinting Audio.");
                 throw new Exception("bin file doesn't exist");
             }
             var fingerprint = new List<uint>();

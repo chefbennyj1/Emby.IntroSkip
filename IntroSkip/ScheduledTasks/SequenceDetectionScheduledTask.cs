@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using IntroSkip.Api;
 using IntroSkip.Detection;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
@@ -30,6 +28,7 @@ namespace IntroSkip.ScheduledTasks
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var tasks = TaskManager.ScheduledTasks.ToList();
+            // ReSharper disable once PossibleNullReferenceException
             if (tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting").State == TaskState.Running)
             {
                 Log.Info("DETECTION: Title sequence task will wait until chroma-printing task has completed.");
@@ -52,7 +51,7 @@ namespace IntroSkip.ScheduledTasks
                 await Task.FromResult(true);
                 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //Log.ErrorException(ex.Message, ex);
                 

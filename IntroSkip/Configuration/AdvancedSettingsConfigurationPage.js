@@ -2,7 +2,7 @@
     function (loading, dialogHelper, mainTabsManager) {
 
         var pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
-
+        var globalView;
         function getTabs() {
             return [
                 {
@@ -62,6 +62,7 @@
                 config.IgnoredList = filteredList;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     reloadList(filteredList, element, view);
+                    loadSeriesSelect(config, view);
                     Dashboard.processPluginConfigurationUpdateResult(r);
                 });
 
@@ -91,12 +92,26 @@
             }
         }
 
+        function loadSeriesSelect(config, view) {
+            var seriesSelect = view.querySelector('#selectEmbySeries');
+            seriesSelect.innerHTML = '';
+            getSeries().then(series => {
+                var seriesItems = series.Items;
+                for (let i = 0; i <= seriesItems.length - 1; i++) {
+                    if (config.IgnoredList.includes(parseInt(seriesItems[i].Id)) || config.IgnoredList.includes(seriesItems[i].Id)) {
+                        continue;
+                    }
+                    seriesSelect.innerHTML += '<option value="' + seriesItems[i].Id + '">' + seriesItems[i].Name + '</option>';
+                }
+            });
+        }
        
 
         return function (view) {
             view.addEventListener('viewshow', () => {
 
                 loading.show();
+                globalView = view;
 
                 mainTabsManager.setTabs(this, 2, getTabs);
 
@@ -107,10 +122,11 @@
                 //enable ItemAdded Event Listeners
                 var chkEnableItemAddedTaskAutoRun       = view.querySelector('#enableItemAddedTaskAutoRun');
                 var chkEnableFastDetect                 = view.querySelector('#enableFastDetect');
-               
                 //enable detection task auto run when fingerprinting is complete
                 var chkEnableDetectionTaskAutoRun       = view.querySelector('#enableDetectionTaskAutoRun');
-                   
+                var seriesSelect = view.querySelector('#selectEmbySeries');
+                var addToIgnoreListBtn = view.querySelector('#btnAddSeriesToIgnoreList');
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -122,18 +138,24 @@
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
+
                     }
+
+                    loadSeriesSelect(config, view);
+                    //getSeries().then(series => {
+                    //    var seriesItem = series.Items;
+                    //    if (config.IgnoredList && config.IgnoredList.length) {
+                    //        seriesItem = seriesItem.filter(i => config.IgnoredList.includes(i));
+                    //    }
+                    //    for (let i = 0; i <= series.Items.length - 1; i++) {
+                    //        seriesSelect.innerHTML += '<option value="' + seriesItem[i].Id + '">' + seriesItem[i].Name + '</option>';
+                    //    }
+                    //});
+
                 });
 
-                //Our ignore list
-                var seriesSelect = view.querySelector('#selectEmbySeries');
-                getSeries().then(series => {
-                    for (let i = 0; i <= series.Items.length - 1; i++) {
-                        seriesSelect.innerHTML += '<option value="' + series.Items[i].Id + '">' + series.Items[i].Name + '</option>';
-                    }
-                });
 
-                var addToIgnoreListBtn = view.querySelector('#btnAddSeriesToIgnoreList');
+
                 addToIgnoreListBtn.addEventListener('click', (el) => {
                     el.preventDefault();
 
@@ -154,7 +176,7 @@
                         }
                         ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                             reloadList(config.IgnoredList, ignoreListElement, view);
-
+                            loadSeriesSelect(config, view);
                             Dashboard.processPluginConfigurationUpdateResult(r); 
                         });
 
@@ -230,6 +252,7 @@
                 loading.hide();
             });
 
+           
 
         }
     });
