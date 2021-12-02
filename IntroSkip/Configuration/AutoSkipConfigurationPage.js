@@ -33,14 +33,14 @@
         }
 
         async function getUser(id) {
-            return await ApiClient.getJSON(ApiClient.getUrl('Users?Id=' + id ));
+            return await ApiClient.getJSON(ApiClient.getUrl('Users/' + id ));
         }
 
-        function getUserSelectOptionsHtml(user) {
-            var html = '';
-            html += '<option value="' + user.Id + '">' + user.Name + ' </option>';
-            return html;
-        }
+        //function getUserSelectOptionsHtml(user) {
+        //    var html = '';
+        //    html += '<option value="' + user.Id + '">' + user.Name + ' </option>';
+        //    return html;
+        //}
 
         function getListItemHtml(user, padding) {
             var html = '';
@@ -65,11 +65,10 @@
                 config.AutoSkipUsers = filteredList;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     reloadList(filteredList, element, view);
+                    loadUsersSelect(config, view);
                     Dashboard.processPluginConfigurationUpdateResult(r);
                 });
-
             });
-
         }
 
         function reloadList(list, element, view) {
@@ -77,8 +76,7 @@
             if (list && list.length) {
                 var padding = 0;
                 list.forEach(async item => {
-                    var result = await getUser(item);
-                    var user = result[0];
+                    var user = await getUser(item);
                     element.innerHTML += getListItemHtml(user, padding);
                     padding += 77; //Why is this padding necessary
                     var removeButtons = view.querySelectorAll('.removeItemBtn');
@@ -94,6 +92,19 @@
             }
         }
 
+        function loadUsersSelect(config, view) {
+            var usersSelect = view.querySelector('#selectEmbyUsers');
+            usersSelect.innerHTML = '';
+            getUsers().then(users => {
+                for (let i = 0; i <= users.length - 1; i++) {
+                    if (config.AutoSkipUsers.includes(users[i].Id)) {
+                        continue;
+                    }
+                    usersSelect.innerHTML += '<option value="' + users[i].Id + '">' + users[i].Name + '</option>';
+                }
+            });
+        }
+
         return function(view) {
             view.addEventListener('viewshow',
                 async () => {
@@ -103,15 +114,26 @@
                     var userSelect = view.querySelector('#selectEmbyUsers');
                     var addToAllowList = view.querySelector('#btnAddUserToAutoSkipList');
                     var chkMessageOnAutoSkipTitleSequence = view.querySelector('#chkMessageOnAutoSkipTitleSequence');
+                    var chkIgnoreEpisodeOneTitleSequenceSkip = view.querySelector('#chkIgnoreEpisodeOneTitleSequenceSkip');
+                    var txtMessageDuration = view.querySelector('#txtMessageDuration');
 
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                         chkEnableAutoSkip.checked = config.EnableAutoSkipTitleSequence ?? false;
                         chkMessageOnAutoSkipTitleSequence.checked = config.ShowAutoTitleSequenceSkipMessage ?? true;
+                        chkIgnoreEpisodeOneTitleSequenceSkip.checked = config.IgnoreEpisodeOneTitleSequenceSkip ?? false;
+                        txtMessageDuration.value = config.AutoTitleSequenceSkipMessageDuration;
+
                         if (config.AutoSkipUsers) {
                             reloadList(config.AutoSkipUsers, userList, view);
                         }
 
+                    });
+
+                    chkIgnoreEpisodeOneTitleSequenceSkip.addEventListener('change', (elem) => {
+                        elem.preventDefault();
+                        var ignoreEpisodeOneTitleSequenceSkip = chkIgnoreEpisodeOneTitleSequenceSkip.checked;
+                        enableIgnoreEpisodeOneTitleSequenceSkip(ignoreEpisodeOneTitleSequenceSkip);
                     });
 
                     chkEnableAutoSkip.addEventListener('change', (elem) => {
@@ -124,12 +146,26 @@
                         elem.preventDefault();
                         var showMessage = chkMessageOnAutoSkipTitleSequence.checked;
                         enableShowMessage(showMessage);
+                        if (showMessage) {
+                            view.querySelector('.messageDuration').classList.remove('hide');
+                        } else {
+                            view.querySelector('.messageDuration').classList.add('hide');
+                        }
                     });
 
-                    var users = await getUsers();
-                    users.forEach(user => {
-                        userSelect.innerHTML += getUserSelectOptionsHtml(user);
-                    })
+                    txtMessageDuration.addEventListener('change', (elem) => {
+                        elem.preventDefault();
+                        var duration = txtMessageDuration.value;
+                        updateMessageDuration(duration);
+                    });
+
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        loadUsersSelect(config, view);
+                    });
+                    //var users = await getUsers();
+                    //users.forEach(user => {
+                    //    userSelect.innerHTML += getUserSelectOptionsHtml(user);
+                    //})
                     
                     addToAllowList.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -150,7 +186,7 @@
                             }
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 reloadList(config.AutoSkipUsers, userList, view);
-
+                                loadUsersSelect(config, view);
                                 Dashboard.processPluginConfigurationUpdateResult(r); 
                             });
 
@@ -159,7 +195,20 @@
                         loading.hide();
                     });
 
+                    function enableIgnoreEpisodeOneTitleSequenceSkip(episodeOneTitleSequenceSkip) {
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.IgnoreEpisodeOneTitleSequenceSkip = episodeOneTitleSequenceSkip;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                        });
+                    }
                     
+                    function updateMessageDuration(duration) {
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.AutoTitleSequenceSkipMessageDuration = duration;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                        });
+                    }
+
                     function enableAutoSkip(autoSkip) {
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
                             config.EnableAutoSkipTitleSequence = autoSkip;

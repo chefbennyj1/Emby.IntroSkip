@@ -26,6 +26,22 @@
 
                     <div class="inputContainer">
                         <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                            <input is="emby-toggle" type="checkbox" id="chkIgnoreEpisodeOneTitleSequenceSkip" class="chkIgnoreEpisodeOneTitleSequenceSkip" data-embytoggle="">
+                            <span class="toggleButtonLabel mdl-switch__label">Do not auto skip the title sequences for the first episode of each season</span>
+                            <div class="mdl-switch__trackContainer">
+                                <div class="mdl-switch__track"></div>
+                                <div class="mdl-switch__thumb">
+                                    <span class="mdl-switch__focus-helper"></span>
+                                </div>
+                            </div>
+                        </label>
+                        <div class="fieldDescription">
+                            When enabled, play the title sequence for the first episode of each season.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label style="width: auto;" class="mdl-switch mdl-js-switch">
                             <input is="emby-toggle" type="checkbox" id="chkMessageOnAutoSkipTitleSequence" class="chkMessageOnAutoSkipTitleSequence" data-embytoggle="">
                             <span class="toggleButtonLabel mdl-switch__label">Show Auto Skip Message</span>
                             <div class="mdl-switch__trackContainer">
@@ -37,6 +53,17 @@
                         </label>
                         <div class="fieldDescription">
                             Show a message on client screens when a title sequence has been successfully skipped.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer messageDuration">
+                        <div style="display: flex; align-items: center;">
+                            <div style="flex-grow: 1;">
+                                <label class="inputLabel inputLabelUnfocused" for="txtMessageDuration">Message Duration:</label><input is="emby-input" type="number" id="txtMessageDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Message Duration:" class="emby-input">
+                            </div>
+                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
+                                Duration to show message (milliseconds).
+                            </div>
                         </div>
                     </div>
                     <hr />
@@ -51,7 +78,7 @@
                                 <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
                             </div>
                             <div class="fieldDescription">
-                                Add this user account to the list of enabled accounts that utilize the Auto Skip feature.
+                                Add a user account from the list to enabled utilization of the Auto Skip feature.
                             </div>
                         </div>
                         <button type="button" is="paper-icon-button-light" id="btnAddUserToAutoSkipList" title="Add to Auto Skip" aria-label="Add to Auto Skip" class="emby-input-iconbutton paper-icon-button-light icon-button-conditionalfocuscolor" style="top: -45px"><i class="md-icon">add</i></button>

@@ -32,6 +32,7 @@ namespace IntroSkip
             TaskManager    = taskManager;
             Instance       = this;
             Logger         = logManager.GetLogger(Plugin.Instance.Name);
+            
         }
 
         public void Dispose()

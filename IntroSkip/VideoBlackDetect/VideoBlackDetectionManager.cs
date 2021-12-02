@@ -20,7 +20,6 @@ namespace IntroSkip.VideoBlackDetect
             Instance = this;
             FfmpegManager = ffmpeg;
             LibraryManager = libraryManager;
-
         }
 
         public List<TimeSpan> Analyze(long internalId, CancellationToken cancellationToken)
@@ -56,6 +55,7 @@ namespace IntroSkip.VideoBlackDetect
                 //process.PriorityClass = ProcessPriorityClass.BelowNormal; //This changes nothing with regards to high CPU usages
 
                 process.Start();
+                process.PriorityClass = ProcessPriorityClass.BelowNormal; 
 
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
                 string processOutput = null;

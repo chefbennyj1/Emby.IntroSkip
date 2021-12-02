@@ -46,7 +46,7 @@
 
                             </div>
                         </div>
-                        
+
                         <div class="inputContainer">
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableItemAddedTaskAutoRun" class="chkEnableItemAddedTaskAutoRun" data-embytoggle="">
@@ -80,7 +80,11 @@
                         </div>
 
                         <hr />
-
+                        <div class="detailSectionHeader">
+                            <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
+                                TV Shows to exclude from scans: <span class="excludeShowTitle"></span>
+                            </h3>
+                        </div>
                         <div style="display: flex">
                             <div style="flex-grow: 1;" class="selectContainer">
                                 <label class="selectLabel">TV Shows</label>
@@ -90,19 +94,15 @@
                                     <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
                                 </div>
                                 <div class="fieldDescription">
-                                    TV Shows to be excluded during Title Sequence Detection
+                                    Add TV Shows from the list to be excluded during Title Sequence Detection
                                 </div>
                             </div>
                             <button type="button" is="paper-icon-button-light" id="btnAddSeriesToIgnoreList" title="Ignore Series" aria-label="Ignore Series" class="emby-input-iconbutton paper-icon-button-light icon-button-conditionalfocuscolor" style="top: -45px"><i class="md-icon">add</i></button>
                         </div>
-                        <div class="detailSectionHeader">
-                            <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
-                                TV Shows to exclude: <span class="excludeShowTitle"></span>
-                            </h3>
-                        </div>
+                        <button type="button" is="paper-icon-button-light" id="btnAddAllSeriesToIgnoreList" title="Ignore All Series" aria-label="Ignore All Series" class="emby-input-iconbutton emby-button  icon-button-conditionalfocuscolor" style="left: 82%;"><i class="md-icon">add</i> Add All Series</button>
                         <!-- List of items to ignore -->
                         <div is="emby-itemscontainer" class="itemsContainer flex flex-grow centered padded-bottom-page padded-left padded-left-page padded-right vertical-list virtualItemsContainer" data-virtualscrolllayout="vertical-grid">
-                            <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible ignore-list" layout="vertical" style="min-height: 24px;">
+                            <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible ignore-list" layout="vertical" style="min-height: 411px; overflow-y: auto;">
 
 
                             </div>

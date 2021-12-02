@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using MediaBrowser.Model.Plugins;
 
 namespace IntroSkip.Configuration
@@ -23,10 +22,14 @@ namespace IntroSkip.Configuration
         public bool EnableFullStatistics                { get; set; } = false;
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;
+
+        //AUTO SKIP
         public bool EnableAutoSkipTitleSequence         { get; set; }
         public bool ShowAutoTitleSequenceSkipMessage    { get; set; } = true;
+        public long? AutoTitleSequenceSkipMessageDuration { get; set; } = 800L;
         public bool EnableAutoSkipEndCreditSequence     { get; set; }
         public List<string> AutoSkipUsers               { get; set; }
+        public bool IgnoreEpisodeOneTitleSequenceSkip  { get; set; } = false;
         
         public PluginConfiguration()
         {
