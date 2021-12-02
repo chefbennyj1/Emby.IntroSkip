@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
+using IntroSkip.Configuration;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -154,11 +156,13 @@ namespace IntroSkip.RemoteControl
 
         private async void SendMessageToClient(SessionInfo session)
         {
+            CultureInfo ci = CultureInfo.InstalledUICulture;
+            Log.Debug(ci.Name);
             await SessionManager.SendMessageCommand(session.Id, session.Id,
                 new MessageCommand
                 {
                     Header = "",
-                    Text = "Intro Skipped",
+                    Text = Localization.Languages[ci.Name],//"Intro Skipped",
                     TimeoutMs = Plugin.Instance.Configuration.AutoTitleSequenceSkipMessageDuration
 
                 }, CancellationToken.None);

@@ -219,7 +219,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 2
             html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' +
                 imageLink(episode) +
-                '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px" src="' +
+                '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px;" src="' +
                 ApiClient.getPrimaryImageUrl(episode.Id) +
                 '"/></a></td>';
             //Index 3

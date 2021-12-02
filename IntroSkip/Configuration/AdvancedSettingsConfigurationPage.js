@@ -126,7 +126,7 @@
                 var chkEnableDetectionTaskAutoRun       = view.querySelector('#enableDetectionTaskAutoRun');
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 var addToIgnoreListBtn = view.querySelector('#btnAddSeriesToIgnoreList');
-
+                var btnAddAllSeriesToIgnoreList = view.querySelector('#btnAddAllSeriesToIgnoreList');
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -154,7 +154,31 @@
 
                 });
 
+                btnAddAllSeriesToIgnoreList.addEventListener('click', (elem) => {
+                    elem.preventDefault();
 
+                    loading.show();
+                    ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                        Array.from(seriesSelect.options).forEach(option => {
+                            var seriesId = option.value;
+                            if (config.IgnoredList) {
+
+                                config.IgnoredList.push(seriesId);
+
+                            } else {
+
+                                config.IgnoredList = [ seriesId ];
+
+                            }
+                        });
+                        ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                            reloadList(config.IgnoredList, ignoreListElement, view);
+                            loadSeriesSelect(config, view);
+                            Dashboard.processPluginConfigurationUpdateResult(r);
+                            loading.hide();
+                        });
+                    });
+                });
 
                 addToIgnoreListBtn.addEventListener('click', (el) => {
                     el.preventDefault();
