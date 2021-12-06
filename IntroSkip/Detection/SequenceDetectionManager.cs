@@ -24,12 +24,15 @@ namespace IntroSkip.Detection
         private static ILogger Log { get; set; }
         private ILibraryManager LibraryManager { get; }
         private IUserManager UserManager { get; }
+
+        private ILibraryMonitor LibraryMonitor { get;  }
         public static SequenceDetectionManager Instance { get; private set; }
 
-        public SequenceDetectionManager(ILogManager logManager, ILibraryManager libMan, IUserManager user)
+        public SequenceDetectionManager(ILogManager logManager, ILibraryManager libMan, IUserManager user, ILibraryMonitor libraryMonitor)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
             LibraryManager = libMan;
+            LibraryMonitor = libraryMonitor;
             UserManager = user;
             Instance = this;
         }
@@ -77,7 +80,7 @@ namespace IntroSkip.Detection
 
         private void Analyze(QueryResult<BaseItem> seriesQuery, IProgress<double> progress, CancellationToken cancellationToken, ISequenceRepository repository)
         {
-
+            
             if (cancellationToken.IsCancellationRequested)
             {
                 progress.Report(100.0);
@@ -85,15 +88,15 @@ namespace IntroSkip.Detection
             var config = Plugin.Instance.Configuration;
             var currentProgress = 0.2;
             var step = 100.0 / seriesQuery.TotalRecordCount;
-
-
+            
 
             Parallel.ForEach(seriesQuery.Items,
                 new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
                 {
+                    //LibraryMonitor.ReportFileSystemChangeBeginning(series.Path);
                     if (cancellationToken.IsCancellationRequested)
                     {
-
+                        //LibraryMonitor.ReportFileSystemChangeComplete(series.Path, false);
                         state.Break();
                         progress.Report(100.0);
                     }

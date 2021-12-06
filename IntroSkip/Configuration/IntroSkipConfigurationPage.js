@@ -263,13 +263,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var hasCredit = intro.HasCreditSequence || (creditStart.minutes !== '00');
 
             html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
-            html += `<div class="editTimestamp" contenteditable>${introStart}</div>`;
+            html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
             html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${await
                 getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0)}"/>`;
             html += '</td>';
 
             html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
-            html += `<div class="editTimestamp" contenteditable>${introEnd}</div>`;
+            html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
             html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${await
                 getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1)}"/>`;
             html += '</td>';
@@ -314,7 +314,22 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px;";
                     fadeIn(edit);
                 });
+                view.querySelectorAll('.hasIntroSelect').forEach(element => {
+                    element.addEventListener('change',
+                        async (e) => {
+                            e.preventDefault();
+                            if (e.target.value === 'false') {
+                                const row = e.target.closest('tr');
+                                row.querySelector('.introStartContentEditable').innerText = "00:00:00";
+                                row.querySelector('.introEndContentEditable').innerText = "00:00:00";
+                                row.querySelector('.introStartThumb').src = await getExtractedThumbImage(false, e.target.id, 0);
+                                row.querySelector('.introEndThumb').src = await getExtractedThumbImage(false, e.target.id, 1);
 
+                            }
+                            
+
+                        });
+                });
                 view.querySelectorAll('.saveSequence').forEach(async (btn) => {
                     btn.addEventListener('click',
                         async (elem) => {

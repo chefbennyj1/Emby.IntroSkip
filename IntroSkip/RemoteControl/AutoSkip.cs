@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using IntroSkip.Configuration;
@@ -97,8 +96,8 @@ namespace IntroSkip.RemoteControl
             if (!config.EnableAutoSkipTitleSequence) return;
             if (config.AutoSkipUsers is null) return;
             if (!config.AutoSkipUsers.Contains(e.Session.UserId)) return;
-            
 
+           
             var episodeIndex = e.Item.IndexNumber;
             var seasonName = e.Item.Parent.Name;
             var seriesName = e.Item.Parent.Parent.Name;
@@ -131,6 +130,14 @@ namespace IntroSkip.RemoteControl
                     if (!AutoSkipSessions.ContainsKey(e.Session.Id))
                     {
                         Log.Debug($"AUTOSKIP:{presentationName} ready to skip intro.");
+
+                        //Auto skip has a hard time skipping intros that start immediately at the 00:00:00 timestamp (or the very beginning)
+                        //we'll push the intro sequence start time a head by two seconds so that we can best skip the intro
+                        if(sequence.TitleSequenceStart == TimeSpan.Zero)
+                        {
+                            sequence.TitleSequenceStart += TimeSpan.FromSeconds(2);
+                        }
+
                         AutoSkipSessions.TryAdd(e.Session.Id, sequence);
                     }
                 }
@@ -146,6 +153,21 @@ namespace IntroSkip.RemoteControl
             }
         }
 
+        private static string GetNowPlayingSubtitleLanguage(SessionInfo session)
+        {
+            if (session.PlayState.SubtitleStreamIndex is null) return string.Empty;
+            return session.FullNowPlayingItem.GetMediaStreams()
+                .FirstOrDefault(stream => stream.Index == session.PlayState.SubtitleStreamIndex)?.DisplayLanguage;
+        }
+
+        private static string GetNowPlayingAudioLanguage(SessionInfo session)
+        {
+            if (session.PlayState.AudioStreamIndex is null) return string.Empty;
+            return session.FullNowPlayingItem.GetMediaStreams()
+                .FirstOrDefault(stream => stream.Index == session.PlayState.AudioStreamIndex)?.DisplayLanguage;
+            
+        }
+
         private void SessionManager_PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
             if (AutoSkipSessions.ContainsKey(e.Session.Id))
@@ -156,14 +178,42 @@ namespace IntroSkip.RemoteControl
 
         private async void SendMessageToClient(SessionInfo session)
         {
-            CultureInfo ci = CultureInfo.InstalledUICulture;
-            Log.Debug(ci.Name);
+            var language = string.Empty;
+            var messageText = "Intro Skipped";
+
+            try
+            {
+                language = GetNowPlayingSubtitleLanguage(session);
+                if (string.IsNullOrEmpty(language))
+                {
+                    Log.Debug("Subtitle language was empty. Using Audio language settings...");
+                    language = GetNowPlayingAudioLanguage(session);
+                    Log.Debug($"Audio Language set to: {language}");
+                }
+                else
+                {
+                    Log.Debug($"Subtitle Language: {language}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Unable to locate currently viewin language. Setting Default.");
+            }
+
+            if (!string.IsNullOrEmpty(language))
+            {
+                var countryCode = Localization.MatchCountryCodeToDisplayName(language); //Returns ISO Two letter language country code ex: "en" English or "fr" French
+                Log.Debug($"Auto Skip country code: {countryCode}");
+                var localizedMessageStrings = Localization.Languages.Where(item => item.Key.Contains(countryCode));
+                if (localizedMessageStrings.Any()) messageText = Localization.Languages[countryCode];
+            }
+
             await SessionManager.SendMessageCommand(session.Id, session.Id,
                 new MessageCommand
                 {
                     Header = "",
-                    Text = Localization.Languages[ci.Name],//"Intro Skipped",
-                    TimeoutMs = Plugin.Instance.Configuration.AutoTitleSequenceSkipMessageDuration
+                    Text = messageText,//"Intro Skipped",
+                    TimeoutMs = Plugin.Instance.Configuration.AutoTitleSequenceSkipMessageDuration ?? 800
 
                 }, CancellationToken.None);
         }
