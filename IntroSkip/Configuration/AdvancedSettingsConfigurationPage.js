@@ -142,15 +142,6 @@
                     }
 
                     loadSeriesSelect(config, view);
-                    //getSeries().then(series => {
-                    //    var seriesItem = series.Items;
-                    //    if (config.IgnoredList && config.IgnoredList.length) {
-                    //        seriesItem = seriesItem.filter(i => config.IgnoredList.includes(i));
-                    //    }
-                    //    for (let i = 0; i <= series.Items.length - 1; i++) {
-                    //        seriesSelect.innerHTML += '<option value="' + seriesItem[i].Id + '">' + seriesItem[i].Name + '</option>';
-                    //    }
-                    //});
 
                 });
 
