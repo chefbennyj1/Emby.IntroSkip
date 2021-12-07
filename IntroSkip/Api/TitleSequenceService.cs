@@ -89,6 +89,12 @@ namespace IntroSkip.Api
             //No args to pass - all code is done in the request below
         }
 
+        [Route("/UpdateAllSeasonSequences", "POST", Summary = "Season Title Sequence Update Data")]
+        public class UpdateAllSeasonSequencesRequest : IReturn<string>
+        {
+            public List<UpdateTitleSequenceRequest> TitleSequencesUpdate { get; set; }
+        }
+
         [Route("/UpdateSequence", "POST", Summary = "Episode Title Sequence Update Data")]
         public class UpdateTitleSequenceRequest : IReturn<string>
         {
@@ -116,11 +122,11 @@ namespace IntroSkip.Api
             
         }
 
-        [Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
-        public class SeasonalIntroVariance : IReturn<string>
-        {
+        //[Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
+        //public class SeasonalIntroVariance : IReturn<string>
+        //{
 
-        }
+        //}
 
         [Route("/NoTitleSequenceThumbImage", "GET", Summary = "No Title Sequence Thumb Image")]
         public class NoTitleSequenceThumbImageRequest : IReturn<object>
@@ -128,12 +134,12 @@ namespace IntroSkip.Api
 
         }
 
-        [Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
-        public class ConfirmAllSeasonIntrosRequest : IReturn<string>
-        {
-            [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
-            public long SeasonId { get; set; }
-        }
+        //[Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
+        //public class ConfirmAllSeasonIntrosRequest : IReturn<string>
+        //{
+        //    [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
+        //    public long SeasonId { get; set; }
+        //}
 
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
@@ -205,22 +211,67 @@ namespace IntroSkip.Api
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png".AsSpan(), "image/png"));
 
-        public void Post(ConfirmAllSeasonIntrosRequest request)
+      
+        //public void Post(ConfirmAllSeasonIntrosRequest request)
+        //{
+        //    ISequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+        //    QueryResult<SequenceResult> dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
+        //    List<SequenceResult> titleSequences = dbResults.Items.ToList();
+
+
+        //    foreach (var episode in titleSequences)
+        //    {
+        //        // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
+        //        episode.Confirmed = true;
+        //        episode.TitleSequenceFingerprint = episode.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+        //        try
+        //        {
+        //            repository.SaveResult(episode, CancellationToken.None);
+
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Log.Warn(ex.Message);
+        //            //return "error";
+        //        }
+        //    }
+        //    DisposeRepository(repository);
+        //    //return "OK";
+
+        //}
+
+        //public string Get(SeasonalIntroVariance request)
+        //{
+        //    var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+        //    var variance =  JsonSerializer.SerializeToString(GetSeasonalIntroVariance(repository));
+            
+        //    DisposeRepository(repository);
+        //    return variance;
+        //}
+
+        public void Post(UpdateAllSeasonSequencesRequest request)
         {
-            ISequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<SequenceResult> dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
-            List<SequenceResult> titleSequences = dbResults.Items.ToList();
+            var update = request.TitleSequencesUpdate;
+            var seasonId = update.FirstOrDefault()?.SeasonId; //Get the season Id from the first item (they are all from the same season.
 
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = seasonId });
+            var titleSequences = dbResults.Items.ToList();
 
-            foreach (var episode in titleSequences)
+            foreach (var item in update)
             {
-                // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
-                episode.Confirmed = true;
-                episode.TitleSequenceFingerprint = episode.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                var titleSequence = titleSequences.FirstOrDefault(s => s.InternalId == item.InternalId);
+                titleSequence.TitleSequenceStart = item.TitleSequenceStart;
+                titleSequence.TitleSequenceEnd = item.TitleSequenceEnd;
+                titleSequence.HasTitleSequence = item.HasTitleSequence;
+                titleSequence.CreditSequenceStart = item.CreditSequenceStart;
+                titleSequence.HasCreditSequence = item.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
+                titleSequence.Confirmed = true;
+                titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
                 try
                 {
-                    repository.SaveResult(episode, CancellationToken.None);
-
+                    repository.SaveResult(titleSequence, CancellationToken.None);
                 }
                 catch (Exception ex)
                 {
@@ -228,18 +279,9 @@ namespace IntroSkip.Api
                     //return "error";
                 }
             }
-            DisposeRepository(repository);
-            //return "OK";
 
-        }
-
-        public string Get(SeasonalIntroVariance request)
-        {
-            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var variance =  JsonSerializer.SerializeToString(GetSeasonalIntroVariance(repository));
-            
             DisposeRepository(repository);
-            return variance;
+
         }
 
         public void Post(UpdateTitleSequenceRequest request)
@@ -255,7 +297,7 @@ namespace IntroSkip.Api
             titleSequence.TitleSequenceEnd = request.TitleSequenceEnd;
             titleSequence.HasTitleSequence = request.HasTitleSequence;
             titleSequence.CreditSequenceStart = request.CreditSequenceStart;
-            titleSequence.HasCreditSequence = titleSequence.CreditSequenceStart != TimeSpan.FromSeconds(0)? true:false; //this was not getting updated when user clicked save
+            titleSequence.HasCreditSequence = titleSequence.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
             titleSequence.Confirmed = true;
             titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
             titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
