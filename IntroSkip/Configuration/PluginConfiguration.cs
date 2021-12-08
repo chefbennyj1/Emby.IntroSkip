@@ -30,7 +30,9 @@ namespace IntroSkip.Configuration
         public bool EnableAutoSkipEndCreditSequence     { get; set; }
         public List<string> AutoSkipUsers               { get; set; }
         public bool IgnoreEpisodeOneTitleSequenceSkip  { get; set; } = false;
-        
+        public string AutoSkipLocalization { get; set; } = "English";
+        public int? AutoSkipDelay { get; set; }
+
         public PluginConfiguration()
         {
 
