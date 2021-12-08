@@ -36,6 +36,9 @@
             return await ApiClient.getJSON(ApiClient.getUrl('Users/' + id ));
         }
 
+        async function getLanguages() {
+            return await ApiClient.getJSON(ApiClient.getUrl("MessageLanguages"))
+        }
         //function getUserSelectOptionsHtml(user) {
         //    var html = '';
         //    html += '<option value="' + user.Id + '">' + user.Name + ' </option>';
@@ -105,6 +108,14 @@
             });
         }
 
+        function loadLanguageSelect(view) {
+            var selectMessageLocalization = view.querySelector('#selectMessageLocalization');
+            getLanguages().then(result => {
+                result.forEach(item => {
+                    selectMessageLocalization.innerHTML += '<option value=' + item + '>' + item + '</option>'
+                })
+            })
+        }
         return function(view) {
             view.addEventListener('viewshow',
                 async () => {
@@ -116,18 +127,32 @@
                     var chkMessageOnAutoSkipTitleSequence = view.querySelector('#chkMessageOnAutoSkipTitleSequence');
                     var chkIgnoreEpisodeOneTitleSequenceSkip = view.querySelector('#chkIgnoreEpisodeOneTitleSequenceSkip');
                     var txtMessageDuration = view.querySelector('#txtMessageDuration');
+                    var selectMessageLocalization = view.querySelector('#selectMessageLocalization');
+                    var txtAutoSkipDelay = view.querySelector('#txtDelayDuration');
 
+                    loadLanguageSelect(view);
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                         chkEnableAutoSkip.checked = config.EnableAutoSkipTitleSequence ?? false;
                         chkMessageOnAutoSkipTitleSequence.checked = config.ShowAutoTitleSequenceSkipMessage ?? true;
                         chkIgnoreEpisodeOneTitleSequenceSkip.checked = config.IgnoreEpisodeOneTitleSequenceSkip ?? false;
                         txtMessageDuration.value = config.AutoTitleSequenceSkipMessageDuration;
+                        selectMessageLocalization.value = config.AutoSkipLocalization;
+                        txtAutoSkipDelay.value = config.AutoSkipDelay ?? 0;
 
                         if (config.AutoSkipUsers) {
                             reloadList(config.AutoSkipUsers, userList, view);
                         }
 
+                        if (chkMessageOnAutoSkipTitleSequence.checked) {
+                            view.querySelector('.languageContainer').classList.remove('hide');
+                            view.querySelector('.messageDurationContainer').classList.remove('hide');
+                        }
+                    });
+
+                    txtAutoSkipDelay.addEventListener('change', (elem) => {
+                        elem.preventDefault();
+                        updateAutoSkipDelay(txtAutoSkipDelay.value);
                     });
 
                     chkIgnoreEpisodeOneTitleSequenceSkip.addEventListener('change', (elem) => {
@@ -147,9 +172,11 @@
                         var showMessage = chkMessageOnAutoSkipTitleSequence.checked;
                         enableShowMessage(showMessage);
                         if (showMessage) {
-                            view.querySelector('.messageDuration').classList.remove('hide');
+                            view.querySelector('.languageContainer').classList.remove('hide');
+                            view.querySelector('.messageDurationContainer').classList.remove('hide');
                         } else {
-                            view.querySelector('.messageDuration').classList.add('hide');
+                            view.querySelector('.languageContainer').classList.add('hide');
+                            view.querySelector('.messageDurationContainer').classList.add('hide');
                         }
                     });
 
@@ -157,6 +184,12 @@
                         elem.preventDefault();
                         var duration = txtMessageDuration.value;
                         updateMessageDuration(duration);
+                    });
+
+                    selectMessageLocalization.addEventListener('change', (elem) => {
+                        elem.preventDefault();
+                        var language = selectMessageLocalization[selectMessageLocalization.selectedIndex].value;
+                        updateMessageLanguage(language);
                     });
 
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
@@ -202,6 +235,20 @@
                         });
                     }
                     
+                    function updateAutoSkipDelay(delay) {
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.AutoSkipDelay = delay;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                        });
+                    }
+
+                    function updateMessageLanguage(language) {
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.AutoSkipLocalization = language;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                        });
+                    }
+
                     function updateMessageDuration(duration) {
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
                             config.AutoTitleSequenceSkipMessageDuration = duration;

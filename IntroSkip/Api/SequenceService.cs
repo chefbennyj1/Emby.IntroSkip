@@ -19,34 +19,13 @@ using IntroSkip.Detection;
 using IntroSkip.Sequence;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Querying;
 
 namespace IntroSkip.Api
 {
-    public class TitleSequenceService : IService, IHasResultFactory
+    public class SequenceService : IService
     {
-        public enum SequenceImageType
-        {
-            IntroStart  = 0,
-            IntroEnd    = 1,
-            CreditStart = 2,
-            CreditEnd   = 3
-        }
-        [Route("/ExtractThumbImage", "GET", Summary = "Image jpg resource frame")]
-        public class ExtractThumbImage : IReturn<object>
-        {
-            [ApiMember(Name = "ImageFrameTimestamp", Description = "The image frame time stamp to extract from the stream", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
-            public string ImageFrameTimestamp { get; set; }
-
-            [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "long[]", ParameterType = "query", Verb = "GET")]
-            public long InternalId { get; set; }
-
-            [ApiMember(Name = "SequenceImageType", Description = "IntroStart = 0, IntroEnd = 1, CreditStart = 2, CreditEnd = 3", IsRequired = true, DataType = "SequenceImageType", ParameterType = "query", Verb = "GET")]
-            public SequenceImageType SequenceImageType { get; set; }
-            
-            public object Img { get; set; }
-        }
-
+        
+      
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -122,133 +101,30 @@ namespace IntroSkip.Api
             
         }
 
-        //[Route("/SeasonalIntroVariance", "GET", Summary = "Episode Title Sequence Variance Data")]
-        //public class SeasonalIntroVariance : IReturn<string>
-        //{
-
-        //}
-
-        [Route("/NoTitleSequenceThumbImage", "GET", Summary = "No Title Sequence Thumb Image")]
-        public class NoTitleSequenceThumbImageRequest : IReturn<object>
-        {
-
-        }
-
-        //[Route("/ConfirmAllSeasonIntros", "POST", Summary = "Confirms All Episodes in the Season are correct")]
-        //public class ConfirmAllSeasonIntrosRequest : IReturn<string>
-        //{
-        //    [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = false, DataType = "string", ParameterType = "query", Verb = "POST")]
-        //    public long SeasonId { get; set; }
-        //}
-
+        
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
-        private ILibraryManager LibraryManager { get; }
-        public IHttpResultFactory ResultFactory { get; set; }
-        private IFfmpegManager FfmpegManager { get; set; }
-        public IRequest Request { get; set; }
-        public StatsManager StatsManager { get; set; }
+        private IHttpResultFactory ResultFactory { get; set; }
+        private StatsManager StatsManager { get; set; }
         private IFileSystem FileSystem { get; }
         private IApplicationPaths ApplicationPaths { get; }
         private char Separator { get; }
 
 
         // ReSharper disable once TooManyDependencies
-        public TitleSequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, StatsManager statsManager, IApplicationPaths applicationPaths, IFileSystem fileSystem)
+        public SequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, StatsManager statsManager, IApplicationPaths applicationPaths, IFileSystem fileSystem)
         {
             JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
-            LibraryManager = libraryManager;
             ResultFactory = resultFactory;
-            FfmpegManager = ffmpegManager;
             StatsManager = statsManager;
             FileSystem = fileSystem;
             ApplicationPaths = applicationPaths;
             Separator = FileSystem.DirectorySeparatorChar;
         }
 
-        public async Task<object> Get(ExtractThumbImage request)
-        {
-            var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
-            var ffmpegPath          = ffmpegConfiguration.EncoderPath;
-            var item                = LibraryManager.GetItemById(request.InternalId);
-            var requestFrame        = TimeSpan.Parse(request.ImageFrameTimestamp);
-            switch(request.SequenceImageType)
-            {
-                case SequenceImageType.CreditStart:
-                    break;
-                case SequenceImageType.IntroStart:
-                    requestFrame += TimeSpan.FromSeconds(7); //<--push the image frame so it isn't always a black screen.
-                    break;
-                case SequenceImageType.CreditEnd:
-                case SequenceImageType.IntroEnd:
-                    requestFrame -= TimeSpan.FromSeconds(7); //<--back up the image frame so it isn't always a black screen.
-                    break;
-            }
-            
-            var frame               = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}"; 
-            var args                = $"-accurate_seek -ss {frame} -i \"{ item.Path }\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 -";
-            var procStartInfo       = new ProcessStartInfo(ffmpegPath, args)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true,
-            };
-
-            FileStream output;
-
-            using (var process = new Process { StartInfo = procStartInfo })
-            {
-                process.Start();
-                output = await Task.Factory.StartNew(() => process.StandardOutput.BaseStream as FileStream);
-            }
-
-            return ResultFactory.GetResult(Request, output, "image/bmp");
-
-        }
-
-        public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.png".AsSpan(), "image/png"));
-
-      
-        //public void Post(ConfirmAllSeasonIntrosRequest request)
-        //{
-        //    ISequenceRepository repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-        //    QueryResult<SequenceResult> dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
-        //    List<SequenceResult> titleSequences = dbResults.Items.ToList();
-
-
-        //    foreach (var episode in titleSequences)
-        //    {
-        //        // ReSharper disable once PossibleNullReferenceException - It's there, we just requested it from the database in the UI
-        //        episode.Confirmed = true;
-        //        episode.TitleSequenceFingerprint = episode.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-        //        try
-        //        {
-        //            repository.SaveResult(episode, CancellationToken.None);
-
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Log.Warn(ex.Message);
-        //            //return "error";
-        //        }
-        //    }
-        //    DisposeRepository(repository);
-        //    //return "OK";
-
-        //}
-
-        //public string Get(SeasonalIntroVariance request)
-        //{
-        //    var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-        //    var variance =  JsonSerializer.SerializeToString(GetSeasonalIntroVariance(repository));
-            
-        //    DisposeRepository(repository);
-        //    return variance;
-        //}
-
+        
+       
         public void Post(UpdateAllSeasonSequencesRequest request)
         {
             var update = request.TitleSequencesUpdate;
@@ -485,16 +361,7 @@ namespace IntroSkip.Api
             var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
-
-        private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceNameAsString = resourceName.ToString();
-            var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceNameAsString));
-
-            return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
-        }
-
+        
         private void DisposeRepository(ISequenceRepository repository)
         {
             // ReSharper disable once UsePatternMatching
@@ -502,28 +369,6 @@ namespace IntroSkip.Api
             repo?.Dispose();
         }
 
-        /// <summary>
-        /// List of seasons where some episodes have intros and some do not.
-        /// </summary>
-        /// <param name="repository"></param>
-        /// <returns></returns>
-        private List<long> GetSeasonalIntroVariance(ISequenceRepository repository)
-        {
-            var dbResults          = repository.GetBaseTitleSequenceResults(new SequenceResultQuery());
-            var baseTitleSequences = dbResults.Items;
-            var seasonalGroups     = baseTitleSequences.GroupBy(sequence => sequence.SeasonId);
-            var abnormalities      = new List<long>();
-            foreach (var group in seasonalGroups)
-            {
-                if (group.All(item => item.HasTitleSequence || !item.HasTitleSequence)) continue; //If they all have sequence data continue
-                if (group.Any(item => item.HasTitleSequence)) //Some of these items have sequence data and some do not.
-                {
-                    abnormalities.Add(group.Key);
-                }
-            }
-            var repo = repository as IDisposable;
-            repo.Dispose();
-            return abnormalities;
-        }
+        
     }
 }

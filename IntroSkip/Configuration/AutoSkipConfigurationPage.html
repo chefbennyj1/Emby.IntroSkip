@@ -56,10 +56,34 @@
                         </div>
                     </div>
 
-                    <div class="inputContainer messageDuration">
+
+                    <div style="flex-grow: 1;" class="selectContainer languageContainer hide">
+                        <label class="selectLabel" for="selectMessageLocalization">Language:</label>
+                        <select is="emby-select" name="selectMessageLocalization" id="selectMessageLocalization" label="Users:" data-mini="true" class="emby-select-withcolor emby-select ">
+                        </select>
+                        <div class="selectArrowContainer">
+                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                        </div>
+                        <div class="fieldDescription">
+                            Language to use when sending the Auto Skip message to the client.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer delayDurationContainer">
                         <div style="display: flex; align-items: center;">
                             <div style="flex-grow: 1;">
-                                <label class="inputLabel inputLabelUnfocused" for="txtMessageDuration">Message Duration:</label><input is="emby-input" type="number" id="txtMessageDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Message Duration:" class="emby-input">
+                                <label class="inputLabel inputLabelUnfocused" for="txtDelayDuration">Delay Auto Skip Duration:</label><input type="number" id="txtDelayDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Auto Skip Delay Duration:" class="emby-input">
+                            </div>
+                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
+                                Delay Auto Skip (milliseconds).
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer messageDurationContainer hide">
+                        <div style="display: flex; align-items: center;">
+                            <div style="flex-grow: 1;">
+                                <label class="inputLabel inputLabelUnfocused" for="txtMessageDuration">Message Duration:</label><input type="number" id="txtMessageDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Message Duration:" class="emby-input">
                             </div>
                             <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
                                 Duration to show message (milliseconds).

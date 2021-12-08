@@ -1,100 +1,90 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 
 namespace IntroSkip.Configuration
 {
     public class Localization
     {
-        public static string MatchCountryCodeToDisplayName(string language)
-        {
-            var cinfo = CultureInfo.GetCultures(CultureTypes.AllCultures & ~CultureTypes.NeutralCultures);
-            return cinfo.FirstOrDefault(c => c.DisplayName.Contains(language))?.TwoLetterISOLanguageName;
-        }
-
         //Dictionary is Two Letter ISO name 
         public static Dictionary<string, string> Languages = new Dictionary<string, string>()
         {
             //Arabic (Saudi Arabia)
-            {"ar", "تم تخطي المقدمة"},
+            {"Arabic", "تم تخطي المقدمة"},
             //Bulgarian (Bulgaria)
-            {"bg", "Въведението е пропуснато"},
+            {"Bulgarian", "Въведението е пропуснато"},
             //Catalan (Catalan)
-            {"ca", "S'ha omès la introducció"},
+            {"Catalan", "S'ha omès la introducció"},
             //Chinese (Taiwan)
-            {"zh", "简介已跳过"},
+            {"Chinese", "简介已跳过"},
             //Czech (Czech Republic)
-            {"cs", "Úvod přeskočen"},
+            {"Czech", "Úvod přeskočen"},
             //Danish (Denmark)
-            {"da", "Intro springet over"},
+            {"Danish", "Intro springet over"},
             //German (Germany)
-            {"de", "Einführung übersprungen"},
+            {"German", "Einführung übersprungen"},
             //Greek (Greece)
-            {"el", "Η εισαγωγή παραβλέφθηκε"},
+            {"Greek", "Η εισαγωγή παραβλέφθηκε"},
             //English 
-            {"en", "Intro Skipped"},
+            {"English", "Intro Skipped"},
             //Finnish (Finland)
-            {"fi", "Johdanto ohitettu"},
+            {"Finnish", "Johdanto ohitettu"},
             //French (France)
-            {"fr", "Introduction ignorée"},
+            {"French", "Introduction ignorée"},
             //Hebrew (Israel)
-            {"he", "דילוג על הקדמה"},
+            {"Hebrew", "דילוג על הקדמה"},
             //Hungarian (Hungary)
-            {"hu", "Intro Kihagyva"},
+            {"Hungarian", "Intro Kihagyva"},
             //Icelandic (Iceland)
-            {"is", "Inngangi sleppt"},
+            {"Icelandic", "Inngangi sleppt"},
             //Italian (Italy)
-            {"it", "Intro saltato"},
+            {"Italian", "Intro saltato"},
             //Japanese (Japan)
-            {"ja", "イントロスキップ"},
+            {"Japanese", "イントロスキップ"},
             //Korean (Korea)
-            {"k", "인트로 건너뜀"},
+            {"Korean", "인트로 건너뜀"},
             //Dutch (Netherlands)
-            {"nl", "Inleiding overgeslagen"},
+            {"Dutch", "Inleiding overgeslagen"},
             //Norwegian, BokmÃ¥l (Norway)
-            {"nb", "Intro hoppet over"},
+            {"Norwegian", "Intro hoppet over"},
             //Polish (Poland)
-            {"pl", "Pominięto wprowadzenie"},
+            {"Polish", "Pominięto wprowadzenie"},
             //Portuguese (Brazil)
-            {"pt", "Introdução pulada"},
+            {"Portuguese", "Introdução pulada"},
             //Romanian (Romania)
-            {"ro", "Introducere omisă"},
+            {"Romanian", "Introducere omisă"},
             //Russian (Russia)
-            {"ru", "Вступление пропущено"},
+            {"Russian", "Вступление пропущено"},
             //Croatian (Croatia)
-            {"hr", "Uvod preskočen"},
+            {"Croatian", "Uvod preskočen"},
             //Slovak (Slovakia)
-            {"sk", "Uvod preskočen"},
+            {"Slovak", "Uvod preskočen"},
             //Albanian (Albania)
-            {"sq", "Hyrja u anashkalua"},
+            {"Albanian", "Hyrja u anashkalua"},
             //Swedish (Sweden)
-            {"sv", "Introt hoppade över"},
+            {"Swedish", "Introt hoppade över"},
             //Thai (Thailand)
-            {"th", "ข้ามบทนำ"},
+            {"Thai", "ข้ามบทนำ"},
             //Turkish (Turkey)
-            {"tr", "Giriş Atlandı"},
+            {"Turkish", "Giriş Atlandı"},
             //Urdu (Islamic Republic of Pakistan)
-            {"ur", "تعارف چھوڑ دیا گیا۔"},
+            {"Urdu", "تعارف چھوڑ دیا گیا۔"},
             //Indonesian (Indonesia)
-            {"id", "Intro Dilewati"},
+            {"Indonesian", "Intro Dilewati"},
             //Ukrainian (Ukraine)
-            {"uk", "Вступ пропущено"},
+            {"Ukrainian", "Вступ пропущено"},
             //Belarusian (Belarus)
-            {"be", "Увядзенне прапушчана"},
+            {"Belarusian", "Увядзенне прапушчана"},
             //Slovenian (Slovenia)
-            {"sl", "Uvod preskočen"},
+            {"Slovenian", "Uvod preskočen"},
             //Vietnamese (Vietnam)
-            {"vi", "Đã bỏ qua phần giới thiệu"},
+            {"Vietnamese", "Đã bỏ qua phần giới thiệu"},
             //Afrikaans (South Africa)
-            {"af", "Inleiding oorgeslaan"},
+            {"Afrikaans", "Inleiding oorgeslaan"},
             //Hindi (India)
-            {"hi", "परिचय छोड़ दिया गया"},
+            {"Hindi", "परिचय छोड़ दिया गया"},
             //Punjabi (India)
-            {"pa", "ਜਾਣ-ਪਛਾਣ ਛੱਡੀ ਗਈ"},
+            {"Punjabi", "ਜਾਣ-ਪਛਾਣ ਛੱਡੀ ਗਈ"},
             //Spanish (Mexico)
-            {"es", "Intro omitido"},
-            //Undefined
-            {"und", "Intro Skipped"}
+            {"Spanish", "Intro omitido"},
 
         };
     }
