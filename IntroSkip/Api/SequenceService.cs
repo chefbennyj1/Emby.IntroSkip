@@ -9,10 +9,7 @@ using System.Threading;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
 using IntroSkip.Configuration;
 using IntroSkip.Data;
 using IntroSkip.Detection;
@@ -92,7 +89,7 @@ namespace IntroSkip.Api
             [ApiMember(Name = "HasTitleSequence", Description = "The episode has a title sequence", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool HasTitleSequence { get; set; }
 
-            [ApiMember(Name = "HasTitleSequence", Description = "The episode has a end credits", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
+            [ApiMember(Name = "HasCreditSequence", Description = "The episode has a end credits", IsRequired = true, DataType = "bool", ParameterType = "query", Verb = "POST")]
             public bool HasCreditSequence { get; set; }
 
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
@@ -152,11 +149,18 @@ namespace IntroSkip.Api
                 catch (Exception ex)
                 {
                     Log.Warn(ex.Message);
-                    //return "error";
+                }
+
+                if (Plugin.Instance.Configuration.ImageCache)
+                {
+                    SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
+                    SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
+                    SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
                 }
             }
 
             DisposeRepository(repository);
+            
 
         }
 
@@ -186,7 +190,12 @@ namespace IntroSkip.Api
                 Log.Warn(ex.Message);
                 //return "error";
             }
-
+            if (Plugin.Instance.Configuration.ImageCache)
+            {
+                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
+                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
+                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
+            }
             DisposeRepository(repository);
             //return "OK";
 
@@ -213,7 +222,11 @@ namespace IntroSkip.Api
 
                     repository.Delete(item.InternalId.ToString());
                     titleSequences.Remove(item);
-
+                    
+                    if (Plugin.Instance.Configuration.ImageCache)
+                    {
+                        SequenceThumbnailService.Instance.RemoveCacheImage(item.InternalId);
+                    }
                 }
                 catch { }
             }

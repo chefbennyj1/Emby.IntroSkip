@@ -91,7 +91,7 @@
                 });
             }
         }
-
+        
         function loadSeriesSelect(config, view) {
             var seriesSelect = view.querySelector('#selectEmbySeries');
             seriesSelect.innerHTML = '';
@@ -127,6 +127,8 @@
                 var seriesSelect = view.querySelector('#selectEmbySeries');
                 var addToIgnoreListBtn = view.querySelector('#btnAddSeriesToIgnoreList');
                 var btnAddAllSeriesToIgnoreList = view.querySelector('#btnAddAllSeriesToIgnoreList');
+                //var chkLockMaxDegreeOfParallelism = view.querySelector('#chkLockMaxDegreeOfParallelism');
+
                 ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
                     titleSequenceMaxDegreeOfParallelism.value = config.MaxDegreeOfParallelism ? config.MaxDegreeOfParallelism : 2;
@@ -134,16 +136,49 @@
                     chkEnableItemAddedTaskAutoRun.checked     = config.EnableItemAddedTaskAutoRun;
                     chkEnableDetectionTaskAutoRun.checked     = config.EnableIntroDetectionAutoRun;
                     chkEnableFastDetect.checked               = config.FastDetect;
-                    
+                    //chkLockMaxDegreeOfParallelism.checked     = config.LockMaxDegreeOfParallelism;
 
                     if (config.IgnoredList) {
                         reloadList(config.IgnoredList, ignoreListElement, view);
-
                     }
+
+                    //if (!chkLockMaxDegreeOfParallelism.checked) {
+                    //    titleSequenceMaxDegreeOfParallelism.disabled = false;
+                    //    fingerprintMaxDegreeOfParallelism.disabled = false;
+                    //    view.querySelector('.lockMaxDegreeOfParallelismContainer > .fieldDescription').innerHTML = "Max degree of parallelism is Unlocked.";
+                    //    view.querySelector('.lockMaxDegreeOfParallelismContainer > label > span').innerHTML = "Unlocked";
+                    //}
 
                     loadSeriesSelect(config, view);
 
                 });
+
+                //chkLockMaxDegreeOfParallelism.addEventListener('change', (elem) => {
+                //    elem.preventDefault();
+                //    if (!chkLockMaxDegreeOfParallelism.checked) {
+                //        titleSequenceMaxDegreeOfParallelism.disabled = false;
+                //        fingerprintMaxDegreeOfParallelism.disabled = false;
+                //        view.querySelector('.lockMaxDegreeOfParallelismContainer > .fieldDescription').innerHTML = "Max degree of parallelism is Unlocked.";
+                //        view.querySelector('.lockMaxDegreeOfParallelismContainer > label > span').innerHTML = "Unlocked";
+                //        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                //            config.LockMaxDegreeOfParallelism = false;
+                //            ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                //        });
+                //    } else {
+                //        titleSequenceMaxDegreeOfParallelism.disabled = true;
+                //        fingerprintMaxDegreeOfParallelism.disabled = true;
+                //        view.querySelector('.lockMaxDegreeOfParallelismContainer > .fieldDescription').innerHTML = "Max degree of parallelism is Locked.";
+                //        view.querySelector('.lockMaxDegreeOfParallelismContainer > label > span').innerHTML = "Locked";
+                //        fingerprintMaxDegreeOfParallelism.value = 2;      //<--Default
+                //        titleSequenceMaxDegreeOfParallelism.value = 2;   //<-- Default
+                //        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                //            config.FingerprintingMaxDegreeOfParallelism = fingerprintMaxDegreeOfParallelism.value;
+                //            config.MaxDegreeOfParallelism = titleSequenceMaxDegreeOfParallelism.value;
+                //            config.LockMaxDegreeOfParallelism = true;
+                //            ApiClient.updatePluginConfiguration(pluginId, config).then(() => { });
+                //        });
+                //    }
+                //});
 
                 btnAddAllSeriesToIgnoreList.addEventListener('click', (elem) => {
                     elem.preventDefault();

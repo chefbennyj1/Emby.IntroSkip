@@ -10,6 +10,7 @@ namespace IntroSkip.Configuration
         public int HammingDistanceThreshold             { get; set; } = 8; //Default
         public int MaxDegreeOfParallelism               { get; set; } = 2; //Default
         public double DetectionConfidence               { get; set; } = 0.60; //Default
+        //public bool LockMaxDegreeOfParallelism { get; set; } = true; //Default
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
         public double BlackDetectionPixelThreshold      { get; set; } = 0.00; //Default
         public double BlackDetectionSecondIntervals     { get; set; } = 0.05; //Default
@@ -22,7 +23,7 @@ namespace IntroSkip.Configuration
         public bool EnableFullStatistics                { get; set; } = false;
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;
-
+        public bool ImageCache { get; set; } = false;
         //AUTO SKIP
         public bool EnableAutoSkipTitleSequence         { get; set; }
         public bool ShowAutoTitleSequenceSkipMessage    { get; set; } = true;

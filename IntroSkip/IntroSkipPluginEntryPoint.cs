@@ -7,7 +7,9 @@ using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using IntroSkip.Data;
+using IntroSkip.ScheduledTasks;
 
 namespace IntroSkip
 {
@@ -67,12 +69,24 @@ namespace IntroSkip
                         new TaskOptions());
                     break;
 
-                    //Run the Chapters after detection
+                //Run the Chapters after detection
                 case "Episode Title Sequence Detection":
                     if (!Plugin.Instance.Configuration.EnableChapterInsertion) return;
                     TaskManager.Execute(TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "IntroSkip Chapter Insertion"),
                             new TaskOptions());
                     break;
+
+                ////Run the Fingerprinting task after each library scan
+                //case "Scan media library":
+                //    try
+                //    {
+                //        TaskManager.Execute(
+                //            TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting"),
+                //            new TaskOptions());
+                //    }catch {} //If this task is already running, we'll catch the error
+
+                //    break;
+
             }
         }
 
@@ -90,8 +104,8 @@ namespace IntroSkip
             }
             
             //if the timer is reset then a new item has been added
-            //if the timer goes off, then no new items have been added
-            ItemsAddedTimer.Change(10000, Timeout.Infinite); //Wait ten seconds to see if anything else is about to be added
+            //if the timer goes off, then we are ready to scan new items
+            ItemsAddedTimer.Change(5000, Timeout.Infinite); //Wait 5 seconds to see if anything else is about to be added
 
         }
         
@@ -101,33 +115,23 @@ namespace IntroSkip
             var libraryTask   = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
             var detectionTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
             var fingerprintingTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting");
-            if (detectionTask?.State == TaskState.Running || fingerprintingTask?.State == TaskState.Running)
+            
+            if (libraryTask?.State == TaskState.Running || fingerprintingTask?.State == TaskState.Running || detectionTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
             {
+                ItemsAddedTimer.Change(5000, Timeout.Infinite ); //Check back in 5 seconds
                 return;
             }
-
-            if (libraryTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
-            {
-                ItemsAddedTimer.Change(10000, Timeout.Infinite); //Check back in 10 seconds
-                return;
-            }
-
-            if (detectionTask?.State == TaskState.Running)
-            {
-                return;
-            }
-
 
             //Okay, we're ready for fingerprinting now - go ahead.
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
             Logger.Info("New Items are ready to fingerprint scan...");
-            var fingerprint = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting");
+            
 
-            if (fingerprint?.State == TaskState.Running) return;
+            if (fingerprintingTask?.State == TaskState.Running) return;
 
             try
             {
-                await TaskManager.Execute(fingerprint, new TaskOptions()).ConfigureAwait(false);
+                await TaskManager.Execute(fingerprintingTask, new TaskOptions()).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
