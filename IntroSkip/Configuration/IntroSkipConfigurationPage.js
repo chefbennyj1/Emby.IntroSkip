@@ -143,8 +143,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     TitleSequenceStart: row.cells[5].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
                     TitleSequenceEnd: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
                     HasTitleSequence: row.cells[4].querySelector('select').value,
+                    HasCreditSequence: row.cells[7].querySelector('select').value,
                     SeasonId: seasonId,
-                    CreditSequenceStart: 'PT' + row.cells[7].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] + "S"
+                    CreditSequenceStart: 'PT' + row.cells[8].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] + "S"
                 });
             });
 
@@ -155,18 +156,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             var id = row.dataset.id;
             var seasonSelect = view.querySelector('#selectEmbySeason');
-            //var intro = await ApiClient.getJSON(ApiClient.getUrl('EpisodeSequence?InternalId=' + id));
             var options = {
                 InternalId: id,
-                TitleSequenceStart: row.cells[5].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") +
-                    "S",
-                TitleSequenceEnd: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") +
-                    "S",
+                TitleSequenceStart: row.cells[5].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
+                TitleSequenceEnd: row.cells[6].querySelector('div').innerText.replace("00:", "PT").replace(":", "M") + "S",
                 HasTitleSequence: row.cells[4].querySelector('select').value,
+                HasCreditSequence: row.cells[7].querySelector('select').value,
                 SeasonId: seasonSelect[seasonSelect.selectedIndex].value,
-                CreditSequenceStart: 'PT' +
-                    row.cells[7].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] +
-                    "S"
+                CreditSequenceStart: 'PT' + row.cells[8].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] + "S"
             }
 
             await ApiClient.updateTitleSequence(options);
@@ -211,71 +208,60 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
             
             //Index 2
-            html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' +
-                imageLink(episode) +
-                '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px;" src="' +
-                ApiClient.getPrimaryImageUrl(episode.Id) +
-                '"/></a></td>';
+            html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) +
+                '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
             //Index 3
             html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
             //Index 4
             html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
             //Index 5
-            html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' +
-                episode.IndexNumber +
-                '">Episode: ' +
-                episode.IndexNumber +
-                '</td>';
+            html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
+
+            var hasIntro = intro.HasTitleSequence || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00'); //<-- looks like we have to check those minute and second values too.
+            
+            var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
+            var hasCredit = intro.HasCreditSequence || (creditStart.minutes !== '00');
+
             //Index 6
             html += '<td data-title="HasTitleSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
-
-
             html += '<div class="selectContainer" style="top:40px">';
             html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
-            html += '<option value="true" ' + (intro.HasTitleSequence ? 'selected' : "") + '>true</option>';
-            html += '<option value="false" ' + (!intro.HasTitleSequence ? 'selected' : "") + '>false</option>';
+            html += '<option value="true" ' + (hasIntro ? 'selected' : "") + '>true</option>';
+            html += '<option value="false" ' + (!hasIntro ? 'selected' : "") + '>false</option>';
             html += '</select>';
-            html +=
-                '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
+            html += '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
             html += '</div>';
-
             html += '</td">';
 
             var introStart = "00:" + introStartTimespan.minutes + ":" + introStartTimespan.seconds;
             var introEnd = "00:" + introEndTimespan.minutes + ":" + introEndTimespan.seconds;
-            var creditStart = creditStartTimeSpan.hours +
-                ":" +
-                creditStartTimeSpan.minutes +
-                ":" +
-                creditStartTimeSpan.seconds;
-
-            var hasIntro = intro.HasTitleSequence ||
-            (introEndTimespan.minutes !== '00' &&
-                introEndTimespan.seconds !==
-                '00'); //<-- looks like we have to check those minute and second values too.
-
-            var hasCredit = intro.HasCreditSequence || (creditStart.minutes !== '00');
-
+            
+            //Index 7
             html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
-            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${await
-                getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0)}"/>`;
+            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0)}"/>`;
             html += '</td>';
-
+            //Index 8
             html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
-            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${await
-                getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1)}"/>`;
+            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1)}"/>`;
             html += '</td>';
-
-
+            //Index 9
+            html += '<td data-title="HasCreditSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
+            html += '<div class="selectContainer" style="top:40px">';
+            html += '<select is="emby-select" class="emby-select-withcolor emby-select hasCreditSelect">';
+            html += '<option value="true" ' + (hasCredit ? 'selected' : "") + '>true</option>';
+            html += '<option value="false" ' + (!hasCredit ? 'selected' : "") + '>false</option>';
+            html += '</select>';
+            html += '<div class="selectArrowContainer" style="top:-23px !important"><div style="visibility:hidden;">0</div><i class="selectArrow md-icon"></i></div>';
+            html += '</div>';
+            html += '</td">';
+            //Index 10
             html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp" contenteditable>${creditStart}</div>`;
-            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${await
-                getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
+            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
             html += '</td>';
-
-            
+            //Index 11
             html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
             html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
             html += '<span>Save</span>';
@@ -483,6 +469,16 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 delay: 100
             });
         }
+
+        function enableImageCache(enabled) {
+            ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                config.ImageCache = enabled;
+                ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                    Dashboard.processPluginConfigurationUpdateResult(r);
+                });
+            });
+        }
+
         return function (view) {
             view.addEventListener('viewshow', async () => {
 
@@ -493,10 +489,22 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     view.querySelector('.detailLogo').classList.remove('hide');
                 }
 
+                var imageCacheToggle = view.querySelector('#enableImageCache');
+
                 mainTabsManager.setTabs(this, 0, getTabs);
+
+                ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                    imageCacheToggle.checked = config.ImageCache;
+                });
 
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
                     '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+
+                imageCacheToggle.addEventListener('change', (elem) => {
+                    elem.preventDefault();
+                    var enabled = view.querySelector('#enableImageCache').checked;
+                    enableImageCache(enabled);
+                });
 
                 var seriesId, seasonId;
 

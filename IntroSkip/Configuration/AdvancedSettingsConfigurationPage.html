@@ -9,25 +9,43 @@
                     </h3>-->
                     <form>
 
+
                         <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
                             Advanced Detection Settings
                         </h3>
-                        <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="txtFingerprintMaxDegreeOfParallelism">Maximum series to Chromaprint at once:</label>
-                            <input type="number" id="txtFingerprintMaxDegreeOfParallelism" min="2" max="16" step="2" label="Maximum series to Chromaprint at once:" class="emby-input">
-                            <div class="fieldDescription">
-                                The number of TV Shows to process audio fingerprints concurrently. Lower powered machines should keep the default of 2.
+                        <div class="paperList" style="padding: 2em; margin-bottom: 2em;">
+                            <!--<div class="inputContainer lockMaxDegreeOfParallelismContainer">
+                                <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                                    <input is="emby-toggle" type="checkbox" id="chkLockMaxDegreeOfParallelism" class="chkLockMaxDegreeOfParallelism" data-embytoggle="">
+                                    <span class="toggleButtonLabel mdl-switch__label">Locked</span>
+                                    <div class="mdl-switch__trackContainer">
+                                        <div class="mdl-switch__track"></div>
+                                        <div class="mdl-switch__thumb">
+                                            <span class="mdl-switch__focus-helper"></span>
+                                        </div>
+                                    </div>
+                                </label>
+                                <div class="fieldDescription">
+                                    Max degree of parallelism is Locked.
+                                </div>
+                            </div>-->
+
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="txtFingerprintMaxDegreeOfParallelism">Maximum series to Chromaprint at once:</label>
+                                <input type="number" id="txtFingerprintMaxDegreeOfParallelism" min="2" max="16" step="2" label="Maximum series to Chromaprint at once:" class="emby-input">
+                                <div class="fieldDescription">
+                                    The number of TV Shows to process audio fingerprints concurrently. Lower powered machines should keep the default of 2.
+                                </div>
+                            </div>
+
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceMaxDegreeOfParallelism">Maximum series to attempt intro detection at once:</label>
+                                <input type="number" id="txtTitleSequenceMaxDegreeOfParallelism" min="2" max="16" step="2" label="Maximum series to attempt intro detection at once:" class="emby-input">
+                                <div class="fieldDescription">
+                                    The number of TV Shows to process the Title Sequence Detection concurrently. Lower powered machines should keep the default of 2.
+                                </div>
                             </div>
                         </div>
-
-                        <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="txtTitleSequenceMaxDegreeOfParallelism">Maximum series to attempt intro detection at once:</label>
-                            <input type="number" id="txtTitleSequenceMaxDegreeOfParallelism" min="2" max="16" step="2" label="Maximum series to attempt intro detection at once:" class="emby-input">
-                            <div class="fieldDescription">
-                                The number of TV Shows to process the Title Sequence Detection concurrently. Lower powered machines should keep the default of 2.
-                            </div>
-                        </div>
-
                         <div class="inputContainer">
                             <label style="width: auto;" class="mdl-switch mdl-js-switch">
                                 <input is="emby-toggle" type="checkbox" id="enableFastDetect" class="chkEnableFastDetect" data-embytoggle="">
@@ -107,11 +125,6 @@
 
                             </div>
                         </div>
-
-
-
-
-
                     </form>
                 </div>
             </div>

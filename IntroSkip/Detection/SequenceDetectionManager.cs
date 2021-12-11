@@ -635,6 +635,7 @@ namespace IntroSkip.Detection
                               $"\nBlack frame detected within contiguous regions: {blackDetection}." +
                               $"\nMoving sequence start to: {blackDetection}.");
                     bestResult.CreditSequenceStart = blackDetection;
+                    bestResult.HasCreditSequence = true;
                     confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same a black frame detection we are perfect.
                 }
                 else
