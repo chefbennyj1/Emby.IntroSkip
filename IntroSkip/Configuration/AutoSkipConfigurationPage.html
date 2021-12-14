@@ -26,6 +26,22 @@
 
                     <div class="inputContainer">
                         <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                            <input is="emby-toggle" type="checkbox" id="autoSkipCreditSequence" class="chkAutoSkipCreditSequence" data-embytoggle="">
+                            <span class="toggleButtonLabel mdl-switch__label">Auto Skip Credit Sequences</span>
+                            <div class="mdl-switch__trackContainer">
+                                <div class="mdl-switch__track"></div>
+                                <div class="mdl-switch__thumb">
+                                    <span class="mdl-switch__focus-helper"></span>
+                                </div>
+                            </div>
+                        </label>
+                        <div class="fieldDescription">
+                            Automatically skip credits for episodes that have credit sequence data.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label style="width: auto;" class="mdl-switch mdl-js-switch">
                             <input is="emby-toggle" type="checkbox" id="chkIgnoreEpisodeOneTitleSequenceSkip" class="chkIgnoreEpisodeOneTitleSequenceSkip" data-embytoggle="">
                             <span class="toggleButtonLabel mdl-switch__label">Do not auto skip the title sequences for the first episode of each season</span>
                             <div class="mdl-switch__trackContainer">
@@ -69,17 +85,6 @@
                         </div>
                     </div>
 
-                    <div class="inputContainer delayDurationContainer">
-                        <div style="display: flex; align-items: center;">
-                            <div style="flex-grow: 1;">
-                                <label class="inputLabel inputLabelUnfocused" for="txtDelayDuration">Delay Auto Skip Duration:</label><input type="number" id="txtDelayDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Auto Skip Delay Duration:" class="emby-input">
-                            </div>
-                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
-                                Delay Auto Skip (milliseconds).
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="inputContainer messageDurationContainer hide">
                         <div style="display: flex; align-items: center;">
                             <div style="flex-grow: 1;">
@@ -87,6 +92,17 @@
                             </div>
                             <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
                                 Duration to show message (milliseconds).
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer delayDurationContainer">
+                        <div style="display: flex; align-items: center;">
+                            <div style="flex-grow: 1;">
+                                <label class="inputLabel inputLabelUnfocused" for="txtDelayDuration">Delay Auto Skip Duration:</label><input type="number" id="txtDelayDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Auto Skip Delay Duration:" class="emby-input">
+                            </div>
+                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
+                                Delay Auto Skip (milliseconds).
                             </div>
                         </div>
                     </div>

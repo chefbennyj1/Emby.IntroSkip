@@ -23,44 +23,44 @@ namespace IntroSkip.RemoteControl
         private ILogger Log { get; }
         public AutoSkip(ISessionManager sessionManager, IUserManager userManager, ILogManager logMan)
         {
+            Log = logMan.GetLogger(Plugin.Instance.Name);
             SessionManager = sessionManager;
             UserManager = userManager;
-            Log = logMan.GetLogger(Plugin.Instance.Name);
         }
         public void Dispose()
         {
-            SessionManager.PlaybackStart -= SessionManager_PlaybackStart;
+            SessionManager.PlaybackStart    -= SessionManager_PlaybackStart;
             SessionManager.PlaybackProgress -= SessionManager_PlaybackProgress;
-            SessionManager.PlaybackStopped -= SessionManager_PlaybackStopped;
+            SessionManager.PlaybackStopped  -= SessionManager_PlaybackStopped;
         }
 
         public void Run()
         {
-            SessionManager.PlaybackStart += SessionManager_PlaybackStart;
+            SessionManager.PlaybackStart    += SessionManager_PlaybackStart;
             SessionManager.PlaybackProgress += SessionManager_PlaybackProgress;
-            SessionManager.PlaybackStopped += SessionManager_PlaybackStopped;
+            SessionManager.PlaybackStopped  += SessionManager_PlaybackStopped;
             //throw new System.NotImplementedException();
         }
         
         private enum SequenceSkip 
         {
-            INTRO = 0,
+            INTRO  = 0,
             CREDIT = 1
         }
         private void SkipSequence(SessionInfo session, long seek, SequenceSkip sequenceSkip) 
         {
             SessionManager.SendPlaystateCommand(null, session.Id, new PlaystateRequest()
             {
-                Command = PlaystateCommand.Seek,
+                Command           = PlaystateCommand.Seek,
                 ControllingUserId = UserManager.Users.FirstOrDefault(u => u.Policy.IsAdministrator)?.Id.ToString(),
                 SeekPositionTicks = seek
             }, CancellationToken.None);
 
             if (Plugin.Instance.Configuration.ShowAutoTitleSequenceSkipMessage)
             {
-                Log.Debug($"AUTOSKIP:Sending Intro skip message to {session.Client}");
+                Log.Debug($"AUTOSKIP:Sending Auto Skip message to {session.Client}");
                 SendMessageToClient(session, sequenceSkip);
-                Log.Debug($"AUTOSKIP:Intro skip message to {session.Client} was successful.");
+                Log.Debug($"AUTOSKIP:Auto Skip message to {session.Client} was successful.");
             }
 
             //We have moved the stream to the end of the intro or credits. Remove it from the appropriate  Sequences Dictionary.
@@ -73,73 +73,71 @@ namespace IntroSkip.RemoteControl
                     AutoCreditSequenceSkipSessions.TryRemove(session.Id, out _);
                     break;
             }
-            
 
         }
 
         
         private void SessionManager_PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
-            //This session does not exists in our sequence dictionary.
-            //It either has no title sequence data, or the stream was resumed, and we are past the title sequence
-            //move on.
-            if (!AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
-            if (!AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
+            //Check if we have data in our dictionaries. If not move on.
+            if (!AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id) && !AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
 
-            //Here is the title sequence data for the sessions currently playing item.
-            var titleSequence = AutoTitleSequenceSkipSessions[e.Session.Id];
-            var creditSequence = AutoCreditSequenceSkipSessions[e.Session.Id];
-
+            BaseSequence titleSequence  = null;
+            BaseSequence creditSequence = null;
+            
+            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) titleSequence = AutoTitleSequenceSkipSessions[e.Session.Id];
+            
+            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) creditSequence = AutoCreditSequenceSkipSessions[e.Session.Id];
+            
             var episodeIndex = e.Item.IndexNumber;
-            var seasonName = e.Item.Parent.Name;
-            var seriesName = e.Item.Parent.Parent.Name;
+            var seasonName   = e.Item.Parent.Name;
+            var seriesName   = e.Item.Parent.Parent.Name;
 
             var presentationName = $"AUTOSKIP:{seriesName} - {seasonName} Episode {episodeIndex}";
-            if (e.PlaybackPositionTicks >= titleSequence.TitleSequenceStart.Ticks && e.PlaybackPositionTicks <= titleSequence.TitleSequenceEnd.Ticks)
+
+            if (titleSequence != null)
             {
-                Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
-                //Seek the stream to the end of the intro
-                SkipSequence(e.Session, titleSequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
-                Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                if (e.PlaybackPositionTicks >= titleSequence.TitleSequenceStart.Ticks && e.PlaybackPositionTicks <= titleSequence.TitleSequenceEnd.Ticks)
+                {
+                    Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
+                    //Seek the stream to the end of the intro
+                    SkipSequence(e.Session, titleSequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
+                    Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                }
             }
 
-            if (e.PlaybackPositionTicks > creditSequence.CreditSequenceStart.Ticks)
+            if (creditSequence != null)
             {
-                Log.Debug($"AUTOSKIP:{presentationName} skipping credits...");
-                SkipSequence(e.Session, titleSequence.CreditSequenceEnd.Ticks, SequenceSkip.CREDIT);
-                Log.Debug($"AUTOSKIP:{presentationName} credit has been skipped.");
+                if (e.PlaybackPositionTicks >= creditSequence.CreditSequenceStart.Ticks)
+                {
+                    Log.Debug($"AUTOSKIP:{presentationName} skipping credits...");
+                    SkipSequence(e.Session, creditSequence.CreditSequenceEnd.Ticks, SequenceSkip.CREDIT);
+                    Log.Debug($"AUTOSKIP:{presentationName} credit has been skipped.");
+                }
             }
+            
         }
 
         private void SessionManager_PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id))
-            {
-                AutoCreditSequenceSkipSessions.TryRemove(e.Session.Id, out _);
-            }
-            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id))
-            {
-                AutoTitleSequenceSkipSessions.TryRemove(e.Session.Id, out _);
-            }
+            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) AutoCreditSequenceSkipSessions.TryRemove(e.Session.Id, out _);
+            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) AutoTitleSequenceSkipSessions.TryRemove(e.Session.Id, out _);
         }
         private void SessionManager_PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
             //We only want tv episodes
-            if(e.Item.GetType().Name != nameof(Episode))
-            {
-                return;
-            }
-
+            if(e.Item.GetType().Name != nameof(Episode)) return;
+            
             var config = Plugin.Instance.Configuration;
             
-            if (!config.EnableAutoSkipTitleSequence) return;
-            if (config.AutoSkipUsers is null) return;
-            if (!config.AutoSkipUsers.Contains(e.Session.UserId)) return;
+            if (!config.EnableAutoSkipTitleSequence && !config.EnableAutoSkipCreditSequence) return; //Both features are not enabled.
+            if (config.AutoSkipUsers is null) return;                                                //No users have opt'd in to the feature
+            if (!config.AutoSkipUsers.Contains(e.Session.UserId)) return;                            //The list of opt'd users does not contain this sessions user.
 
            
             var episodeIndex = e.Item.IndexNumber;
-            var seasonName = e.Item.Parent.Name;
-            var seriesName = e.Item.Parent.Parent.Name;
+            var seasonName   = e.Item.Parent.Name;
+            var seriesName   = e.Item.Parent.Parent.Name;
 
             var presentationName = $"{seriesName} - {seasonName} Episode {episodeIndex}";
 
@@ -149,24 +147,25 @@ namespace IntroSkip.RemoteControl
             
             var sequence = repository.GetBaseTitleSequence(e.Item.InternalId.ToString());
 
-            if (sequence.HasCreditSequence || sequence.CreditSequenceStart > TimeSpan.Zero)
+            
+            if ((sequence.HasCreditSequence || sequence.CreditSequenceStart > TimeSpan.Zero) && config.EnableAutoSkipCreditSequence)
             {
                 Log.Debug($"{presentationName} has credit sequence data.");
-                PrepareCreditSequenceSkip(e, presentationName, sequence, config);
+                PrepareCreditSequenceSkip(e, presentationName, sequence);
             }
             else
             {
-                Log.Debug($"AUTOSKIP:{ presentationName } has no credit sequence data.");
+                Log.Debug($"AUTOSKIP:{ presentationName } will not skip credit sequence.");
             }
 
-            if (sequence.HasTitleSequence)
+            if (sequence.HasTitleSequence && config.EnableAutoSkipTitleSequence)
             {
                 Log.Debug($"{presentationName} has title sequence data.");
                 PrepareTitleSequenceSkip(e, presentationName, sequence, config);
 
             } else
             {
-                Log.Debug($"AUTOSKIP:{ presentationName } has no title sequence data.");
+                Log.Debug($"AUTOSKIP:{ presentationName } will not skip title sequence.");
             }
 
             var repo = repository as IDisposable;
@@ -176,7 +175,7 @@ namespace IntroSkip.RemoteControl
             }
         }
 
-        private void PrepareCreditSequenceSkip(PlaybackProgressEventArgs e, string presentationName, BaseSequence sequence, PluginConfiguration config)
+        private void PrepareCreditSequenceSkip(PlaybackProgressEventArgs e, string presentationName, BaseSequence sequence)
         {
             //Stream is not near the credit sequence, and is not near the end of the stream. We are good to ready the credit sequence skip.
             if (e.PlaybackPositionTicks > sequence.CreditSequenceStart.Ticks || e.PlaybackPositionTicks > (e.Item.RunTimeTicks - TimeSpan.FromSeconds(10).Ticks)) return;
@@ -194,7 +193,7 @@ namespace IntroSkip.RemoteControl
             //It is episode one of a season, and the option to show the title sequence has been set to true
             if (e.Item.IndexNumber == 1)
             {
-                if (Plugin.Instance.Configuration.IgnoreEpisodeOneTitleSequenceSkip)
+                if (config.IgnoreEpisodeOneTitleSequenceSkip)
                 {
                     Log.Debug($"AUTOSKIP:Will not skip intro for { presentationName }.");
                     return;
@@ -203,7 +202,7 @@ namespace IntroSkip.RemoteControl
 
             //We are at the beginning of the stream
             //We want to ignore streams that are 'Resumed'
-            if (e.PlaybackPositionTicks == 0 || (e.PlaybackPositionTicks <= sequence.CreditSequenceStart.Ticks))
+            if (e.PlaybackPositionTicks == 0 || (e.PlaybackPositionTicks <= sequence.TitleSequenceStart.Ticks))
             {
                 Log.Debug($"AUTOSKIP:{presentationName} preparing intro skip...");
                 if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
@@ -221,7 +220,6 @@ namespace IntroSkip.RemoteControl
                 AutoTitleSequenceSkipSessions.TryAdd(e.Session.Id, sequence);
             }
         }
-              
 
         private async void SendMessageToClient(SessionInfo session, SequenceSkip sequenceSkip)
         {
@@ -232,16 +230,20 @@ namespace IntroSkip.RemoteControl
                 case SequenceSkip.INTRO:
                     messageText = Localization.Languages[config.AutoSkipLocalization];
                     break;
+                case SequenceSkip.CREDIT:
+                    messageText = "Credits Skipped";
+                    break;
             }
            
             await SessionManager.SendMessageCommand(session.Id, session.Id,
                 new MessageCommand
                 {
+
                     Header = "",
                     Text = messageText,
                     TimeoutMs = Plugin.Instance.Configuration.AutoTitleSequenceSkipMessageDuration ?? 800
 
-                }, CancellationToken.None);
+                }, CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

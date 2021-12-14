@@ -56,7 +56,10 @@ namespace IntroSkip.Api
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "GET")]
             public long SeasonId { get; set; }
-
+            [ApiMember(Name = "StartIndex", Description = "The Start Index of the query", IsRequired = true, DataType = "int", ParameterType = "query", Verb = "GET")]
+            public int StartIndex { get; set; }
+            [ApiMember(Name = "Limit", Description = "The Limit of the query", IsRequired = true, DataType = "int", ParameterType = "query", Verb = "GET")]
+            public int Limit { get; set; }
         }
 
         [Route("/GetSeasonStatistics", "GET", Summary = "Get Statics by Season")]
@@ -244,18 +247,20 @@ namespace IntroSkip.Api
             // ReSharper disable twice UnusedAutoPropertyAccessor.Local
             public TimeSpan CommonEpisodeTitleSequenceLength { get; set; }
             public List<BaseSequence> TitleSequences { get; set; }
+            public int TotalRecordCount { get; set; }
         }
 
         public string Get(SeasonTitleSequenceRequest request)
         {
-
-
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            var query = new SequenceResultQuery() { SeasonInternalId = request.SeasonId };
+            
+            var query = new SequenceResultQuery() { SeasonInternalId = request.SeasonId};
             var dbResults = repository.GetBaseTitleSequenceResults(query);
 
             var titleSequences = dbResults.Items.ToList();
-
+            
+            //titleSequences.Sort((x, y) => x.IndexNumber.Value.CompareTo(y.IndexNumber.Value));
+            
             TimeSpan commonDuration;
             try
             {
@@ -268,10 +273,17 @@ namespace IntroSkip.Api
 
             DisposeRepository(repository);
 
+            var recordEnd = request.Limit;
+            if (request.StartIndex + request.Limit >= titleSequences.Count)
+            {
+                recordEnd = titleSequences.Count - request.StartIndex;
+            }
+            
             return JsonSerializer.SerializeToString(new SeasonTitleSequenceResponse()
             {
                 CommonEpisodeTitleSequenceLength = commonDuration,
-                TitleSequences = titleSequences
+                TitleSequences = titleSequences.GetRange(request.StartIndex, recordEnd),
+                TotalRecordCount = titleSequences.Count
             });
 
         }

@@ -4,7 +4,7 @@ namespace IntroSkip.Configuration
 {
     public class Localization
     {
-        //Dictionary is Two Letter ISO name 
+        
         public static Dictionary<string, string> Languages = new Dictionary<string, string>()
         {
             //Arabic (Saudi Arabia)

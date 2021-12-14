@@ -172,11 +172,11 @@ namespace IntroSkip.Data
 
                     if (query.StartIndex.HasValue && query.StartIndex.Value > 0)
                     {
-                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM SequenceResults ORDER BY SeasonId desc LIMIT {0})",
+                        commandText += string.Format(" WHERE ResultId NOT IN (SELECT ResultId FROM SequenceResults ORDER BY IndexNumber asc LIMIT {0})",
                             query.StartIndex.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    commandText += " ORDER BY SeasonId desc";
+                    commandText += " ORDER BY IndexNumber asc";
 
                     if (query.Limit.HasValue)
                     {
