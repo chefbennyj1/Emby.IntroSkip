@@ -67,7 +67,7 @@ namespace IntroSkip.Chapters
 
                     long insertStart = sequence.TitleSequenceStart.Ticks;
                     long insertEnd = sequence.TitleSequenceEnd.Ticks;
-                    long EndCredStart = sequence.CreditSequenceStart.Ticks;
+                    long endCredStart = sequence.CreditSequenceStart.Ticks;
 
                     string introStartString = "Title Sequence";
                     string introEndString = "Intro End";
@@ -77,8 +77,10 @@ namespace IntroSkip.Chapters
                     int lastIndex = iCount - 1;
 
                     //This wil check if the Introstart chapter point is already in the list,
+                    //TODO: If for some reason the sequence data has changed, we need to update the chapter data
                     if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                     {
+                        
                         Log.Debug("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
                     }
                     else if(chapters.Exists(chapterPoint => chapterPoint.Name == endCredString))
@@ -96,8 +98,7 @@ namespace IntroSkip.Chapters
 
                                 ChapterErrors.Add(new ChapterError()
                                 {
-                                    Id = item
-                                        .InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
+                                    Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
                                     Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
                                     ChapterCount = iCount,
                                     FilePathString = item.Path
@@ -109,12 +110,12 @@ namespace IntroSkip.Chapters
                                 if (sequence.HasCreditSequence && chapters.Exists(chapterPoint => chapterPoint.Name == endCredString) == false)
                                 {
                                     Log.Debug("CHAPTER INSERT: Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
-                                        tvShowName, seasonName, episodeNo.ToString(), item.Name, ConvertTicksToTime(EndCredStart));
+                                        tvShowName, seasonName, episodeNo.ToString(), item.Name, ConvertTicksToTime(endCredStart));
 
                                     chapters.Add(new ChapterInfo
                                     {
                                         Name = endCredString,
-                                        StartPositionTicks = EndCredStart
+                                        StartPositionTicks = endCredStart
 
                                     });
                                     chapters.Sort(CompareStartTimes);

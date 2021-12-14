@@ -24,7 +24,9 @@ namespace IntroSkip.Configuration
         public int Version                              { get; set; } = 0;
         public int? Limit                               { get; set; } = null;
         public bool ImageCache { get; set; } = false;
+        
         //AUTO SKIP
+        public bool EnableAutoSkipCreditSequence { get; set; }
         public bool EnableAutoSkipTitleSequence         { get; set; }
         public bool ShowAutoTitleSequenceSkipMessage    { get; set; } = true;
         public long? AutoTitleSequenceSkipMessageDuration { get; set; } = 800L;

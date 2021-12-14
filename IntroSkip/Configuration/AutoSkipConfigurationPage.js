@@ -120,7 +120,8 @@
             view.addEventListener('viewshow',
                 async () => {
                     mainTabsManager.setTabs(this, 3, getTabs);
-                    var chkEnableAutoSkip = view.querySelector('#autoSkipTitleSequence');
+                    var chkEnableAutoSkipTitleSequence = view.querySelector('#autoSkipTitleSequence');
+                    var chkEnableAutoSkipCreditSequence = view.querySelector('#autoSkipCreditSequence');
                     var userList = view.querySelector('.user-list');
                     var userSelect = view.querySelector('#selectEmbyUsers');
                     var addToAllowList = view.querySelector('#btnAddUserToAutoSkipList');
@@ -133,7 +134,8 @@
                     loadLanguageSelect(view);
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
-                        chkEnableAutoSkip.checked = config.EnableAutoSkipTitleSequence ?? false;
+                        chkEnableAutoSkipTitleSequence.checked = config.EnableAutoSkipTitleSequence ?? false;
+                        chkEnableAutoSkipCreditSequence.checked = config.EnableAutoSkipCreditSequence ?? false;
                         chkMessageOnAutoSkipTitleSequence.checked = config.ShowAutoTitleSequenceSkipMessage ?? true;
                         chkIgnoreEpisodeOneTitleSequenceSkip.checked = config.IgnoreEpisodeOneTitleSequenceSkip ?? false;
                         txtMessageDuration.value = config.AutoTitleSequenceSkipMessageDuration;
@@ -161,10 +163,16 @@
                         enableIgnoreEpisodeOneTitleSequenceSkip(ignoreEpisodeOneTitleSequenceSkip);
                     });
 
-                    chkEnableAutoSkip.addEventListener('change', (elem) => {
+                    chkEnableAutoSkipTitleSequence.addEventListener('change', (elem) => {
                         elem.preventDefault();
-                        var autoSkip = chkEnableAutoSkip.checked;
-                        enableAutoSkip(autoSkip);
+                        var autoSkip = chkEnableAutoSkipTitleSequence.checked;
+                        enableAutoSkipTitleSequence(autoSkip);
+                    });
+
+                    chkEnableAutoSkipCreditSequence.addEventListener('change', (elem) => {
+                        elem.preventDefault();
+                        var autoSkip = chkEnableAutoSkipCreditSequence.checked;
+                        enableAutoSkipCreditSequence(autoSkip);
                     });
 
                     chkMessageOnAutoSkipTitleSequence.addEventListener('change', (elem) => {
@@ -195,10 +203,6 @@
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
                         loadUsersSelect(config, view);
                     });
-                    //var users = await getUsers();
-                    //users.forEach(user => {
-                    //    userSelect.innerHTML += getUserSelectOptionsHtml(user);
-                    //})
                     
                     addToAllowList.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -256,9 +260,16 @@
                         });
                     }
 
-                    function enableAutoSkip(autoSkip) {
+                    function enableAutoSkipTitleSequence(autoSkip) {
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
                             config.EnableAutoSkipTitleSequence = autoSkip;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
+                        });
+                    }
+
+                    function enableAutoSkipCreditSequence(autoSkip) {
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.EnableAutoSkipCreditSequence = autoSkip;
                             ApiClient.updatePluginConfiguration(pluginId, config).then(() => {});
                         });
                     }

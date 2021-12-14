@@ -297,6 +297,8 @@ namespace IntroSkip.Detection
                 fingerprint2 = fingerprint2.GetRange(0, fingerprint2.Count() - 1);
             }
 
+            
+
             int offset = GetBestOffset(fingerprint1, fingerprint2);
 
             var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);

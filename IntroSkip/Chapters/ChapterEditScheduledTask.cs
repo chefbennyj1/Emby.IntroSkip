@@ -123,15 +123,15 @@ namespace IntroSkip.Chapters
 
         private Task ProcessEpisodeChaptersPoints()
         {
-            Log.Debug("CHAPTER TASK: STARTING PROCESSEPISODECHAPTERPOINTS() METHOD");
+            Log.Debug("CHAPTER TASK: Starting episode chapter insertion...");
             var config = Plugin.Instance.Configuration;
 
-            var Repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            QueryResult<SequenceResult> dbResults = Repository.GetResults(new SequenceResultQuery());
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults = repository.GetResults(new SequenceResultQuery());
 
             ChapterInsertion.ChapterErrors.Clear();
 
-            foreach (SequenceResult episode in dbResults.Items)
+            foreach (var episode in dbResults.Items)
             {
                 if (config.EnableChapterInsertion && (episode.HasTitleSequence || episode.HasCreditSequence))
                 {
@@ -141,7 +141,7 @@ namespace IntroSkip.Chapters
                 }
             }
 
-            var repo = Repository as IDisposable;
+            var repo = repository as IDisposable;
             if (repo != null)
             {
                 repo.Dispose();
