@@ -158,12 +158,27 @@ namespace IntroSkip.RemoteControl
                 Log.Debug($"AUTOSKIP:{ presentationName } will not skip credit sequence.");
             }
 
+            
             if (sequence.HasTitleSequence && config.EnableAutoSkipTitleSequence)
             {
                 Log.Debug($"{presentationName} has title sequence data.");
-                PrepareTitleSequenceSkip(e, presentationName, sequence, config);
 
-            } else
+                //If the intro starts at the beginning of the stream, or se started the stream in the middle of the intro.. act on it right away.
+                if (sequence.CreditSequenceStart == TimeSpan.Zero || (e.PlaybackPositionTicks > sequence.TitleSequenceStart.Ticks && e.PlaybackPositionTicks < sequence.TitleSequenceEnd.Ticks))
+                {
+                    Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
+                    //Seek the stream to the end of the intro
+                    SkipSequence(e.Session, sequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
+                    Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                    
+                }
+                else
+                {
+                    PrepareTitleSequenceSkip(e, presentationName, sequence, config);
+                }
+
+            } 
+            else
             {
                 Log.Debug($"AUTOSKIP:{ presentationName } will not skip title sequence.");
             }

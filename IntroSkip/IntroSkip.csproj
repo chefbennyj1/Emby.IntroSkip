@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>0.0.1.42</AssemblyVersion> <FileVersion>0.0.1.42</FileVersion> <Version>0.0.1.42</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>0.0.1.49</AssemblyVersion> <FileVersion>0.0.1.49</FileVersion> <Version>0.0.1.49</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -16,6 +16,8 @@
   <None Remove="Configuration\AutoSkipConfigurationPage.js" />
   <None Remove="Configuration\StatsConfigurationPage.html" />
   <None Remove="Configuration\StatsConfigurationPage.js" />
+  <None Remove="no_credit.jpg" />
+  <None Remove="no_intro.jpg" />
 </ItemGroup>
 
 
@@ -30,6 +32,8 @@
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
+  <EmbeddedResource Include="no_credit.jpg" />
+  <EmbeddedResource Include="no_intro.jpg" />
   <EmbeddedResource Include="no_intro.png" />
   <EmbeddedResource Include="thumb.jpg" />
 </ItemGroup>

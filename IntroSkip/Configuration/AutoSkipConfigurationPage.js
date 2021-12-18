@@ -108,12 +108,10 @@
             });
         }
 
-        function loadLanguageSelect(view) {
-            var selectMessageLocalization = view.querySelector('#selectMessageLocalization');
-            getLanguages().then(result => {
-                result.forEach(item => {
-                    selectMessageLocalization.innerHTML += '<option value=' + item + '>' + item + '</option>'
-                })
+        async function loadLanguageSelect(selectMessageLocalization) {
+            var languages = await getLanguages();
+            languages.forEach(item => {
+                selectMessageLocalization.innerHTML += '<option value=' + item + '>' + item + '</option>'
             })
         }
         return function(view) {
@@ -131,15 +129,16 @@
                     var selectMessageLocalization = view.querySelector('#selectMessageLocalization');
                     var txtAutoSkipDelay = view.querySelector('#txtDelayDuration');
 
-                    loadLanguageSelect(view);
+                    await loadLanguageSelect(selectMessageLocalization);
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
 
+                        selectMessageLocalization.value = config.AutoSkipLocalization;
                         chkEnableAutoSkipTitleSequence.checked = config.EnableAutoSkipTitleSequence ?? false;
                         chkEnableAutoSkipCreditSequence.checked = config.EnableAutoSkipCreditSequence ?? false;
                         chkMessageOnAutoSkipTitleSequence.checked = config.ShowAutoTitleSequenceSkipMessage ?? true;
                         chkIgnoreEpisodeOneTitleSequenceSkip.checked = config.IgnoreEpisodeOneTitleSequenceSkip ?? false;
                         txtMessageDuration.value = config.AutoTitleSequenceSkipMessageDuration;
-                        selectMessageLocalization.value = config.AutoSkipLocalization;
+                        
                         txtAutoSkipDelay.value = config.AutoSkipDelay ?? 0;
 
                         if (config.AutoSkipUsers) {

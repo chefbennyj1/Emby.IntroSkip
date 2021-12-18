@@ -144,9 +144,7 @@ namespace IntroSkip.ScheduledTasks
                          }
 
                          // ReSharper disable once AccessToModifiedClosure <-- That's ridiculous, it's right there!
-                         var processedEpisodeResults =
-                             titleSequences.Where(s =>
-                                 s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
+                         var processedEpisodeResults = titleSequences.Where(s => s.SeasonId == seasonQuery.Items[seasonIndex].InternalId); //Items we have fingerprinted.
 
                          var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                          {
@@ -157,13 +155,17 @@ namespace IntroSkip.ScheduledTasks
                              IsVirtualItem = false
                          });
 
-                        //The season has been processed and all episodes have a sequence - move on.                        
-                        if (processedEpisodeResults.Count() == episodeQuery.TotalRecordCount)
-                         {
-                             Log.Debug(
-                                 $"FINGERPRINT: {series.Name} - {seasonQuery.Items[seasonIndex].Name} chromaprint profile is up to date.");
-                             continue;
-                         }
+
+                        //The season has been processed and all episodes have a sequence - move on.
+                        if (processedEpisodeResults != null)
+                        {
+                            if (processedEpisodeResults.Count() == episodeQuery.Items.Count())
+                            {
+                                Log.Debug($"FINGERPRINT: {series.Name} - {seasonQuery.Items[seasonIndex].Name} fingerprint profile is up to date.");
+                                continue;
+                            }
+                        }
+                        
 
                          var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                          var duration = GetEncodingDuration(averageRuntime);
@@ -171,6 +173,7 @@ namespace IntroSkip.ScheduledTasks
                          //If we are processing the final series, increase the amount of episodes to process at once.
                          if (seriesIndex == seriesQuery.Items.Count() - 1) fpMax *= 2;
 
+                         var index = seasonIndex;
                          Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = (int)Math.Round((double)fpMax / 2, MidpointRounding.AwayFromZero) }, (episode, st) =>
                          {
                              if (cancellationToken.IsCancellationRequested)
@@ -179,7 +182,7 @@ namespace IntroSkip.ScheduledTasks
                              }
 
                              //The episode data exists in the database
-                             // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                             
                              if (titleSequences.Exists(result => result.InternalId == episode.InternalId))
                              {
                                  var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episode.InternalId);
@@ -193,14 +196,14 @@ namespace IntroSkip.ScheduledTasks
                                  else //If new episodes are added to the season it may alter the encoding duration for the fingerprint. The duration for all fingerprints must be the same.
                                  {
                                      Log.Info(
-                                         $"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
+                                         $"Encoding duration has changed for {series.Name} - {seasonQuery.Items[index].Name}");
                                      repository.Delete(titleSequenceResult.InternalId.ToString());
 
                                      dbResults = repository.GetResults(new SequenceResultQuery());
 
                                      titleSequences = dbResults.Items.ToList();
                                      processedEpisodeResults = titleSequences.Where(s =>
-                                         s.SeasonId == seasonQuery.Items[seasonIndex].InternalId);
+                                         s.SeasonId == seasonQuery.Items[index].InternalId);
                                  }
                              }
 
@@ -239,7 +242,7 @@ namespace IntroSkip.ScheduledTasks
 
                              try
                              {
-                                 Log.Info($"{series.Name} {seasonQuery.Items[seasonIndex].Name} Episode: {episode.IndexNumber} Credit and Title Sequence Fingerprinting Successful.");
+                                 Log.Info($"{series.Name} {seasonQuery.Items[index].Name} Episode: {episode.IndexNumber} Credit and Title Sequence Fingerprinting Successful.");
                                  repository.SaveResult(new SequenceResult()
                                  {
                                      Duration = duration,
@@ -249,7 +252,7 @@ namespace IntroSkip.ScheduledTasks
                                      HasCreditSequence = false,  //Set this to true when we scan the fingerprint data in the other scheduled task
                                      IndexNumber = episode.IndexNumber,
                                      InternalId = episode.InternalId,
-                                     SeasonId = seasonQuery.Items[seasonIndex].InternalId,
+                                     SeasonId = seasonQuery.Items[index].InternalId,
                                      SeriesId = series.InternalId,
                                      TitleSequenceStart = new TimeSpan(),
                                      TitleSequenceEnd = new TimeSpan(),

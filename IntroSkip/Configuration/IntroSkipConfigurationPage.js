@@ -95,6 +95,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var url = this.getUrl(`Items/${id}/Images/Primary?maxHeight=500&amp;maxWidth=300&amp;quality=90`);
             return url;
         }
+        //http://localhost:8096/emby/videos/48258/stream.mp4?StartTimeTicks=2754166090&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false  
+        ApiClient.getVideoSequence = function(id, startTime) {
+            var url = this.getUrl("Videos/" + id + "/stream.mp4?StartTimeTicks=" + startTime + "&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false");
+            return url;
+        }
 
         function getTabs() {
             return [
@@ -193,18 +198,35 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 HasTitleSequence   : row.cells[4].querySelector('select').value,
                 HasCreditSequence  : row.cells[7].querySelector('select').value,
                 SeasonId           : seasonSelect[seasonSelect.selectedIndex].value,
-                CreditSequenceStart: 'PT' + row.cells[8].querySelector('div').innerText.replace(":", "H").replace(":", "M").split(":")[0] + "S"
+                CreditSequenceStart: row.cells[8].querySelector('div').innerText //.replace("00:", "PT").replace(":", "M") + "S"
             }
 
             await ApiClient.updateTitleSequence(options);
                      
         }
         
-
         async function getIntros(seasonId) {
             return await ApiClient.getJSON(ApiClient.getUrl(`SeasonSequences?SeasonId=${seasonId}&StartIndex=${pagination.StartIndex}&Limit=${pagination.Limit}`));
         }
 
+        async function getSequenceVideo(sequence, startTimeTicks) {
+            return await ApiClient.getVideoSequence(sequence.InternalId, startTimeTicks);
+        }
+
+        function getSequenceTime(sequence) {
+            var titleSequenceStart = parseISO8601Duration(sequence.TitleSequenceStart);
+            var titleSequenceEnd = parseISO8601Duration(sequence.TitleSequenceEnd);
+            var sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
+            var sequenceEndTimeString = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
+            var sequenceStartTime = new Date('1970-01-01T' + sequenceStartTimeString + 'Z');
+            var sequenceEndTime = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');
+
+            return {
+                Start: sequenceStartTime.getTime(),
+                End: sequenceEndTime.getTime()
+            }
+           
+        }
         //Backend Enum: SequenceImageTypes
         //IntroStart  = 0
         //IntroEnd    = 1
@@ -250,7 +272,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var hasIntro = intro.HasTitleSequence || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00'); //<-- looks like we have to check those minute and second values too.
             
             var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
-            var hasCredit = intro.HasCreditSequence || (creditStart.minutes !== '00');
+            var hasCredit = intro.HasCreditSequence || (creditStartTimeSpan.minutes !== '00');
 
             //Index 6
             html += '<td data-title="HasTitleSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
@@ -288,7 +310,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '</td">';
             //Index 10
             html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
-            html += `<div class="editTimestamp" contenteditable>${creditStart}</div>`;
+            html += `<div class="editTimestamp creditStartContentEditable" contenteditable>${creditStart}</div>`;
             html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
             html += '</td>';
             //Index 11
@@ -296,7 +318,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
             html += '<span>Save</span>';
             html += '</button>';
+
+            if (hasIntro) {
+                html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit">`;
+                html += '<span>Play</span>';
+                html += '</button>';
+            }
             html += '</td>';
+
 
             html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
             html += '</tr>';
@@ -334,6 +363,17 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         });
                 });
 
+                view.querySelectorAll('.hasCreditSelect').forEach(element => {
+                    element.addEventListener('change',
+                        async (e) => {
+                            e.preventDefault();
+                            if (e.target.value === 'false') {
+                                const row = e.target.closest('tr');
+                                row.querySelector('.creditStartContentEditable').innerText = "00:00:00";
+                                row.querySelector('.creditStartThumb').src = await getExtractedThumbImage(false, e.target.id, 2);
+                            } 
+                        });
+                });
                 
 
                 view.querySelectorAll('.saveSequence').forEach(async (btn) => {
@@ -342,10 +382,17 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                             elem.preventDefault();
                             var row = elem.target.closest('tr');
                             await saveIntro(row, view);
+
+                            var seriesSelect = view.querySelector('#selectEmbySeries');
                             var seasonSelect = view.querySelector('#selectEmbySeason');
+                            
                             var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                            var result = await getIntros(seasonId);
-                            renderTableItems(result.TitleSequences, view);
+                            var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+
+                            var seasons = await getSeasons(seriesId);
+                            var season = seasons.Items.filter(s => s.Id === seasonId)[0];
+
+                            loadPageData(season, view);
                         });
                 });
 
@@ -363,9 +410,19 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         });
                 });
 
+                view.querySelectorAll('.playSequence').forEach(async (btn) => {
+                    btn.addEventListener('click',
+                        async (elem) => {
+                            elem.preventDefault();
+                            
+                            dlgIntroPlayer(view, sequence);
+                        });
+                });
                 sortTable(view);
-                loading.hide();
+               
             });
+
+            loading.hide();
         }
 
         //function reloadTableItems(sequences, view) {
@@ -374,6 +431,52 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //    renderTableItems(sequences, view);
         //    loading.hide();
         //}
+
+        async function dlgIntroPlayer(view, sequence) {
+            var dlg = dialogHelper.createDialog({
+                removeOnClose: true,
+                size: 'small'
+            });
+
+            dlg.classList.add('ui-body-a');
+            dlg.classList.add('background-theme-a');
+
+            dlg.classList.add('formDialog');
+            dlg.style.maxWidth = '25%';
+            dlg.style.maxHeight = '55%';
+
+            var sequenceTime = getSequenceTime(sequence);
+            var sequenceStartTimeTicks = ((sequenceTime.Start * 10000) + 621355968000000000);
+
+            var html = '';
+            html += '<div class="formDialogHeader">';
+            html += '<button is="paper-icon-button-light" class="btnCancel autoSize" tabindex="-1"><i class="md-icon">&#xE5C4;</i></button>';
+            html += `<h3 class="formDialogHeaderTitle">Title Sequence</h3>`;
+            html += '</div>';
+
+            html += '<div class="formDialogContent" style="margin:2em">';
+            html += '<div class="dialogContentInner" style="max-width: 100%; display: flex;align-items: center;justify-content: center;">';
+
+            html += '<video style="width:100%; height:100%" preload="metadata" autoplay="autoplay" webkit-playsinline="" playsinline="" crossorigin="anonymous" controls src="' + await getSequenceVideo(sequence, sequenceStartTimeTicks) + '"></video>';
+            
+            html += '</div>';
+            html += '</div>';
+
+            dlg.innerHTML = html;
+
+            const video = dlg.querySelector('video');
+            video.onprogress = function() {
+                if (video.currentTime >= (sequenceTime.End - sequenceTime.Start )/1000) {
+                    video.pause();
+                }
+            };
+            dlg.querySelectorAll('.btnCancel').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    dialogHelper.close(dlg);
+                });
+            });
+            dialogHelper.open(dlg);
+        }
 
         function confirm_dlg(view, confirmAction) {
             var dlg = dialogHelper.createDialog({
@@ -435,8 +538,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             async function clearAll(seasonId, page) {
                 ApiClient.deleteSeasonData(seasonId).then(async () => {
-                    var result = await getIntros(seasonId);
-                    renderTableItems(result.TitleSequences, page);
+                    //var result = await getIntros(seasonId);
+                    var seriesSelect = view.querySelector('#selectEmbySeries');
+                    var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                    var seasons = await getSeasons(seriesId);
+                    var season = seasons.Items.filter(s => s.Id === seasonId)[0];
+                    pagination.TotalRecordCount = 0;
+                    loadPageData(season, page);
                 });
             }
 
@@ -516,16 +624,18 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             
             const result = await getIntros(season.Id);
 
-            pagination.TotalRecordCount = result.TotalRecordCount;
             pagingContainer.innerHTML = '';
-            pagingContainer.innerHTML += getPagingHtml();
 
             if (result) {
                 if (result.TitleSequences) {
+
+                    pagination.TotalRecordCount = result.TotalRecordCount;
+                    pagingContainer.innerHTML += getPagingHtml();
+
                     view.querySelector('.introResultBody').innerHTML = "";
                     const averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
-                    removeSeasonalFingerprintButton.querySelector('span').innerHTML = `Reset ${season.IndexNumber} Data`;
+                    removeSeasonalFingerprintButton.querySelector('span').innerHTML = `Reset ${season.Name} Data`;
                     if (removeSeasonalFingerprintButton.classList.contains('hide')) {
                         removeSeasonalFingerprintButton.classList.remove('hide');
                     }
@@ -533,6 +643,25 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     view.querySelector('.averageTitleSequenceTime').innerText = `00:${averageLength.minutes}:${averageLength.seconds}`;
 
                     renderTableItems(result.TitleSequences, view);
+
+
+                    view.querySelector('.btnPreviousPage').addEventListener('click', async (btn) => {
+                        btn.preventDefault();
+                        loading.show();
+                        pagination.StartIndex -= pagination.Limit;
+                        await loadPageData(season, view);
+                        loading.hide();
+
+                    });
+
+                    view.querySelector('.btnNextPage').addEventListener('click', async (btn) => {
+                        btn.preventDefault();
+                        loading.show();
+                        pagination.StartIndex += pagination.Limit;
+                        await loadPageData(season, view);
+                        loading.hide();
+                    });
+
                         
                 } else {
 
@@ -542,38 +671,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     }
                 }
             }
-
-            view.querySelector('.btnPreviousPage').addEventListener('click', async (btn) => {
-                btn.preventDefault();
-                loading.show();
-                pagination.StartIndex -= pagination.Limit;
-                //if (pagination.StartIndex - pagination.Limit < 0) {
-                //    pagination.StartIndex = 0;
-                //    pagination.Limit = 5;
-                //} else {
-                //    pagination.StartIndex -= 5;
-                //}  
-
-                await loadPageData(season, view);
-                loading.hide();
-
-            });
-
-            view.querySelector('.btnNextPage').addEventListener('click', async (btn) => {
-                btn.preventDefault();
-                loading.show();
-                   
-                pagination.StartIndex += pagination.Limit;
-
-                //if (pagination.StartIndex + pagination.Limit > pagination.TotalRecordCount) {
-                //    pagination.Limit = pagination.TotalRecordCount - pagination.StartIndex;
-                //}  
-
-                await loadPageData(season, view);
-
-                loading.hide();
-            });
-
         }
 
         return function (view) {
