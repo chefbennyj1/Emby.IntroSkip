@@ -39,6 +39,13 @@ namespace IntroSkip.ScheduledTasks
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
 #pragma warning restore 1998
         {
+            if (!AudioFingerprintManager.Instance.HasChromaprint())
+            {
+                Log.Warn("Emby Server doesn't contain chromaprint libraries.");
+                progress.Report(100.0);
+                return;
+            }
+
             var tasks = TaskManager.ScheduledTasks.ToList();
             if (tasks.FirstOrDefault(task => task.Name == "Episode Title Sequence Detection")?.State == TaskState.Running)
             {
@@ -370,22 +377,46 @@ namespace IntroSkip.ScheduledTasks
 
             Log.Debug($"Library episodes count:        {libraryItems.Count}");
             Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
+            
+            var change = titleSequences.Where(sequence => !libraryItems.Exists(i => i.InternalId == sequence.InternalId)).ToList(); 
+            
+            if (!change.Any()) return; //No change. Move on.
+            
+            Log.Debug($"FINGERPRINT: {change.Count} sequence item(s) don't match the library. Syncing items for fingerprinting...");
 
-
-            if (libraryItems.Count >= titleSequences.Count) return; // if we are equal nothing has change, if emby is more we'll pick up the new stuff next.
-
-            titleSequences.Where(item => !libraryItems.Select(i => i.InternalId).Contains(item.InternalId))
-                .AsParallel()
-                .WithDegreeOfParallelism(5)
-                .WithCancellation(cancellationToken)
-                .ForAll(item =>
+            foreach (var item in change)
+            {
+                try
                 {
-                    try
-                    {
-                        repository.Delete(item.InternalId.ToString());
-                    }
-                    catch { }
-                });
+                    repository.Delete(item.InternalId.ToString());
+                }
+                catch { }
+            }
+            //foreach (var sequenceChangeGroup in change.GroupBy(s => s.SeasonId))
+            //{
+            //    var dbResults = repository.GetBaseTitleSequenceResults(new SequenceResultQuery() { SeasonInternalId = sequenceChangeGroup.Key });
+            //    foreach (var item in dbResults.Items)
+            //    {
+            //        try
+            //        {
+            //            repository.Delete(item.InternalId.ToString());
+            //        }
+            //        catch { }
+            //    }
+            //}
+
+            //changedSequenceItems
+            //    .AsParallel()
+            //    .WithDegreeOfParallelism(5)
+            //    .WithCancellation(cancellationToken)
+            //    .ForAll(item =>
+            //    {
+            //        try
+            //        {
+            //            repository.Delete(item.InternalId.ToString());
+            //        }
+            //        catch { }
+            //    });
 
             try
             {

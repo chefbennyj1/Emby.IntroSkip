@@ -3,15 +3,19 @@
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
 
-                <div style="display:flex">
-                    <form style="flex-grow:1">
+                <div class="chromaprintAlert hide" style="background: red; color: white; margin: 2em; height: 3em; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                    <i class="md-icon" style="padding-right: 1em; font-size: x-large;">error</i>Emby Server doesn't contain Chromaprint libraries
+                </div>
+
+                <div style="display: flex">
+                    <form style="flex-grow: 1">
                         <div class="infoBanner flex align-items-center">
-                            Must have a minimum of 2 Episodes in the same Season for detection to run. <br />
+                            Must have a minimum of 2 Episodes in the same Season for detection to run. <br/>
                             You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
 
                         </div>
 
-                        <br />
+                        <br/>
                         <div style="align-items: center;">
 
                             <!-- Emby Series List -->
@@ -82,7 +86,7 @@
                             </div>
 
                         </div>
-                        <br />
+                        <br/>
                         <div class="confirmButtonContainer hide">
                             <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
                                 <span>Confirm All Season Intros are Correct</span>
@@ -92,7 +96,7 @@
                             </div>
                         </div>
 
-                        <br />
+                        <br/>
                         <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
                             <span>Rescan data</span>
                         </button>
@@ -102,11 +106,11 @@
 
                     </form>
 
-                    <div class="detailLogo hide" style="margin-top: 2em; margin-left: 30%; opacity: 0;top:0"></div>
+                    <div class="detailLogo hide" style="margin-top: 2em; margin-left: 30%; opacity: 0; top: 0"></div>
                 </div>
-                <br />
+                <br/>
 
-                <hr />
+                <hr/>
 
                 <div class="detailSectionHeader" style="padding-bottom: 2em">
                     <div style="display: flex">
@@ -127,7 +131,7 @@
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="pagingContainer" style="display: flex; justify-content: center; align-items: center"></div>
 
                     <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
@@ -139,34 +143,34 @@
                 <div class="introResults scrollY" style="max-height: 82em; margin: 0 2em 2em 2em">
                     <table class="tblEpisodeIntroResults table detailTable responsive" style="width: 100%; border-collapse: collapse !important;">
                         <thead>
-                            <tr style="text-align: left;">
-                                <!--<th class="detailTableHeaderCell" data-priority="2">Confirmed</th>-->
-                                <th class="detailTableHeaderCell" data-priority="2">Library Link</th>
-                                <th class="detailTableHeaderCell" data-priority="2">Series</th>
-                                <th class="detailTableHeaderCell" data-priority="2">Season</th>
-                                <th class="detailTableHeaderCell" data-priority="2">Episode</th>
-                                <!-- ReSharper disable three CssNotResolved -->
-                                <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Intro</th>
-                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
-                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
-                                <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Credit</th>
-                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
+                        <tr style="text-align: left;">
+                            <!--<th class="detailTableHeaderCell" data-priority="2">Confirmed</th>-->
+                            <th class="detailTableHeaderCell" data-priority="2"></th>
+                            <th class="detailTableHeaderCell" data-priority="2">Series</th>
+                            <th class="detailTableHeaderCell" data-priority="2">Season</th>
+                            <th class="detailTableHeaderCell" data-priority="2">Episode</th>
+                            <!-- ReSharper disable three CssNotResolved -->
+                            <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Intro</th>
+                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
+                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
+                            <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Credit</th>
+                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
 
-                                <!--<th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Has Recap</th>-->
+                            <!--<th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Has Recap</th>-->
 
-                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
-                                <th class="detailTableHeaderCell" data-priority="1"></th>
-                                <th class="detailTableHeaderCell" data-priority="1"></th>
-                            </tr>
+                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
+                            <th class="detailTableHeaderCell" data-priority="1"></th>
+                            <th class="detailTableHeaderCell" data-priority="1"></th>
+                        </tr>
                         </thead>
                         <tbody class="introResultBody"></tbody>
                     </table>
                 </div>
                 <div style="display: flex; justify-content: center">
-                    <button is="emby-button" type="submit" class="raised button-submit block emby-button saveAll" style="width:50%"><span>Save All</span></button>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button saveAll" style="width: 50%"><span>Save All</span></button>
                 </div>
-                
-                <div style="position: absolute; width: 175px; height:100px" class="introPlayerContainer hide"></div>
+
+                <div style="position: absolute; width: 175px; height: 100px" class="introPlayerContainer hide"></div>
             </div>
         </div>
     </div>

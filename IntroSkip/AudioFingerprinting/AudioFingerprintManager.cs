@@ -211,7 +211,7 @@ namespace IntroSkip.AudioFingerprinting
             }
             else
             {
-                Log.Warn("Ffmpeg fingerprint instance forced exiting...");
+                Log.Debug("Ffmpeg fingerprint instance exiting...");
                 try
                 {
                     process.Kill();
@@ -222,6 +222,40 @@ namespace IntroSkip.AudioFingerprinting
                 }
             }
             return FfmpegProcessMonitor.TryRemove(internalId, out int instance);
+        }
+
+        public bool HasChromaprint()
+        {
+            var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
+            var ffmpegPath = ffmpegConfiguration.EncoderPath;
+            var args = new[]
+            {
+                $"-version",
+               
+            };
+
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, string.Join(" ", args))
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            using (var process = new Process {StartInfo = procStartInfo})
+            {
+                process.Start();
+                string processOutput = null;
+
+                while ((processOutput = process.StandardOutput.ReadLine()) != null)
+                {
+                    if (processOutput.Contains("chromaprint"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
         public void Dispose()
         {

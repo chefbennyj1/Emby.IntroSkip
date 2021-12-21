@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Data;
 using IntroSkip.ScheduledTasks;
+using IntroSkip.Sequence;
+using MediaBrowser.Controller.Entities.TV;
 
 namespace IntroSkip
 {
@@ -55,7 +57,31 @@ namespace IntroSkip
             
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
 
+            LibraryManager.ItemUpdated += LibraryManager_ItemUpdated;
+
             Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
+        }
+
+        private void LibraryManager_ItemUpdated(object sender, ItemChangeEventArgs e)
+        {
+            return;
+
+
+
+            //var repository = GetRepository();
+            //var dbResults = repository.GetBaseTitleSequenceResults(new SequenceResultQuery() {SeasonInternalId = e.Item.InternalId});
+            //foreach (var result in dbResults.Items)
+            //{
+            //    try
+            //    {
+            //        repository.Delete(result.InternalId.ToString());
+            //    }
+            //    catch
+            //    {
+
+            //    }
+            //}
+            //ItemsAddedTimer.Change(10000, Timeout.Infinite);
         }
 
         private void TaskManagerOnTaskCompleted(object sender, TaskCompletionEventArgs e)
@@ -98,6 +124,8 @@ namespace IntroSkip
                 return;
             }
 
+            Logger.Debug("Fingerprinting Task is ready to scan new items...");
+
             if (e.Item.GetType().Name != "Episode")
             {
                 return;
@@ -118,16 +146,15 @@ namespace IntroSkip
             
             if (libraryTask?.State == TaskState.Running || fingerprintingTask?.State == TaskState.Running || detectionTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
             {
+                Logger.Debug("Fingerprinting Task will wait for library scan to complete.");
                 ItemsAddedTimer.Change(5000, Timeout.Infinite ); //Check back in 5 seconds
                 return;
             }
 
             //Okay, we're ready for fingerprinting now - go ahead.
             ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            Logger.Info("New Items are ready to fingerprint scan...");
+            Logger.Info("New Items are ready to fingerprint...");
             
-
-            if (fingerprintingTask?.State == TaskState.Running) return;
 
             try
             {

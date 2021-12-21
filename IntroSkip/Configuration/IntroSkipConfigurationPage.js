@@ -15,6 +15,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             };
         };
 
+        ApiClient.HasChromaprint = function () {
+            const url = this.getUrl("HasChromaprint");
+            return url;
+        }
+
         ApiClient.deleteAll = function() {
             var url = this.getUrl('RemoveAll');
             return this.ajax({
@@ -96,8 +101,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return url;
         }
         //http://localhost:8096/emby/videos/48258/stream.mp4?StartTimeTicks=2754166090&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false  
-        ApiClient.getVideoSequence = function(id, startTime) {
-            var url = this.getUrl("Videos/" + id + "/stream.mp4?StartTimeTicks=" + startTime + "&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false");
+        ApiClient.getVideoSequence = function(sequence, startTime) {
+            var url = this.getUrl("Videos/" + sequence.InternalId + "/stream.mp4?StartTimeTicks=" + startTime + "&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false&n=" + Date.now());
             return url;
         }
 
@@ -130,6 +135,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             Limit:5,
             TotalRecordCount:0
         }
+
+        var localImageCache = [];
 
         function getPagingHtml() {
 
@@ -204,13 +211,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             await ApiClient.updateTitleSequence(options);
                      
         }
-        
+         
         async function getIntros(seasonId) {
             return await ApiClient.getJSON(ApiClient.getUrl(`SeasonSequences?SeasonId=${seasonId}&StartIndex=${pagination.StartIndex}&Limit=${pagination.Limit}`));
         }
 
         async function getSequenceVideo(sequence, startTimeTicks) {
-            return await ApiClient.getVideoSequence(sequence.InternalId, startTimeTicks);
+            return await ApiClient.getVideoSequence(sequence, startTimeTicks);
         }
 
         function getSequenceTime(sequence) {
@@ -257,11 +264,28 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var introStartTimespan = parseISO8601Duration(intro.TitleSequenceStart);
             var introEndTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
             var creditStartTimeSpan = parseISO8601Duration(intro.CreditSequenceStart);
+
+            var hasIntro = intro.HasTitleSequence || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00'); //<-- looks like we have to check those minute and second values too.
+            
+            var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
+            var hasCredit = intro.HasCreditSequence || (creditStartTimeSpan.minutes !== '00');
+
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
             
             //Index 2
-            html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell"><a href="' + imageLink(episode) +
-                '" target="_blank" title="Click to go to Episode"><img style="width:125px; height:71px;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/></a></td>';
+            html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell">'; 
+            //html +='<a href="' + imageLink(episode) + '" target="_blank" title="Click to go to Episode">';
+            html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center">';
+            
+            html += '<img style="width:175px; height:100px; position:absolute;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/>';
+            if (hasIntro || introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
+                html += `<button style="position:absolute; margin-left:1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit fab hide">`;
+                html += '<i class="md-icon">play_arrow</i>';
+                html += '</button>';
+            }
+            html += '</div>';
+            //html +='</a>'; 
+            html += '</td>';
             //Index 3
             html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
             //Index 4
@@ -269,11 +293,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 5
             html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
 
-            var hasIntro = intro.HasTitleSequence || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00'); //<-- looks like we have to check those minute and second values too.
-            
-            var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
-            var hasCredit = intro.HasCreditSequence || (creditStartTimeSpan.minutes !== '00');
-
+             
             //Index 6
             html += '<td data-title="HasTitleSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
             html += '<div class="selectContainer" style="top:40px">';
@@ -287,16 +307,44 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                                                                                          
             var introStart = "00:" + introStartTimespan.minutes + ":" + introStartTimespan.seconds;
             var introEnd = "00:" + introEndTimespan.minutes + ":" + introEndTimespan.seconds;
+
+            var extractedImageIntroStart;
+            var extractedImageIntroEnd;
+            var extractedImageCreditStart;
             
+            if (!imageExistsInLocalCache(intro.InternalId)) {
+
+                var introStartImage  = new Image(175, 100);
+                var introEndImage    = new Image(175, 100);
+                var creditStartImage = new Image(175, 100);
+
+                introStartImage  = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
+                introEndImage    =  await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
+                creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
+
+                localImageCache.push({
+                    Id: intro.InternalId,
+                    ExtractedImageIntroStart: introStartImage,
+                    ExtractedImageIntroEnd: introEndImage,
+                    ExtractedImageCreditStart: creditStartImage
+                });
+            }
+            
+            var imageData = localImageCache.filter(i => i.Id === intro.InternalId)[0];
+            extractedImageIntroStart = imageData.ExtractedImageIntroStart;
+            extractedImageIntroEnd = imageData.ExtractedImageIntroEnd;
+            extractedImageCreditStart = imageData.ExtractedImageCreditStart;
+          
+
             //Index 7
             html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
-            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0)}"/>`;
+            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${extractedImageIntroStart}"/>`;
             html += '</td>';
             //Index 8
             html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
-            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1)}"/>`;
+            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${extractedImageIntroEnd}"/>`;
             html += '</td>';
             //Index 9
             html += '<td data-title="HasCreditSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
@@ -311,20 +359,21 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 10
             html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp creditStartContentEditable" contenteditable>${creditStart}</div>`;
-            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2)}"/>`;
+            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${extractedImageCreditStart}"/>`;
             html += '</td>';
             //Index 11
             html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
+
             html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
             html += '<span>Save</span>';
             html += '</button>';
 
-            if (hasIntro) {
-                html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit">`;
-                html += '<span>Play</span>';
-                html += '</button>';
-            }
-            html += '</td>';
+            //if (hasIntro && introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
+            //    html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit">`;
+            //    html += '<span>Play</span>';
+            //    html += '</button>';
+            //}
+            //html += '</td>';
 
 
             html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
@@ -334,6 +383,19 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         }
 
+        function imageExistsInLocalCache(id) {
+            return localImageCache.filter(c => c.Id === id).length > 0;
+        }
+        function addImageToLocalCache(data) {
+            localImageCache.push(data);
+        }
+
+        function getImageFromLocalCache(data) {
+            if (localImageCache.length) {
+                const image =  localImageCache.filter(d => d.Id === data.Id);
+                return image;
+            }
+        }
         function renderTableItems(sequences, view) {
             loading.show();
             view.querySelector('.introResultBody').innerHTML = '';
@@ -410,12 +472,31 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         });
                 });
 
+                view.querySelectorAll('[data-title="EpisodeImage"]').forEach(img => {
+                    img.addEventListener('mouseenter',
+                        (elem) => {
+                            var btn = elem.target.querySelector('.playSequence');
+                            if (btn) {
+                                btn.classList.remove('hide');
+                            }
+                        });
+
+                    img.addEventListener('mouseleave',
+                        (elem) => {
+                            var btn = elem.target.querySelector('.playSequence');
+                            if (btn) {
+                                btn.classList.add('hide');
+                            }
+                        });
+                });
+
                 view.querySelectorAll('.playSequence').forEach(async (btn) => {
                     btn.addEventListener('click',
                         async (elem) => {
                             elem.preventDefault();
-                            
-                            dlgIntroPlayer(view, sequence);
+                            var row = elem.target.closest('tr');
+                            var id = row.dataset.id;
+                            dlgIntroPlayer(view, id);
                         });
                 });
                 sortTable(view);
@@ -432,7 +513,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //    loading.hide();
         //}
 
-        async function dlgIntroPlayer(view, sequence) {
+        async function dlgIntroPlayer(view, id) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
                 size: 'small'
@@ -444,9 +525,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             dlg.classList.add('formDialog');
             dlg.style.maxWidth = '25%';
             dlg.style.maxHeight = '55%';
-
+            const seasonSelect = view.querySelector('#selectEmbySeason');
+            const result = await getIntros(seasonSelect.value);
+            const sequence = result.TitleSequences.filter(s => s.InternalId == id)[0];
             var sequenceTime = getSequenceTime(sequence);
-            var sequenceStartTimeTicks = ((sequenceTime.Start * 10000) + 621355968000000000);
+            const sequenceStartTimeTicks = ((sequenceTime.Start * 10000) + 621355968000000000);
 
             var html = '';
             html += '<div class="formDialogHeader">';
@@ -677,6 +760,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             view.addEventListener('viewshow', async () => {
 
                 loading.show();
+
+                if (!ApiClient.HasChromaprint()) {
+                    view.querySelector('.chromaprintAlert').classList.remove('hide');
+                }
 
                 const isMobile = window.matchMedia("only screen and (max-width: 1676px)").matches;
                 if (!isMobile) {

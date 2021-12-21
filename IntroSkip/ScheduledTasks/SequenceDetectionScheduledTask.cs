@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntroSkip.AudioFingerprinting;
 using IntroSkip.Detection;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
@@ -27,6 +28,13 @@ namespace IntroSkip.ScheduledTasks
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
+            if (!AudioFingerprintManager.Instance.HasChromaprint())
+            {
+                Log.Warn("Emby Server doesn't contain chromaprint libraries.");
+                progress.Report(100.0);
+                return;
+            }
+
             var tasks = TaskManager.ScheduledTasks.ToList();
             // ReSharper disable once PossibleNullReferenceException
             if (tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting").State == TaskState.Running)

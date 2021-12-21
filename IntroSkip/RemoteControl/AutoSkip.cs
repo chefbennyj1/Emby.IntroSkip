@@ -238,6 +238,8 @@ namespace IntroSkip.RemoteControl
 
         private async void SendMessageToClient(SessionInfo session, SequenceSkip sequenceSkip)
         {
+            if (!session.Capabilities.SupportedCommands.Contains("DisplayMessage")) return;
+
             var messageText = string.Empty;
             var config = Plugin.Instance.Configuration;
             switch (sequenceSkip)

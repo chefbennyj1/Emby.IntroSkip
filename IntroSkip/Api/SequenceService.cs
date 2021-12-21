@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.IO;
+using IntroSkip.AudioFingerprinting;
 using IntroSkip.Configuration;
 using IntroSkip.Data;
 using IntroSkip.Detection;
@@ -22,7 +23,12 @@ namespace IntroSkip.Api
     public class SequenceService : IService
     {
         
-      
+        [Route("/HasChromaprint", "GET", Summary = "FFMPEG has chromaprint capabilities")]
+        public class HasChromaprintRequest : IReturn<bool>
+        {
+
+        }
+
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -123,7 +129,10 @@ namespace IntroSkip.Api
             Separator = FileSystem.DirectorySeparatorChar;
         }
 
-        
+        public bool Get(HasChromaprintRequest request)
+        {
+            return AudioFingerprintManager.Instance.HasChromaprint();
+        }
        
         public void Post(UpdateAllSeasonSequencesRequest request)
         {
@@ -173,6 +182,7 @@ namespace IntroSkip.Api
             var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
             
+            //We assume this does exist because we have already loaded it in the UI, and we are editing it there.
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
 
             
