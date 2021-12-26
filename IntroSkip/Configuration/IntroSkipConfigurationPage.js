@@ -136,7 +136,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             TotalRecordCount:0
         }
 
-        var localImageCache = [];
+        var localImageStore = [];
 
         function getPagingHtml() {
 
@@ -221,19 +221,19 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         function getSequenceTime(sequence) {
-            var titleSequenceStart = parseISO8601Duration(sequence.TitleSequenceStart);
-            var titleSequenceEnd = parseISO8601Duration(sequence.TitleSequenceEnd);
-            var sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
-            var sequenceEndTimeString = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
-            var sequenceStartTime = new Date('1970-01-01T' + sequenceStartTimeString + 'Z');
-            var sequenceEndTime = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');
+            const titleSequenceStart      = parseISO8601Duration(sequence.TitleSequenceStart);
+            const titleSequenceEnd        = parseISO8601Duration(sequence.TitleSequenceEnd);
+            const sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
+            const sequenceEndTimeString   = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
+            const sequenceStartTime       = new Date('1970-01-01T' + sequenceStartTimeString + 'Z');
+            const sequenceEndTime         = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');
 
             return {
                 Start: sequenceStartTime.getTime(),
-                End: sequenceEndTime.getTime()
+                End  : sequenceEndTime.getTime()
             }
-           
         }
+
         //Backend Enum: SequenceImageTypes
         //IntroStart  = 0
         //IntroEnd    = 1
@@ -246,7 +246,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     ? 'NoTitleSequenceThumbImage'
                     : `ExtractThumbImage?InternalId=${id}&ImageFrameTimestamp=${encodeURIComponent(imageFrameTimestamp)}&SequenceImageType=${sequenceImageType}&api_key=${ApiClient._serverInfo.AccessToken}`;
 
-                //TODO: Try catch here, and return an empty image if the image doesn't return something right
+                
                 const url = ApiClient.getUrl(thumb);
 
                 var xhr = new XMLHttpRequest();
@@ -337,58 +337,35 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var introStart = "00:" + introStartTimespan.minutes + ":" + introStartTimespan.seconds;
             var introEnd = "00:" + introEndTimespan.minutes + ":" + introEndTimespan.seconds;
 
-            var extractedImageIntroStart;
-            var extractedImageIntroEnd;
-            var extractedImageCreditStart;
-            
-            if (!imageExistsInLocalCache(intro.InternalId)) {
 
-                var introStartImage;
-                var introEndImage;
-                var creditStartImage;
-                
-                try {
-                    introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
-                } 
-                catch(err) {
-                    //introStartImage = emptyImage;
-                }
-                try {
-                    introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
-                }
-                catch (err) {
-                    //introEndImage = emptyImage;
-                }
-                try {
-                    creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
-                } 
-                catch(err) {
-                    //creditStartImage = emptyImage;
-                }
-
-                localImageCache.push({
-                    Id: intro.InternalId,
-                    ExtractedImageIntroStart: introStartImage,
-                    ExtractedImageIntroEnd: introEndImage,
-                    ExtractedImageCreditStart: creditStartImage
+            if (!imageExistsInLocalStore(intro.InternalId)) {
+                const introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
+                const introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
+                const creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
+                localImageStore.push({
+                    Id                               : intro.InternalId,
+                    ExtractedImageTitleSequenceStart : introStartImage,
+                    ExtractedImageTitleSequenceEnd   : introEndImage,
+                    ExtractedImageCreditSequenceStart: creditStartImage
                 });
             }
             
-            var imageData = localImageCache.filter(i => i.Id === intro.InternalId)[0];
-            extractedImageIntroStart = imageData.ExtractedImageIntroStart;
-            extractedImageIntroEnd = imageData.ExtractedImageIntroEnd;
-            extractedImageCreditStart = imageData.ExtractedImageCreditStart;
+            var imageData = localImageStore.filter(i => i.Id === intro.InternalId)[0];
+
+            var extractedImageTitleSequenceStart  = imageData.ExtractedImageTitleSequenceStart;
+            var extractedImageTitleSequenceEnd    = imageData.ExtractedImageTitleSequenceEnd;
+            var extractedImageCreditSequenceStart = imageData.ExtractedImageCreditSequenceStart;
           
 
             //Index 7
             html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
-            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${extractedImageIntroStart}"/>`;
+            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${extractedImageTitleSequenceStart}"/>`;
             html += '</td>';
             //Index 8
             html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
-            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${extractedImageIntroEnd}"/>`;
+            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${extractedImageTitleSequenceEnd}"/>`;
             html += '</td>';
             //Index 9
             html += '<td data-title="HasCreditSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
@@ -403,7 +380,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 10
             html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp creditStartContentEditable" contenteditable>${creditStart}</div>`;
-            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${extractedImageCreditStart}"/>`;
+            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${extractedImageCreditSequenceStart}"/>`;
             html += '</td>';
             //Index 11
             html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
@@ -412,14 +389,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '<span>Save</span>';
             html += '</button>';
 
-            //if (hasIntro && introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
-            //    html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit">`;
-            //    html += '<span>Play</span>';
-            //    html += '</button>';
-            //}
-            //html += '</td>';
-
-
+            
             html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
             html += '</tr>';
 
@@ -427,8 +397,20 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         }
 
-        function imageExistsInLocalCache(id) {
-            return localImageCache.filter(c => c.Id === id).length > 0;
+        //async function loadImageInLocalCache(hasIntro, hasCredit, intro, introStart, creditStart, introEnd) {
+        //    const introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
+        //    const introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
+        //    const creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
+        //    localImageCache.push({
+        //        Id                               : intro.InternalId,
+        //        ExtractedImageTitleSequenceStart : introStartImage,
+        //        ExtractedImageTitleSequenceEnd   : introEndImage,
+        //        ExtractedImageCreditSequenceStart: creditStartImage
+        //    });
+        //}
+
+        function imageExistsInLocalStore(id) {
+            return localImageStore.filter(c => c.Id === id).length > 0;
         }
         
         function renderTableItems(sequences, view) {

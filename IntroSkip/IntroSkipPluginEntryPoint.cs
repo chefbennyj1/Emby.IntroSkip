@@ -64,6 +64,7 @@ namespace IntroSkip
 
         private void LibraryManager_ItemUpdated(object sender, ItemChangeEventArgs e)
         {
+            
             return;
 
 
