@@ -517,7 +517,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         });
                 });
                 sortTable(view);
-                
+                loading.hide();
             });
 
             
@@ -719,7 +719,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function loadPageData(season, view) {
-            loading.show();
+            
             const removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
             const pagingContainer = view.querySelector('.pagingContainer');
             
@@ -751,7 +751,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                        
                         pagination.StartIndex -= pagination.Limit;
                         await loadPageData(season, view);
-                        loading.hide();
+                         
 
                     });
 
@@ -760,7 +760,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         
                         pagination.StartIndex += pagination.Limit;
                         await loadPageData(season, view);
-                        loading.hide();
+                         
                     });
 
                         
@@ -848,7 +848,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     pagination.StartIndex = 0;
                     pagination.Limit = 5;
                     await loadPageData(season, view);
-                    loading.hide();
+                    
                 });
 
                 seriesSelect.addEventListener('change', async (e) => {
@@ -867,7 +867,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     await loadPageData(season, view);
                     primaryImage.innerHTML = `<img src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
                     fadeIn(primaryImage);
-                    loading.hide();
+                    
                 });
 
                 removeSeasonalFingerprintButton.addEventListener('click', (e) => {
@@ -882,10 +882,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     await saveAllSeasonSequences(rows, seasonId);
                     var introResult = await getIntros(seasonId);
                     renderTableItems(introResult.TitleSequences, view);
-                    loading.hide();
+                    
                 });
                 
-                loading.hide();
+                
 
             });
         }
