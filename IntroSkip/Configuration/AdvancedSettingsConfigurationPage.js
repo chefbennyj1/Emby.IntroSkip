@@ -41,17 +41,19 @@
 
         function getListItemHtml(series, padding) {
             var html = '';
-            html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, ' + padding + 'px);">';
-            html += '<div class="listItem-content listItemContent-touchzoom">';
-            html += '<div class="listItemBody itemAction listItemBody-noleftpadding">';
-            html += '<div class="listItemBodyText listItemBodyText-nowrap">' + series.Name + '</div>';
-            html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">Will be ignored during intro detection.</div>';
-            html += '</div>';
-            html += '<button title="Remove" aria-label="Remove" type="button" is="paper-icon-button-light" class="listItemButton itemAction paper-icon-button-light icon-button-conditionalfocuscolor removeItemBtn" id="' + series.Id + '">';
-            html += '<i class="md-icon removeItemBtn" style="pointer-events: none;">delete</i>';
-            html += '</button> ';
-            html += '</div>';
-            html += '</div>';
+            if (series) {
+                html += '<div class="virtualScrollItem listItem listItem-border focusable listItemCursor listItem-hoverable listItem-withContentWrapper" tabindex="0" draggable="false" style="transform: translate(0px, ' + padding + 'px);">';
+                html += '<div class="listItem-content listItemContent-touchzoom">';
+                html += '<div class="listItemBody itemAction listItemBody-noleftpadding">';
+                html += '<div class="listItemBodyText listItemBodyText-nowrap">' + series.Name + '</div>';
+                html += '<div class="listItemBodyText listItemBodyText-secondary listItemBodyText-nowrap">Will be ignored during intro detection.</div>';
+                html += '</div>';
+                html += '<button title="Remove" aria-label="Remove" type="button" is="paper-icon-button-light" class="listItemButton itemAction paper-icon-button-light icon-button-conditionalfocuscolor removeItemBtn" id="' + series.Id + '">';
+                html += '<i class="md-icon removeItemBtn" style="pointer-events: none;">delete</i>';
+                html += '</button> ';
+                html += '</div>';
+                html += '</div>';
+            }
             return html;
         }
 

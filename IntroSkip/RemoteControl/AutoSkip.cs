@@ -245,7 +245,7 @@ namespace IntroSkip.RemoteControl
             switch (sequenceSkip)
             {
                 case SequenceSkip.INTRO:
-                    messageText = Localization.Languages[config.AutoSkipLocalization];
+                    messageText = Localization.IntroSkipLanguages[config.AutoSkipLocalization];
                     break;
                 case SequenceSkip.CREDIT:
                     messageText = "Credits Skipped";

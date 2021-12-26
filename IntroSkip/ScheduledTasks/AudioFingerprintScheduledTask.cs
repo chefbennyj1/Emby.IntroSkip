@@ -423,6 +423,14 @@ namespace IntroSkip.ScheduledTasks
                 repository.Vacuum();
             }
             catch { }
+
+            titleSequencesQuery = repository.GetBaseTitleSequenceResults(new SequenceResultQuery());
+            titleSequences = titleSequencesQuery.Items.ToList();
+            Log.Debug("Database Sync finalizing...");
+            Log.Debug($"Library episodes count:        {libraryItems.Count}");
+            Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
+
+
         }
         public string Name => "Episode Audio Fingerprinting";
         public string Key => "Audio Fingerprint Options";

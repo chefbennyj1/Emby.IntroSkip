@@ -118,9 +118,7 @@ namespace IntroSkip.Api
             //Get the extracted frame using FFmpeg. 
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
-            //var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 -";
-            var args =
-                $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -c:v png -s 175x100 -f image2pipe  -";
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vframes 1 -an -f image2 -s 175x100 -";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -133,14 +131,17 @@ namespace IntroSkip.Api
             using (var process = new Process {StartInfo = procStartInfo})
             {
                 process.Start();
+                process.ErrorDataReceived += Process_ErrorDataReceived;
                 output = process.StandardOutput.BaseStream as FileStream;
             }
 
-            
             return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/png"));
         }
 
-
+        private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Log.Warn(e.Data);
+        }
 
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
             await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/png"));

@@ -102,7 +102,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
         //http://localhost:8096/emby/videos/48258/stream.mp4?StartTimeTicks=2754166090&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false  
         ApiClient.getVideoSequence = function(sequence, startTime) {
-            var url = this.getUrl("Videos/" + sequence.InternalId + "/stream.mp4?StartTimeTicks=" + startTime + "&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false&n=" + Date.now());
+            var url = this.getUrl("Videos/" + sequence.InternalId + "/stream.mp4?StartTimeTicks=" + startTime + "&VideoCodec=h264&AudioCodec=mp3,aac&VideoBitrate=139616000&AudioBitrate=384000&AudioStreamIndex=1&SubtitleStreamIndex=12&SubtitleMethod=Hls&TranscodingMaxAudioChannels=2&SegmentContainer=m4s,ts&MinSegments=1&BreakOnNonKeyFrames=True&ManifestSubtitles=vtt&h264-profile=high,main,baseline,constrainedbaseline,high10&h264-level=52&TranscodeReasons=AudioCodecNotSupported,DirectPlayError&allowVideoStreamCopy=false" + "&api_key=" + ApiClient._serverInfo.AccessToken + "&n=" + Date.now());
             return url;
         }
 
@@ -240,12 +240,41 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //CreditStart = 2
         //CreditEnd   = 3
 
-        async function getExtractedThumbImage(hasSequence, id, imageFrameTimestamp, sequenceImageType) {
-            var thumb = !hasSequence
-                ? 'NoTitleSequenceThumbImage'
-                : `ExtractThumbImage?InternalId=${id}&ImageFrameTimestamp=${encodeURIComponent(imageFrameTimestamp)}&SequenceImageType=${sequenceImageType}`;
-            return await ApiClient.getUrl(thumb);
+        function getExtractedThumbImage(hasSequence, id, imageFrameTimestamp, sequenceImageType) {
+            return new Promise((resolve, reject) => {
+                var thumb = !hasSequence
+                    ? 'NoTitleSequenceThumbImage'
+                    : `ExtractThumbImage?InternalId=${id}&ImageFrameTimestamp=${encodeURIComponent(imageFrameTimestamp)}&SequenceImageType=${sequenceImageType}&api_key=${ApiClient._serverInfo.AccessToken}`;
+
+                //TODO: Try catch here, and return an empty image if the image doesn't return something right
+                const url = ApiClient.getUrl(thumb);
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", url);
+                xhr.responseType = "blob";
+                xhr.onload = function ()
+                {
+                    if (xhr.statusText == "OK") {
+                        var reader = new FileReader();
+                        reader.readAsDataURL(this.response);
+                        reader.onloadend = function() {
+                            const base64data = reader.result;
+                            resolve(base64data);
+                            //return base64data;
+                        }
+                    } else {
+                        resolve("data:image/png;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=");
+                    }
+                }
+                xhr.send();
+
+            });
+          
+            
+            //return url;
         }
+
+        
 
         function imageLink(baseItem) {
             return ApiClient._serverAddress +
@@ -256,7 +285,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function renderTableRowHtml(intro) {
-
+            
             var result = await getEpisode(intro.InternalId);
 
             var html = '';
@@ -314,13 +343,28 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             
             if (!imageExistsInLocalCache(intro.InternalId)) {
 
-                var introStartImage  = new Image(175, 100);
-                var introEndImage    = new Image(175, 100);
-                var creditStartImage = new Image(175, 100);
-
-                introStartImage  = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
-                introEndImage    =  await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
-                creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
+                var introStartImage;
+                var introEndImage;
+                var creditStartImage;
+                
+                try {
+                    introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
+                } 
+                catch(err) {
+                    //introStartImage = emptyImage;
+                }
+                try {
+                    introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
+                }
+                catch (err) {
+                    //introEndImage = emptyImage;
+                }
+                try {
+                    creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
+                } 
+                catch(err) {
+                    //creditStartImage = emptyImage;
+                }
 
                 localImageCache.push({
                     Id: intro.InternalId,
@@ -386,18 +430,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         function imageExistsInLocalCache(id) {
             return localImageCache.filter(c => c.Id === id).length > 0;
         }
-        function addImageToLocalCache(data) {
-            localImageCache.push(data);
-        }
-
-        function getImageFromLocalCache(data) {
-            if (localImageCache.length) {
-                const image =  localImageCache.filter(d => d.Id === data.Id);
-                return image;
-            }
-        }
+        
         function renderTableItems(sequences, view) {
-            loading.show();
+            
             view.querySelector('.introResultBody').innerHTML = '';
             sequences.forEach(async (sequence) => {
                 
@@ -415,7 +450,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     element.addEventListener('change',
                         async (e) => {
                             e.preventDefault();
-                            if (e.target.value === 'false') {
+                            if (e.target.value === 'false') {  //<--Switch the select box to no intro
                                 const row = e.target.closest('tr');
                                 row.querySelector('.introStartContentEditable').innerText = "00:00:00";
                                 row.querySelector('.introEndContentEditable').innerText = "00:00:00";
@@ -429,7 +464,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     element.addEventListener('change',
                         async (e) => {
                             e.preventDefault();
-                            if (e.target.value === 'false') {
+                            if (e.target.value === 'false') {    //<--Switch the select box to no credit
                                 const row = e.target.closest('tr');
                                 row.querySelector('.creditStartContentEditable').innerText = "00:00:00";
                                 row.querySelector('.creditStartThumb').src = await getExtractedThumbImage(false, e.target.id, 2);
@@ -500,10 +535,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                         });
                 });
                 sortTable(view);
-               
+                
             });
 
-            loading.hide();
+            
         }
 
         //function reloadTableItems(sequences, view) {
@@ -702,6 +737,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function loadPageData(season, view) {
+            loading.show();
             const removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
             const pagingContainer = view.querySelector('.pagingContainer');
             
@@ -730,7 +766,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     view.querySelector('.btnPreviousPage').addEventListener('click', async (btn) => {
                         btn.preventDefault();
-                        loading.show();
+                       
                         pagination.StartIndex -= pagination.Limit;
                         await loadPageData(season, view);
                         loading.hide();
@@ -739,7 +775,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     view.querySelector('.btnNextPage').addEventListener('click', async (btn) => {
                         btn.preventDefault();
-                        loading.show();
+                        
                         pagination.StartIndex += pagination.Limit;
                         await loadPageData(season, view);
                         loading.hide();
@@ -754,6 +790,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     }
                 }
             }
+            
         }
 
         return function (view) {
@@ -865,9 +902,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     renderTableItems(introResult.TitleSequences, view);
                     loading.hide();
                 });
-
                 
-
                 loading.hide();
 
             });
