@@ -197,65 +197,65 @@ namespace IntroSkip.Statistics
         }
 
         public string GetIntroSkipInfoDir()
+        {
+            var configDir = ApplicationPaths.PluginConfigurationsPath;
+            return $"{configDir}{Separator}IntroSkipInfo";
+        }
+
+        public void CreateStatisticsTextFile()
+        {
+            var configDir = ApplicationPaths.PluginConfigurationsPath;
+            Log.Debug("STATISTICS: Writing statistics to file");
+
+            var stats = ReturnedDetectionStatsList;
+            var filePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
+            statsFilePath = filePath;
+
+            if (stats == null)
             {
-                var configDir = ApplicationPaths.PluginConfigurationsPath;
-                return $"{configDir}{Separator}IntroSkipInfo";
+                Log.Info("STATISTICS: NOTHING TO WRITE TO THE FILE");
             }
-
-            public void CreateStatisticsTextFile()
+            else
             {
-                var configDir = ApplicationPaths.PluginConfigurationsPath;
-                Log.Debug("STATISTICS: Writing statistics to file");
-
-                var stats = ReturnedDetectionStatsList;
-                var filePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
-                statsFilePath = filePath;
-
-                if (stats == null)
+                using (StreamWriter writer = new StreamWriter(filePath, false))
                 {
-                    Log.Info("STATISTICS: NOTHING TO WRITE TO THE FILE");
-                }
-                else
-                {
-                    using (StreamWriter writer = new StreamWriter(filePath, false))
+                    var delim = ("\t");
+                    var headers = string.Join(delim, "Has Issue", "TV Show", "Season", "Episode Count", "Duration", "Intro Results", "EndCredit Results", "Comments", "Date");
+                    writer.WriteLine(headers);
+
+                    foreach (var stat in stats)
                     {
-                        var delim = ("\t");
-                        var headers = string.Join(delim, "Has Issue", "TV Show", "Season", "Episode Count", "Duration", "Intro Results", "EndCredit Results", "Comments", "Date");
-                        writer.WriteLine(headers);
+                        bool issue = stat.HasIssue;
+                        string show = stat.TVShowName;
+                        string season = stat.Season;
+                        int episode = stat.EpisodeCount;
+                        TimeSpan duration = stat.IntroDuration;
+                        double introResults = stat.PercentDetected;
+                        double endcredResults = stat.EndPercentDetected;
+                        string comments = stat.Comment;
+                        DateTime date = stat.Date;
 
-                        foreach (var stat in stats)
-                        {
-                            bool issue = stat.HasIssue;
-                            string show = stat.TVShowName;
-                            string season = stat.Season;
-                            int episode = stat.EpisodeCount;
-                            TimeSpan duration = stat.IntroDuration;
-                            double introResults = stat.PercentDetected;
-                            double endcredResults = stat.EndPercentDetected;
-                            string comments = stat.Comment;
-                            DateTime date = stat.Date;
-
-                            var statLine = string.Join(delim, issue, show, season, episode, duration, introResults, endcredResults, comments, date);
-                            writer.WriteLine(statLine);
-                        }
+                        var statLine = string.Join(delim, issue, show, season, episode, duration, introResults, endcredResults, comments, date);
+                        writer.WriteLine(statLine);
                     }
                 }
             }
-
-            #region IServerEntryPoint Implemented Members
-
-            public void Dispose()
-            {
-                //throw new NotImplementedException();
-            }
-
-            public void Run()
-            {
-                var errorDir = GetIntroSkipInfoDir();
-                if (!FileSystem.DirectoryExists($"{errorDir}")) FileSystem.CreateDirectory($"{errorDir}");
-            }
-
-            #endregion
         }
+
+        #region IServerEntryPoint Implemented Members
+
+        public void Dispose()
+        {
+            //throw new NotImplementedException();
+        }
+
+        public void Run()
+        {
+            var errorDir = GetIntroSkipInfoDir();
+            if (!FileSystem.DirectoryExists($"{errorDir}")) FileSystem.CreateDirectory($"{errorDir}");
+        }
+
+        #endregion
     }
+}
 
