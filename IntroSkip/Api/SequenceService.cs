@@ -205,6 +205,7 @@ namespace IntroSkip.Api
             }
             if (Plugin.Instance.Configuration.ImageCache)
             {
+                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId);
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
@@ -238,7 +239,7 @@ namespace IntroSkip.Api
                     
                     if (Plugin.Instance.Configuration.ImageCache)
                     {
-                        SequenceThumbnailService.Instance.RemoveCacheImage(item.InternalId);
+                        SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId);
                     }
                 }
                 catch { }

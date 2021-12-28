@@ -209,7 +209,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             }
 
             await ApiClient.updateTitleSequence(options);
-                     
+            
+            if (imageExistsInLocalStore(id)) {
+                localImageStore = localImageStore.filter(c => c.Id != id);
+            }
+
         }
          
         async function getIntros(seasonId) {
@@ -410,7 +414,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //}
 
         function imageExistsInLocalStore(id) {
-            return localImageStore.filter(c => c.Id === id).length > 0;
+            return localImageStore.filter(c => c.Id == id).length > 0;
         }
         
         function renderTableItems(sequences, view) {
@@ -471,7 +475,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                             var seasons = await getSeasons(seriesId);
                             var season = seasons.Items.filter(s => s.Id === seasonId)[0];
 
-                            loadPageData(season, view);
+                            await loadPageData(season, view);
                         });
                 });
 
@@ -644,7 +648,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     var seasons = await getSeasons(seriesId);
                     var season = seasons.Items.filter(s => s.Id === seasonId)[0];
                     pagination.TotalRecordCount = 0;
-                    loadPageData(season, page);
+                    await loadPageData(season, page);
                 });
             }
 

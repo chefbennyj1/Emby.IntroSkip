@@ -103,10 +103,10 @@ namespace IntroSkip.Api
             //We have enabled the the image cache
             if (config.ImageCache)
             {
+                Log.Debug($"Returning thumb images from cache.");
                 //We have the image in the cache
                 if (CacheImageExists(imageFile))
-                    return ResultFactory.GetResult(Request,
-                        new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
+                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
             }
 
             var frame = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}";
@@ -187,7 +187,7 @@ namespace IntroSkip.Api
             return sb.ToString();
         }
 
-        public void RemoveCacheImage(long internalId)
+        public void RemoveCacheImages(long internalId)
         {
             var cache = GetCacheDirectory();
             var titleSequenceStartImageFile = GetHashString($"{internalId}{SequenceImageType.IntroStart}");
@@ -223,8 +223,8 @@ namespace IntroSkip.Api
 
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
-            var arguments =
-                $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 \"{Path.Combine(cache, imageFile)}\"";
+           
+            var arguments = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 \"{Path.Combine(cache, imageFile)}\"";
             var processStartInfo = new ProcessStartInfo(ffmpegPath, arguments)
             {
                 RedirectStandardOutput = true,
@@ -239,18 +239,6 @@ namespace IntroSkip.Api
 
 
         }
-
-        private static Stream ConvertToBase64(Stream stream)
-        {
-            byte[] bytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                stream.CopyTo(memoryStream);
-                bytes = memoryStream.ToArray();
-            }
-
-            string base64 = Convert.ToBase64String(bytes);
-            return new MemoryStream(Encoding.UTF8.GetBytes(base64));
-        }
+        
     }
 }
