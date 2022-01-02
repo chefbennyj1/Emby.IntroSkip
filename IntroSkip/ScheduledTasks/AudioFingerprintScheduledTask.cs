@@ -115,19 +115,19 @@ namespace IntroSkip.ScheduledTasks
                     titleSequences = dbResults.Items.ToList();
                     Log.Info($"FINGERPRINT: Chroma-print database contains {dbResults.TotalRecordCount} items.");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    Log.Info("Title sequence database is new.");
                     titleSequences = new List<SequenceResult>();
                 }
 
                 progress.Report((currentProgress += step) - 1); //Give the user some kind of progress to show the task has started
 
                 //We divide by two because we are going to split up the parallel function for both series and episodes.
-                var fpMax = config.FingerprintingMaxDegreeOfParallelism / 2;
-                var seriesIndex = 0;
+                var fpMax = config.FingerprintingMaxDegreeOfParallelism;
+                
+
                 Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = fpMax }, (series, state) =>
-                 {
+                {
                      if (cancellationToken.IsCancellationRequested)
                      {
                          state.Break();
@@ -178,14 +178,16 @@ namespace IntroSkip.ScheduledTasks
                          var duration = GetEncodingDuration(averageRuntime);
 
                          //If we are processing the final series, increase the amount of episodes to process at once.
-                         if (seriesIndex == seriesQuery.Items.Count() - 1) fpMax *= 2;
+                         //if (seriesIndex == seriesQuery.Items.Count() - 1) fpMax *= 2;
 
                          var index = seasonIndex;
-                         Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = (int)Math.Round((double)fpMax / 2, MidpointRounding.AwayFromZero) }, (episode, st) =>
+                         foreach(var episode in episodeQuery.Items)
+                         //Parallel.ForEach(episodeQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = (int)Math.Round((double)fpMax / 2, MidpointRounding.AwayFromZero) }, (episode, st) =>
                          {
                              if (cancellationToken.IsCancellationRequested)
                              {
-                                 st.Break();
+                                // st.Break();
+                                break;
                              }
 
                              //The episode data exists in the database
@@ -284,11 +286,11 @@ namespace IntroSkip.ScheduledTasks
                                  Log.Error(ex.Message);
                              }
 
-                         });
+                         }
                      }
 
                      progress.Report((currentProgress += step) - 1);
-                     seriesIndex += 1;
+                     //seriesIndex += 1;
                  });
             }
             catch (TaskCanceledException)

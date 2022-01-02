@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Session;
+using MediaBrowser.Model.Tasks;
 
 namespace IntroSkip.RemoteControl
 {
@@ -21,11 +22,13 @@ namespace IntroSkip.RemoteControl
         private ISessionManager SessionManager { get; }
         private IUserManager UserManager { get; }
         private ILogger Log { get; }
-        public AutoSkip(ISessionManager sessionManager, IUserManager userManager, ILogManager logMan)
+        private ITaskManager TaskManager { get; }
+        public AutoSkip(ISessionManager sessionManager, IUserManager userManager, ILogManager logMan, ITaskManager taskManager)
         {
             Log = logMan.GetLogger(Plugin.Instance.Name);
             SessionManager = sessionManager;
             UserManager = userManager;
+            TaskManager = taskManager;
         }
         public void Dispose()
         {
@@ -120,11 +123,28 @@ namespace IntroSkip.RemoteControl
 
         private void SessionManager_PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) AutoCreditSequenceSkipSessions.TryRemove(e.Session.Id, out _);
-            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) AutoTitleSequenceSkipSessions.TryRemove(e.Session.Id, out _);
+            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) 
+                if(AutoCreditSequenceSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Credit Auto Skip Session List.");
+
+            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) 
+                if(AutoTitleSequenceSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Intro Auto Skip Session List.");
         }
         private void SessionManager_PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
+            //We can not use Auto Skip while the two tasks are running. Possibly because we need to access the database.
+            //We'll have to leave Auto skip alone if either of the tasks are running
+            var tasks = TaskManager.ScheduledTasks.ToList();
+            if (tasks.FirstOrDefault(task => task.Name == "Episode Title Sequence Detection")?.State == TaskState.Running)
+            {
+                Log.Info("Auto Skip will not be enabled while the Detection Task is running.");
+                return;
+            }
+            if (tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting")?.State == TaskState.Running)
+            {
+                Log.Info("Auto Skip will not be enabled while the Fingerprinting Task is running.");
+                return;
+            }
+
             //We only want tv episodes
             if(e.Item.GetType().Name != nameof(Episode)) return;
             

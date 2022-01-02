@@ -470,9 +470,12 @@ namespace IntroSkip.Detection
                     }
 
                 });
+            
+            repository.Backup();
 
             progress.Report(100.0);
         }
+
         
         private Tuple<double, SequenceResult> GetBestTitleSequenceResult(TimeSpan common,
             ConcurrentBag<SequenceResult> titleSequences, CancellationToken cancellationToken)

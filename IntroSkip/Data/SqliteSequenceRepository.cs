@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Serialization;
@@ -16,14 +17,47 @@ namespace IntroSkip.Data
     public class SqliteSequenceRepository : BaseSqliteRepository, ISequenceRepository
     {
         private readonly IJsonSerializer _json;
+        private IFileSystem FileSystem { get; set; }
 
-        public SqliteSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json) : base(logger)
+        private IServerApplicationPaths AppPaths { get; set; }
+        public SqliteSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json, IFileSystem fileSystem) : base(logger)
         {
             _json = json;
+            FileSystem = fileSystem;
             DbFilePath = Path.Combine(appPaths.DataPath, "titlesequence.db");
         }
 
+        public void Backup()
+        {
+            var backups = FileSystem.GetFiles(AppPaths.DataPath).Where(f => f.Name.Contains("titlesequence_")).ToList(); //our backup files
+            if (backups.Count() > 2) //Only remove files if we have more then 2 of them
+            {
+                foreach (var file in backups)
+                {
+                    var fileBackupDate = DateTime.Parse(file.Name.Split('_')[1]); //The date the file backup happened is on the name
+                    if (fileBackupDate >= DateTime.Now.AddDays(-3)) continue; // only clean up files if the backup is older then 3 days
+                    try
+                    {
+                        FileSystem.DeleteFile(file.FullName); //Get rid of old backups
+                    }
+                    catch(Exception ex)
+                    {
+                        Logger.Warn(ex.Message);
+                    }
+                }
+            }
 
+            try
+            {
+                FileSystem.CopyFile(DbFilePath, Path.Combine(AppPaths.DataPath, $"titlesequence_{DateTime.Now}.db"), true); //Create the new backup
+                Logger.Debug("Sequence Database backup complete.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex.Message);
+            }
+            
+        }
         /// <summary>
         /// Opens the connection to the database
         /// </summary>

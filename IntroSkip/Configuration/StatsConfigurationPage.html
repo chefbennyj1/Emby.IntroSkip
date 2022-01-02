@@ -8,12 +8,13 @@
                     <h2 class="sectionTitle">Detection Statistics</h2>
                 </div>
                 <div>
-                    <h3 class="sectionTitle">Statistical overview of detection successes for TV Shows and seasons.</h3>
+                    <h3 class="sectionTitle">Statistical overview of detection successes for TV Shows and Seasons.</h3>
                     <p>In order to generate statistics, the IntroSkip Statistics Task must be run, under Scheduled Tasks</p>
                 </div>
 
                 <div class="fieldDescription" style="width:45%">
-                    Some episodes are broadcast without title sequences, or only include a short title screen which will not considered a title sequence.<br />This must be taken into consideration when reading detection statistic data.
+                    Some episodes are broadcast without title sequences, or only include a short title screen which would not be considered a title sequence.<br />
+                    This should be taken into consideration when reading detection statistic data.
                 </div>
 
                 <br />
@@ -48,12 +49,13 @@
                 <div class="StatsResults scrollY" style="max-height: 50em; margin:0 2em 2em 2em">
                     <table class="tblStatsResults table detailTable" style="width: 100%;">
                         <thead>
-                            <tr style="text-align: left; color: mediumseagreen; padding-bottom: 2em;">
+                        <!-- ReSharper disable once CssNotResolved -->
+                        <tr style="text-align: left; color: var(--theme-primary-color); padding-bottom: 2em;">
                                 <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Date</th>-->
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2"></th>
 
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">TV Show</th>
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Season</th>
+                                <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">TV Show</th>-->
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Seasons</th>
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Intro Results</th>
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Episode Count</th>
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Intro Duration</th>

@@ -12,6 +12,7 @@ using IntroSkip.Data;
 using IntroSkip.ScheduledTasks;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.IO;
 
 namespace IntroSkip
 {
@@ -24,16 +25,17 @@ namespace IntroSkip
         private static IServerConfigurationManager Config { get; set; }
         private static ILogger Logger { get; set; }
         private static IJsonSerializer _json { get; set; }
-
+        private IFileSystem FileSystem { get; set; }
         //Handling new items added to the library
         private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
        
-        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
+        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager, IFileSystem fileSystem)
         {
             _json          = json;
             Config         = config;
             LibraryManager = libraryManager;
             TaskManager    = taskManager;
+            FileSystem     = fileSystem;
             Instance       = this;
             Logger         = logManager.GetLogger(Plugin.Instance.Name);
             
@@ -169,7 +171,7 @@ namespace IntroSkip
 
         public ISequenceRepository GetRepository()
         {
-            var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json);
+            var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json, FileSystem);
 
             repo.Initialize();
             

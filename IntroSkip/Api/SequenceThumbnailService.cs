@@ -35,15 +35,14 @@ namespace IntroSkip.Api
             public string ImageFrameTimestamp { get; set; }
 
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true,
-                DataType = "long[]", ParameterType = "query", Verb = "GET")]
+                DataType = "long", ParameterType = "query", Verb = "GET")]
             public long InternalId { get; set; }
 
             [ApiMember(Name = "SequenceImageType",
                 Description = "IntroStart = 0, IntroEnd = 1, CreditStart = 2, CreditEnd = 3", IsRequired = true,
-                DataType = "SequenceImageType", ParameterType = "query", Verb = "GET")]
+                DataType = "object", ParameterType = "query", Verb = "GET")]
             public SequenceImageType SequenceImageType { get; set; }
 
-            public object Img { get; set; }
         }
 
         [Route("/NoTitleSequenceThumbImage", "GET", Summary = "No Title Sequence Thumb Image")]
@@ -78,7 +77,11 @@ namespace IntroSkip.Api
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
             var item = LibraryManager.GetItemById(request.InternalId);
-            var requestFrame = TimeSpan.Parse(request.ImageFrameTimestamp);
+            var canExtract = TimeSpan.TryParse(request.ImageFrameTimestamp, out var requestFrame);
+            if (!canExtract)
+            {
+                Log.Debug($"Error extracting thumb image time span: {request.ImageFrameTimestamp}");
+            }
             switch (request.SequenceImageType)
             {
                 case SequenceImageType.CreditStart:
@@ -96,17 +99,23 @@ namespace IntroSkip.Api
 
             var config = Plugin.Instance.Configuration;
 
-            //If we are caching, this will be the file path.
-            var cache = GetCacheDirectory();
-            var imageFile = GetHashString($"{item.InternalId}{request.SequenceImageType}");
+            
 
             //We have enabled the the image cache
             if (config.ImageCache)
             {
-                Log.Debug($"Returning thumb images from cache.");
+                //If we are caching, this will be the file path.
+                var cache = GetCacheDirectory();
+                var imageFile = GetHashString($"{item.InternalId}{request.SequenceImageType}");
+
+               
                 //We have the image in the cache
                 if (CacheImageExists(imageFile))
-                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
+                {
+                    Log.Debug("Returning thumb images from cache.");
+                    
+                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/jpeg");
+                }
             }
 
             var frame = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}";
@@ -118,7 +127,8 @@ namespace IntroSkip.Api
             //Get the extracted frame using FFmpeg. 
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vframes 1 -an -f image2 -s 175x100 -";
+           
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vframes 1 -f image2pipe -s 175x100 -";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -127,15 +137,24 @@ namespace IntroSkip.Api
                 CreateNoWindow = true,
             };
 
-            FileStream output;
+            Stream output;
+           
+            //Stream error;
             using (var process = new Process {StartInfo = procStartInfo})
             {
                 process.Start();
                 process.ErrorDataReceived += Process_ErrorDataReceived;
-                output = process.StandardOutput.BaseStream as FileStream;
+                output = process.StandardOutput.BaseStream;
+                //error = process.StandardError.BaseStream;
+                
             }
+            
+            //using (var sr = new StreamReader(error))
+            //{
+            //    //Log.Debug(await sr.ReadToEndAsync());
+            //}
 
-            return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/png"));
+            return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/jpeg"));
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -144,7 +163,7 @@ namespace IntroSkip.Api
         }
 
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/png"));
+            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/jpg"));
 
         private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
         {

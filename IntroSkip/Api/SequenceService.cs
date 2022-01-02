@@ -318,44 +318,45 @@ namespace IntroSkip.Api
 
         }
 
-        public class UIStats
-        {
-            public bool HasIssue { get; set; }
-            public string TVShowName { get; set; }
-            public string Season { get; set; }
-            public int EpisodeCount { get; set; }
-            public TimeSpan IntroDuration { get; set; }
-            public double PercentDetected { get; set; }
-            public double EndPercentDetected { get; set; }
-            public string Comment { get; set; } 
-            public DateTime Date { get; set; }
-        }
+        //public class UIStats
+        //{
+        //    public bool HasIssue { get; set; }
+        //    public string TVShowName { get; set; }
+        //    public string Season { get; set; }
+        //    public long SeasonInternalId { get; set; }
+        //    public int EpisodeCount { get; set; }
+        //    public TimeSpan IntroDuration { get; set; }
+        //    public double PercentDetected { get; set; }
+        //    public double EndPercentDetected { get; set; }
+        //    public string Comment { get; set; } 
+        //    public DateTime Date { get; set; }
+        //}
 
        public string Get(SeasonStatisticsRequest request)
        {
            
             PluginConfiguration config = Plugin.Instance.Configuration;
-            List<UIStats> statsList = new List<UIStats>();
+            List<DetectionStats> statsList = new List<DetectionStats>();
 
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("STATISTICS: SERVICE - Getting statistics for UI from Text file");
             string statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
 
-            if (FileSystem.FileExists(statsFilePath) == false)
+            if (!FileSystem.FileExists(statsFilePath))
             {   //OMG this is hilarious :)
 
-                statsList.Add(new UIStats
-                {
-                    HasIssue = true,
-                    TVShowName = "Please Run IntroSkip",
-                    Season = "Statistics Task",
-                    EpisodeCount = 0,
-                    IntroDuration = TimeSpan.Parse("12:11:59"),
-                    PercentDetected = 66.6,
-                    //EndPercentDetected = 66.6,
-                    Comment = "Go Run the STATISTICS TASK",
-                    Date = Convert.ToDateTime(DateTime.Now)
-                });
+                //statsList.Add(new DetectionStats
+                //{
+                //    HasIssue = true,
+                //    TVShowName = "Please Run IntroSkip",
+                //    Season = "Statistics Task",
+                //    EpisodeCount = 0,
+                //    IntroDuration = TimeSpan.Parse("12:11:59"),
+                //    PercentDetected = 66.6,
+                //    //EndPercentDetected = 66.6,
+                //    Comment = "Go Run the STATISTICS TASK",
+                    
+                //});
             }
             else
             {
@@ -365,17 +366,17 @@ namespace IntroSkip.Api
                     Log.Info("STATISTICS: LINE = {0}", line);
 
                     var tempLine = line.Split('\t');
-                    statsList.Add(new UIStats
+                    statsList.Add(new DetectionStats()
                     {
                         HasIssue = Convert.ToBoolean(tempLine[0]),
                         TVShowName = tempLine[1],
-                        Season = tempLine[2],
-                        EpisodeCount = Convert.ToInt32(tempLine[3]),
-                        IntroDuration = TimeSpan.Parse(tempLine[4]),
-                        PercentDetected = Convert.ToDouble(tempLine[5]),
-                        //EndPercentDetected = Convert.ToDouble(tempLine[6]),
-                        Comment = tempLine[7],
-                        Date = Convert.ToDateTime(tempLine[8])
+                        SeriesId = Convert.ToInt64(tempLine[2]),
+                        Season = tempLine[3],
+                        SeasonId = Convert.ToInt64(tempLine[4]),
+                        EpisodeCount = Convert.ToInt32(tempLine[5]),
+                        IntroDuration = TimeSpan.Parse(tempLine[6]),
+                        PercentDetected = Convert.ToDouble(tempLine[7]),
+                        EndPercentDetected = tempLine[8] != "NaN" ? Convert.ToDouble(tempLine[8]) : 0,
                     });
                 }
             }

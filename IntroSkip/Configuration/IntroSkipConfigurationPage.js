@@ -343,8 +343,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
 
             if (!imageExistsInLocalStore(intro.InternalId)) {
-                const introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
-                const introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
+                const introStartImage  = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
+                const introEndImage    = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
                 const creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
                 localImageStore.push({
                     Id                               : intro.InternalId,
@@ -400,19 +400,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return html;
 
         }
-
-        //async function loadImageInLocalCache(hasIntro, hasCredit, intro, introStart, creditStart, introEnd) {
-        //    const introStartImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
-        //    const introEndImage = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
-        //    const creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
-        //    localImageCache.push({
-        //        Id                               : intro.InternalId,
-        //        ExtractedImageTitleSequenceStart : introStartImage,
-        //        ExtractedImageTitleSequenceEnd   : introEndImage,
-        //        ExtractedImageCreditSequenceStart: creditStartImage
-        //    });
-        //}
-
+        
         function imageExistsInLocalStore(id) {
             return localImageStore.filter(c => c.Id == id).length > 0;
         }
@@ -527,13 +515,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             
         }
 
-        //function reloadTableItems(sequences, view) {
-        //    loading.show();
-        //    view.querySelector('.introResultBody').innerHTML = '';
-        //    renderTableItems(sequences, view);
-        //    loading.hide();
-        //}
-
+        
         async function dlgIntroPlayer(view, id) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
@@ -718,6 +700,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 config.ImageCache = enabled;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     Dashboard.processPluginConfigurationUpdateResult(r);
+                    localImageStore = [];
                 });
             });
         }
@@ -752,7 +735,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     view.querySelector('.btnPreviousPage').addEventListener('click', async (btn) => {
                         btn.preventDefault();
-                       
+                        loading.show();
                         pagination.StartIndex -= pagination.Limit;
                         await loadPageData(season, view);
                          
@@ -761,7 +744,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                     view.querySelector('.btnNextPage').addEventListener('click', async (btn) => {
                         btn.preventDefault();
-                        
+                        loading.show();
                         pagination.StartIndex += pagination.Limit;
                         await loadPageData(season, view);
                          
@@ -888,9 +871,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     renderTableItems(introResult.TitleSequences, view);
                     
                 });
-                
-                
-
             });
         }
     });

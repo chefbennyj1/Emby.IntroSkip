@@ -38,6 +38,16 @@
                 }];
         }
 
+        ApiClient.getPrimaryImageUrl = function(id) {
+            var url = this.getUrl(`Items/${id}/Images/Primary?maxHeight=227&amp;maxWidth=136&amp;quality=90`);
+            return url;
+        }
+
+        ApiClient.getLogoImageUrl = function(id) {
+            var url = this.getUrl(`Items/${id}/Images/Logo?maxHeight=136&amp;maxWidth=227&amp;quality=90`);
+            return url;
+        }
+
         //function waitdlg(view) {
         //    var dlg = dialogHelper.createDialog({
         //        removeOnClose: true,
@@ -104,6 +114,50 @@
             getSeasonStatistics().then(statResults => {
                 statResults.forEach(statItem => {
                     statisticsResultTable.innerHTML += renderTableRowHtml(statItem);
+                    var style = getComputedStyle(document.body);
+
+                    require([Dashboard.getConfigurationResourceUrl('Chart.js')], (Chart) => {
+                        var ctx = view.querySelector('#chart_' + statItem.SeasonId).getContext("2d");
+
+                        var myChart = new Chart(ctx,
+                            {
+                                type: 'doughnut',
+                                label: "Sequence Results",
+                                data: {
+                                    labels: ['Detected'],
+                                    datasets: [
+                                        {
+                                            data: [statItem.PercentDetected, (100 - statItem.PercentDetected)],
+                                            backgroundColor: [style.getPropertyValue("--theme-primary-color"), "transparent"],
+                                            borderColor: ["black", style.getPropertyValue("--theme-primary-color")],
+                                            borderWidth: 1,
+                                            //dataFriendly   : [ driveData[t].FriendlyUsed, driveData[t].FriendlyAvailable ]
+                                        }
+                                    ]
+                                },
+                                options: {
+
+                                    "cutout": 20
+
+                                    //tooltips: {
+                                    //    callbacks: {
+                                    //        title     : (tooltipItem, data) => { return data['labels'][tooltipItem[0]['index']]; },
+                                    //        label     : (tooltipItem, data) => { return data['datasets'][0]['dataFriendly'][tooltipItem['index']]; },
+                                    //        afterLabel: (tooltipItem, data) => {
+
+                                    //            var dataset = data['datasets'][0];
+                                    //            var total   = dataset['data'][0] + dataset['data'][1];
+                                    //            var percent = Math.round((dataset['data'][tooltipItem['index']] / total) * 100);
+
+                                    //            return '(' + percent + '%)';
+
+                                    //        }
+
+                                    //    }
+                                    //}
+                                }
+                            });
+                    });
                 });
                 loading.hide();
             });
@@ -161,13 +215,21 @@
             html += '</svg>';
             html += '</td>';
 
-           
 
-            html += '<td data-title="TV Show" class="detailTableBodyCell fileCell">' + statElement.TVShowName + '</td>';
+            html += '<td data-title="Season" class="detailTableBodyCell fileCell">';
+            /*html += '<img src="' + ApiClient.getLogoImageUrl(statElement.SeriesId) + '"/>';*/
+            html += '<div style="display:flex;align-items: center;font-weight: 500;">' + statElement.TVShowName + '</div>';
+            html += '<div style="display:flex;align-items: center;font-weight: 500;">' + statElement.Season + '</div>';
+            html += '</td>';
 
-            html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + statElement.Season + '</td>';
+            //html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + statElement.Season + '</td>';
 
-            html += '<td data-title="Results" class="detailTableBodyCell fileCell">' + statElement.PercentDetected + "%" + '</td>';
+            html += '<td data-title="Results" class="detailTableBodyCell fileCell">';
+            html += '<div style="display:flex;align-items:center;justify-content:center; width:100px">';
+            html += '<canvas id="chart_' + statElement.SeasonId + '" width="100" height="100" style="max-width:100px"></canvas>';
+            html += statElement.PercentDetected + "%";
+            html += '</div>';
+            html += '</td>';
 
             html += '<td data-title="No. Episodes" class="detailTableBodyCell fileCell">' + statElement.EpisodeCount + '</td>';
 

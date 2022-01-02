@@ -84,7 +84,11 @@ namespace IntroSkip
                 Name = "StatsConfigurationPageJS",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.StatsConfigurationPage.js"
             },
-
+            new PluginPageInfo
+            {
+                Name = "Chart.js",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.Chart.js"
+            },
 
         };
     }

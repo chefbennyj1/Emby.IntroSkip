@@ -116,15 +116,32 @@ namespace IntroSkip.Statistics
                         }
                     }
 
+                    //Probably only one episode so we can't detect data yet.
+                    if (hasIntroCount == 0 && hasEndCount == 0)
+                    {
+                        ReturnedDetectionStatsList.Add(new DetectionStats
+                        {
+                            SeriesId = seasonItem.Parent.InternalId,
+                            SeasonId = seasonItem.InternalId,
+                            TVShowName = seasonItem.Parent.Name,
+                            Season = seasonItem.Name,
+                            EpisodeCount = totalEpisodeCount,
+                            HasSeqCount = hasIntroCount,
+                            PercentDetected = 0,
+                            EndPercentDetected = 0,
+                            IntroDuration = commonDuration,
+                            HasIssue = false
+                        });
+                    }
                     //Hoping not using this will increase performance massively.
-                    if (totalEpisodeCount == hasIntroCount || hasIntroCount == 0)
+                    if (totalEpisodeCount == hasIntroCount)
                     {
                         int y = totalEpisodeCount;
                         int z = hasEndCount;
                         double creditPercentage = Math.Round((double)z / y * 100);
                         ReturnedDetectionStatsList.Add(new DetectionStats
                         {
-                            Date = DateTime.Now,
+                            SeriesId = seasonItem.Parent.InternalId,
                             SeasonId = seasonItem.InternalId,
                             TVShowName = seasonItem.Parent.Name,
                             Season = seasonItem.Name,
@@ -133,7 +150,6 @@ namespace IntroSkip.Statistics
                             PercentDetected = 100,
                             EndPercentDetected = creditPercentage,
                             IntroDuration = commonDuration,
-                            Comment = "Looks Good",
                             HasIssue = false
                         });
                     }
@@ -148,8 +164,8 @@ namespace IntroSkip.Statistics
 
                         ReturnedDetectionStatsList.Add(new DetectionStats
                         {
-                            Date = DateTime.Now,
                             SeasonId = seasonItem.InternalId,
+                            SeriesId = seasonItem.Parent.InternalId,
                             TVShowName = seasonItem.Parent.Name,
                             Season = seasonItem.Name,
                             EpisodeCount = totalEpisodeCount,
@@ -157,7 +173,6 @@ namespace IntroSkip.Statistics
                             PercentDetected = introPercentage,
                             EndPercentDetected = creditPercentage,
                             IntroDuration = commonDuration,
-                            Comment = "Needs Attention",
                             HasIssue = true
                         });
                     }
@@ -165,7 +180,7 @@ namespace IntroSkip.Statistics
 
 
                 DisposeRepository(repository);
-                Log.Info("STATISTICS: Completed Statitics Successfully");
+                Log.Info("STATISTICS: Completed Statistics Successfully");
                 ReturnedDetectionStatsList.Sort((x, y) => string.CompareOrdinal(x.TVShowName, y.TVShowName));
                 //Sorts the Seasons and Tv Shows in Season order but not alphabetically for the Shows.
                 // List<DetectionStats> list = ReturnedDetectionStatsList.OrderBy(x => x.TVShowName).ThenBy(x => x.Season).ToList();
@@ -196,13 +211,13 @@ namespace IntroSkip.Statistics
             repo?.Dispose();
         }
 
-        public string GetIntroSkipInfoDir()
+        private string GetIntroSkipInfoDir()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             return $"{configDir}{Separator}IntroSkipInfo";
         }
 
-        public void CreateStatisticsTextFile()
+        private void CreateStatisticsTextFile()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("STATISTICS: Writing statistics to file");
@@ -220,22 +235,22 @@ namespace IntroSkip.Statistics
                 using (StreamWriter writer = new StreamWriter(filePath, false))
                 {
                     var delim = ("\t");
-                    var headers = string.Join(delim, "Has Issue", "TV Show", "Season", "Episode Count", "Duration", "Intro Results", "EndCredit Results", "Comments", "Date");
+                    var headers = string.Join(delim, "Has Issue", "TV Show", "SeriesId", "Season", "SeasonId", "Episode Count", "Duration", "Intro Results", "EndCredit Results");
                     writer.WriteLine(headers);
 
                     foreach (var stat in stats)
                     {
                         bool issue = stat.HasIssue;
+                        long seriesId = stat.SeriesId;
                         string show = stat.TVShowName;
                         string season = stat.Season;
+                        long seasonId = stat.SeasonId;
                         int episode = stat.EpisodeCount;
                         TimeSpan duration = stat.IntroDuration;
                         double introResults = stat.PercentDetected;
-                        double endcredResults = stat.EndPercentDetected;
-                        string comments = stat.Comment;
-                        DateTime date = stat.Date;
+                        double endCreditResults = stat.EndPercentDetected;
 
-                        var statLine = string.Join(delim, issue, show, season, episode, duration, introResults, endcredResults, comments, date);
+                        var statLine = string.Join(delim, issue, show, seriesId, season, seasonId, episode, duration, introResults, endCreditResults);
                         writer.WriteLine(statLine);
                     }
                 }

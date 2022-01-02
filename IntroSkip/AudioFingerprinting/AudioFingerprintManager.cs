@@ -105,6 +105,7 @@ namespace IntroSkip.AudioFingerprinting
                 "-f chromaprint",
                 "-fp_format raw",
                 $"\"{output}\""
+               
             };
 
             var procStartInfo = new ProcessStartInfo(ffmpegPath, string.Join(" ", args))
@@ -123,7 +124,7 @@ namespace IntroSkip.AudioFingerprinting
                 //We have to check later that ffmpeg completed and ended properly.
                 FfmpegProcessMonitor.TryAdd(item.InternalId, process.Id);
 
-
+               
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 //
                 // Very Important!
@@ -137,7 +138,8 @@ namespace IntroSkip.AudioFingerprinting
 
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
                 string processOutput = null;
-
+              
+               
                 while ((processOutput = process.StandardError.ReadLine()) != null)
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -149,15 +151,15 @@ namespace IntroSkip.AudioFingerprinting
                         catch { }
                     }
 
-
-
                     //Log.Info(processOutput);
                 }
 
-                //Log.Info($"Chroma-print binary extraction successful: { input }");
+               
 
             }
         }
+
+
 
         private List<uint> SplitByteData(ReadOnlySpan<char> bin, BaseItem item)
         {
@@ -230,7 +232,7 @@ namespace IntroSkip.AudioFingerprinting
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
             var args = new[]
             {
-                $"-version",
+                "-version",
                
             };
 
