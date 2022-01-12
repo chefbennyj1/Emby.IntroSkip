@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using IntroSkip.AudioFingerprinting;
 using IntroSkip.Detection;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Tasks;
@@ -18,7 +17,7 @@ namespace IntroSkip.ScheduledTasks
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
-       
+
         public SequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
@@ -28,13 +27,6 @@ namespace IntroSkip.ScheduledTasks
 
         public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            if (!AudioFingerprintManager.Instance.HasChromaprint())
-            {
-                Log.Warn("Emby Server doesn't contain chromaprint libraries.");
-                progress.Report(100.0);
-                return;
-            }
-
             var tasks = TaskManager.ScheduledTasks.ToList();
             // ReSharper disable once PossibleNullReferenceException
             if (tasks.FirstOrDefault(task => task.Name == "Episode Audio Fingerprinting").State == TaskState.Running)
@@ -44,28 +36,28 @@ namespace IntroSkip.ScheduledTasks
                 return;
             }
 
-            
+
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
-            
+
             var config = Plugin.Instance.Configuration;
             if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
-            
+
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             try
             {
-                
+
                 SequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
-                
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //Log.ErrorException(ex.Message, ex);
-                
+                Log.ErrorException(ex.Message, ex);
+
             }
 
-            var repo = (IDisposable) repository;
+            var repo = (IDisposable)repository;
             repo.Dispose();
             progress.Report(100.0);
         }

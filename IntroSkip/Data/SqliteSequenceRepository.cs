@@ -18,43 +18,58 @@ namespace IntroSkip.Data
     {
         private readonly IJsonSerializer _json;
         private IFileSystem FileSystem { get; set; }
-
+        //private ILogger Logger { get; set; }
         private IServerApplicationPaths AppPaths { get; set; }
         public SqliteSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json, IFileSystem fileSystem) : base(logger)
         {
             _json = json;
             FileSystem = fileSystem;
+            AppPaths = appPaths;
             DbFilePath = Path.Combine(appPaths.DataPath, "titlesequence.db");
+            //Logger = logger;
         }
 
         public void Backup()
         {
-            var backups = FileSystem.GetFiles(AppPaths.DataPath).Where(f => f.Name.Contains("titlesequence_")).ToList(); //our backup files
-            if (backups.Count() > 2) //Only remove files if we have more then 2 of them
+            var backups = new List<FileSystemMetadata>();
+            try
             {
-                foreach (var file in backups)
+                backups = FileSystem.GetFiles(AppPaths.DataPath).Where(f => f.Name.Contains("titlesequence_"))
+                    .ToList(); //our backup files
+            }
+            catch { }
+
+            if (backups.Any()) //Only remove files if we have more then 2 of them
+            {
+                if (backups.Count > 2)
                 {
-                    var fileBackupDate = DateTime.Parse(file.Name.Split('_')[1]); //The date the file backup happened is on the name
-                    if (fileBackupDate >= DateTime.Now.AddDays(-3)) continue; // only clean up files if the backup is older then 3 days
-                    try
+                    foreach (var file in backups)
                     {
-                        FileSystem.DeleteFile(file.FullName); //Get rid of old backups
-                    }
-                    catch(Exception ex)
-                    {
-                        Logger.Warn(ex.Message);
+                        var fileBackupDate =
+                            DateTime.Parse(file.Name.Split('_')[1]
+                                .Split('.')[0]); //The date the file backup happened is on the name
+                        if (fileBackupDate >= DateTime.Now.AddDays(-3))
+                            continue; // only clean up files if the backup is older then 3 days
+                        try
+                        {
+                            FileSystem.DeleteFile(file.FullName); //Get rid of old backups
+                        }
+                        catch (Exception ex)
+                        {
+                            //Logger.Warn(ex.Message);
+                        }
                     }
                 }
             }
 
             try
             {
-                FileSystem.CopyFile(DbFilePath, Path.Combine(AppPaths.DataPath, $"titlesequence_{DateTime.Now}.db"), true); //Create the new backup
-                Logger.Debug("Sequence Database backup complete.");
+                FileSystem.CopyFile(DbFilePath, Path.Combine(AppPaths.DataPath, $"titlesequence_{DateTime.Now:yy-MM-dd}.db"), true); //Create the new backup
+                //Logger.Debug("Sequence Database backup complete.");
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex.Message);
+                //Logger.Warn(ex.Message);
             }
             
         }

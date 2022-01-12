@@ -43,8 +43,8 @@ namespace IntroSkip.Chapters
                 var seasonName = item.Parent.Name;
                 var episodeNo = item.IndexNumber;
 
-                Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
-                Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
+                //Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
+                //Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
                 var config = Plugin.Instance.Configuration;
 
@@ -61,8 +61,8 @@ namespace IntroSkip.Chapters
                             Name = chap.Name,
                             StartPositionTicks = chap.StartPositionTicks,
                         });
-                        Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
-                            ConvertTicksToTime(chap.StartPositionTicks));
+                        //Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
+                        //    ConvertTicksToTime(chap.StartPositionTicks));
                     }
 
                     long insertStart = sequence.TitleSequenceStart.Ticks;
@@ -78,17 +78,7 @@ namespace IntroSkip.Chapters
 
                     //This wil check if the Introstart chapter point is already in the list,
                     //TODO: If for some reason the sequence data has changed, we need to update the chapter data
-                    if (chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
-                    {
-                        
-                        Log.Debug("CHAPTER INSERT: Title Sequence Chapter already Added for {0}", item.Name);
-                    }
-                    else if(chapters.Exists(chapterPoint => chapterPoint.Name == endCredString))
-                    {
-                        Log.Debug("CHAPTER INSERT: End Credit Chapter already Added for {0}", item.Name);
-                    }
-
-                    else
+                    if (!chapters.Exists(chapterPoint => chapterPoint.Name == introStartString))
                     {
                         try
                         {
@@ -159,8 +149,7 @@ namespace IntroSkip.Chapters
                                     // We'll use the browsers engine (the UI) to request further data about the item if necessary.
                                     ChapterErrors.Add(new ChapterError()
                                     {
-                                        Id = item
-                                            .InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
+                                        Id = item.InternalId, //<-- use the internalId, they are shorter, less data to send to the UI
                                         Date = DateTime.Now, //<-- Give them a date, so they know when this happened.
                                         ChapterCount = iCount,
                                         FilePathString = item.Path
@@ -175,7 +164,7 @@ namespace IntroSkip.Chapters
                                 {
                                     ChapterInfo neededChapInfo = chapters[startIndex + 1];
                                     string chapName = neededChapInfo.Name;
-                                    Log.Debug("CHAPTER INSERT: Organising..... New Chapter name after Insert = {0}",
+                                    Log.Debug("CHAPTER INSERT: Organizing..... New Chapter name after Insert = {0}",
                                         chapName);
                                     string newVal = introEndString.Replace(introEndString, chapName);
 
@@ -199,8 +188,7 @@ namespace IntroSkip.Chapters
                                 }
 
                                 ItemRepository.SaveChapters(id, chapters);
-                                Log.Debug(
-                                    "CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
+                                Log.Debug("CHAPTER INSERT: Successfully added Title Sequence for {0} - {1} - {2}: {3}",
                                     tvShowName, seasonName, episodeNo, item.Name);
                             }
                         }
@@ -220,12 +208,12 @@ namespace IntroSkip.Chapters
             }
         }
 
-        public static int CompareStartTimes(ChapterInfo tick1, ChapterInfo tick2)
+        private static int CompareStartTimes(ChapterInfo tick1, ChapterInfo tick2)
         {
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
 
-        public static string ConvertTicksToTime(long ticks)
+        private static string ConvertTicksToTime(long ticks)
         {
             TimeSpan time = TimeSpan.FromTicks(ticks);
             string output = time.ToString(@"hh\:mm\:ss");

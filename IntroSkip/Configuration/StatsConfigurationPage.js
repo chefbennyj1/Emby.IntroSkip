@@ -117,9 +117,9 @@
                     var style = getComputedStyle(document.body);
 
                     require([Dashboard.getConfigurationResourceUrl('Chart.js')], (Chart) => {
-                        var ctx = view.querySelector('#chart_' + statItem.SeasonId).getContext("2d");
-
-                        var myChart = new Chart(ctx,
+                        var introCtx = view.querySelector('#chart_intro_' + statItem.SeasonId).getContext("2d");
+                        var creditCtx = view.querySelector('#chart_credit_' + statItem.SeasonId).getContext("2d");
+                        new Chart(introCtx,
                             {
                                 type: 'doughnut',
                                 label: "Sequence Results",
@@ -135,27 +135,25 @@
                                         }
                                     ]
                                 },
-                                options: {
-
-                                    "cutout": 20
-
-                                    //tooltips: {
-                                    //    callbacks: {
-                                    //        title     : (tooltipItem, data) => { return data['labels'][tooltipItem[0]['index']]; },
-                                    //        label     : (tooltipItem, data) => { return data['datasets'][0]['dataFriendly'][tooltipItem['index']]; },
-                                    //        afterLabel: (tooltipItem, data) => {
-
-                                    //            var dataset = data['datasets'][0];
-                                    //            var total   = dataset['data'][0] + dataset['data'][1];
-                                    //            var percent = Math.round((dataset['data'][tooltipItem['index']] / total) * 100);
-
-                                    //            return '(' + percent + '%)';
-
-                                    //        }
-
-                                    //    }
-                                    //}
-                                }
+                                options: { "cutout": 20 }
+                            });
+                        new Chart(creditCtx,
+                            {
+                                type: 'doughnut',
+                                label: "Sequence Results",
+                                data: {
+                                    labels: ['Detected'],
+                                    datasets: [
+                                        {
+                                            data: [statItem.EndPercentDetected, (100 - statItem.EndPercentDetected)],
+                                            backgroundColor: [style.getPropertyValue("--theme-primary-color"), "transparent"],
+                                            borderColor: ["black", style.getPropertyValue("--theme-primary-color")],
+                                            borderWidth: 1,
+                                            //dataFriendly   : [ driveData[t].FriendlyUsed, driveData[t].FriendlyAvailable ]
+                                        }
+                                    ]
+                                },
+                                options: { "cutout": 20 }
                             });
                     });
                 });
@@ -217,32 +215,30 @@
 
 
             html += '<td data-title="Season" class="detailTableBodyCell fileCell">';
-            /*html += '<img src="' + ApiClient.getLogoImageUrl(statElement.SeriesId) + '"/>';*/
+            
             html += '<div style="display:flex;align-items: center;font-weight: 500;">' + statElement.TVShowName + '</div>';
             html += '<div style="display:flex;align-items: center;font-weight: 500;">' + statElement.Season + '</div>';
             html += '</td>';
 
-            //html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + statElement.Season + '</td>';
+            html += '<td data-title="No. Episodes" class="detailTableBodyCell fileCell">' + statElement.EpisodeCount + '</td>';
+           
+            const duration = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
+            html += '<td data-title="Duration" class="detailTableBodyCell fileCell">' + duration + '</td>';
 
-            html += '<td data-title="Results" class="detailTableBodyCell fileCell">';
+
+            html += '<td data-title="intro_results" class="detailTableBodyCell fileCell">';
             html += '<div style="display:flex;align-items:center;justify-content:center; width:100px">';
-            html += '<canvas id="chart_' + statElement.SeasonId + '" width="100" height="100" style="max-width:100px"></canvas>';
+            html += '<canvas id="chart_intro_' + statElement.SeasonId + '" width="100" height="100" style="max-width:100px"></canvas>';
             html += statElement.PercentDetected + "%";
             html += '</div>';
             html += '</td>';
 
-            html += '<td data-title="No. Episodes" class="detailTableBodyCell fileCell">' + statElement.EpisodeCount + '</td>';
-
-            var duration = "00:" + startTimespan.minutes + ":" + startTimespan.seconds;
-            html += '<td data-title="Duration" class="detailTableBodyCell fileCell">' + duration + '</td>';
-
-            
-
-            //html += '<td data-title="Results" class="detailTableBodyCell fileCell">' + statElement.EndPercentDetected + "%" + '</td>';
-
-            //html += '<td data-title="Comments" class="detailTableBodyCell fileCell">' + statElement.Comment + '</td>';
-
-            
+            html += '<td data-title="credit_results" class="detailTableBodyCell fileCell">';
+            html += '<div style="display:flex;align-items:center;justify-content:center; width:100px">';
+            html += '<canvas id="chart_credit_' + statElement.SeasonId + '" width="100" height="100" style="max-width:100px"></canvas>';
+            html += statElement.EndPercentDetected + "%";
+            html += '</div>';
+            html += '</td>';
 
             return html;
         }

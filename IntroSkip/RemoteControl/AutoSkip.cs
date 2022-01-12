@@ -16,8 +16,8 @@ namespace IntroSkip.RemoteControl
 {
     public class AutoSkip : IServerEntryPoint
     {
-        private readonly ConcurrentDictionary<string, BaseSequence> AutoTitleSequenceSkipSessions = new ConcurrentDictionary<string, BaseSequence>();
-        private readonly ConcurrentDictionary<string, BaseSequence> AutoCreditSequenceSkipSessions = new ConcurrentDictionary<string, BaseSequence>();
+        private readonly ConcurrentDictionary<string, BaseSequence> TitleSequenceAutoSkipSessions = new ConcurrentDictionary<string, BaseSequence>();
+        private readonly ConcurrentDictionary<string, BaseSequence> CreditSequenceAutoSkipSessions = new ConcurrentDictionary<string, BaseSequence>();
 
         private ISessionManager SessionManager { get; }
         private IUserManager UserManager { get; }
@@ -70,10 +70,10 @@ namespace IntroSkip.RemoteControl
             switch (sequenceSkip)
             {
                 case SequenceSkip.INTRO:
-                    AutoTitleSequenceSkipSessions.TryRemove(session.Id, out _);
+                    TitleSequenceAutoSkipSessions.TryRemove(session.Id, out _);
                     break;
                 case SequenceSkip.CREDIT:
-                    AutoCreditSequenceSkipSessions.TryRemove(session.Id, out _);
+                    CreditSequenceAutoSkipSessions.TryRemove(session.Id, out _);
                     break;
             }
 
@@ -83,14 +83,14 @@ namespace IntroSkip.RemoteControl
         private void SessionManager_PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
             //Check if we have data in our dictionaries. If not move on.
-            if (!AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id) && !AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
+            if (!CreditSequenceAutoSkipSessions.ContainsKey(e.Session.Id) && !TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) return;
 
             BaseSequence titleSequence  = null;
             BaseSequence creditSequence = null;
             
-            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) titleSequence = AutoTitleSequenceSkipSessions[e.Session.Id];
+            if (TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) titleSequence = TitleSequenceAutoSkipSessions[e.Session.Id];
             
-            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) creditSequence = AutoCreditSequenceSkipSessions[e.Session.Id];
+            if (CreditSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) creditSequence = CreditSequenceAutoSkipSessions[e.Session.Id];
             
             var episodeIndex = e.Item.IndexNumber;
             var seasonName   = e.Item.Parent.Name;
@@ -106,6 +106,7 @@ namespace IntroSkip.RemoteControl
                     //Seek the stream to the end of the intro
                     SkipSequence(e.Session, titleSequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
                     Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                    TitleSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _);
                 }
             }
 
@@ -116,6 +117,7 @@ namespace IntroSkip.RemoteControl
                     Log.Debug($"AUTOSKIP:{presentationName} skipping credits...");
                     SkipSequence(e.Session, creditSequence.CreditSequenceEnd.Ticks, SequenceSkip.CREDIT);
                     Log.Debug($"AUTOSKIP:{presentationName} credit has been skipped.");
+                    CreditSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _);
                 }
             }
             
@@ -123,16 +125,15 @@ namespace IntroSkip.RemoteControl
 
         private void SessionManager_PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) 
-                if(AutoCreditSequenceSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Credit Auto Skip Session List.");
+            if (CreditSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) 
+                if(CreditSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Credit Auto Skip Session List.");
 
-            if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) 
-                if(AutoTitleSequenceSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Intro Auto Skip Session List.");
+            if (TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) 
+                if(TitleSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _)) Log.Debug("Unable to remove Session ID from Intro Auto Skip Session List.");
         }
         private void SessionManager_PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
-            //We can not use Auto Skip while the two tasks are running. Possibly because we need to access the database.
-            //We'll have to leave Auto skip alone if either of the tasks are running
+            //We can not use Auto Skip while Detection or Fingerprinting tasks are running. Possibly because we need to access the database.
             var tasks = TaskManager.ScheduledTasks.ToList();
             if (tasks.FirstOrDefault(task => task.Name == "Episode Title Sequence Detection")?.State == TaskState.Running)
             {
@@ -183,19 +184,7 @@ namespace IntroSkip.RemoteControl
             {
                 Log.Debug($"{presentationName} has title sequence data.");
 
-                //If the intro starts at the beginning of the stream, or se started the stream in the middle of the intro.. act on it right away.
-                if (sequence.CreditSequenceStart == TimeSpan.Zero || (e.PlaybackPositionTicks > sequence.TitleSequenceStart.Ticks && e.PlaybackPositionTicks < sequence.TitleSequenceEnd.Ticks))
-                {
-                    Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
-                    //Seek the stream to the end of the intro
-                    SkipSequence(e.Session, sequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
-                    Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
-                    
-                }
-                else
-                {
-                    PrepareTitleSequenceSkip(e, presentationName, sequence, config);
-                }
+                PrepareTitleSequenceSkip(e, presentationName, sequence, config);
 
             } 
             else
@@ -216,11 +205,11 @@ namespace IntroSkip.RemoteControl
             if (e.PlaybackPositionTicks > sequence.CreditSequenceStart.Ticks || e.PlaybackPositionTicks > (e.Item.RunTimeTicks - TimeSpan.FromSeconds(10).Ticks)) return;
 
             Log.Debug($"AUTOSKIP:{presentationName} preparing credit skip...");
-            if (AutoCreditSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
+            if (CreditSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) return;
             
             Log.Debug($"AUTOSKIP:{presentationName} ready to skip credits.");
                     
-            AutoCreditSequenceSkipSessions.TryAdd(e.Session.Id, sequence);
+            CreditSequenceAutoSkipSessions.TryAdd(e.Session.Id, sequence);
         }
 
         private void PrepareTitleSequenceSkip(PlaybackProgressEventArgs e, string presentationName, BaseSequence sequence, PluginConfiguration config)
@@ -235,12 +224,22 @@ namespace IntroSkip.RemoteControl
                 }
             }
 
+            //If the stream started in the middle of the intro.. act on it right away.
+            if (e.PlaybackPositionTicks > sequence.TitleSequenceStart.Ticks && e.PlaybackPositionTicks < sequence.TitleSequenceEnd.Ticks)
+            {
+                Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
+                //Seek the stream to the end of the intro
+                SkipSequence(e.Session, sequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
+                Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                return;
+            }
+            
             //We are at the beginning of the stream
             //We want to ignore streams that are 'Resumed'
-            if (e.PlaybackPositionTicks == 0 || (e.PlaybackPositionTicks <= sequence.TitleSequenceStart.Ticks))
+            if (e.PlaybackPositionTicks <= sequence.TitleSequenceStart.Ticks)
             {
                 Log.Debug($"AUTOSKIP:{presentationName} preparing intro skip...");
-                if (AutoTitleSequenceSkipSessions.ContainsKey(e.Session.Id)) return;
+                if (TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id)) return;
                 Log.Debug($"AUTOSKIP:{presentationName} ready to skip intro.");
 
                 //Auto skip has a hard time skipping intros that start immediately at the 00:00:00 timestamp (or the very beginning)
@@ -252,14 +251,14 @@ namespace IntroSkip.RemoteControl
 
                 if (config.AutoSkipDelay.HasValue) sequence.TitleSequenceStart += TimeSpan.FromMilliseconds(config.AutoSkipDelay.Value);
 
-                AutoTitleSequenceSkipSessions.TryAdd(e.Session.Id, sequence);
+                TitleSequenceAutoSkipSessions.TryAdd(e.Session.Id, sequence);
             }
         }
 
         private async void SendMessageToClient(SessionInfo session, SequenceSkip sequenceSkip)
         {
             if (!session.Capabilities.SupportedCommands.Contains("DisplayMessage")) return;
-
+            if (session.Client.Contains("Apple") || session.Client.Contains("Roku SG")) return;
             var messageText = string.Empty;
             var config = Plugin.Instance.Configuration;
             switch (sequenceSkip)

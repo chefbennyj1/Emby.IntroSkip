@@ -14,6 +14,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Serialization;
 
 // ReSharper disable ComplexConditionExpression
 
@@ -23,10 +24,11 @@ namespace IntroSkip.Detection
     {
         public static SequenceDetection Instance { get; private set; }
         private static ILogger Log { get; set; }
-
-        public SequenceDetection(ILogManager logMan)
+        private IJsonSerializer JsonSerializer { get; set; }
+        public SequenceDetection(ILogManager logMan, IJsonSerializer json)
         {
             Log = logMan.GetLogger(Plugin.Instance.Name);
+            JsonSerializer = json;
             Instance = this;
         }
 
@@ -204,26 +206,32 @@ namespace IntroSkip.Detection
             return false;
         }
 
-        public List<SequenceResult> DetectSequences(BaseItem episode1Input, BaseItem episode2Input, QueryResult<SequenceResult> result, Stopwatch stopWatch)
+
+        
+        public List<SequenceResult> DetectSequences(BaseItem episode1Input, BaseItem episode2Input, AudioFingerprint episode1Fingerprint,  AudioFingerprint episode2Fingerprint, QueryResult<SequenceResult> results, Stopwatch stopWatch)
         {
+            //var episode1Fingerprint = fingerprints.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
 
-            var episode1InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
+            //var episode2Fingerprint = fingerprints.FirstOrDefault(r => r.InternalId == episode2Input.InternalId);
 
-            var episode2InputKey = result.Items.FirstOrDefault(r => r.InternalId == episode2Input.InternalId);
+            var episode1InputKey = results.Items.FirstOrDefault(r => r.InternalId == episode1Input.InternalId);
 
-            if (episode1InputKey is null)
+            var episode2InputKey = results.Items.FirstOrDefault(r => r.InternalId == episode2Input.InternalId);
+
+            if (episode1Fingerprint is null)
             {
 
                 throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
-            if (episode2InputKey is null)
+            if (episode2Fingerprint is null)
             {
 
                 throw new AudioFingerprintMissingException($" fingerprint data doesn't currently exist");
             }
 
-            if (episode1InputKey.Duration != episode2InputKey.Duration)
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
+            if (episode1InputKey?.Duration != episode2InputKey?.Duration)
             {
                 throw new AudioFingerprintDurationMatchException("Fingerprint encoding durations don't match");
             }
@@ -234,14 +242,14 @@ namespace IntroSkip.Detection
             var creditDto = new List<SequenceResult>(); //<-- Default empty
             try
             {
-                introDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: true);  //<--we'll change here
+                introDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Fingerprint, episode2Fingerprint, episode1Input, episode2Input, isTitleSequence: true);  //<--we'll change here
                 //Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} title sequence detection took {stopWatch.Elapsed.Seconds} seconds.");
             }
             catch { }
 
             try
             {
-                creditDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Input, episode2Input, isTitleSequence: false); //<-- we'll change here
+                creditDto = CompareFingerprint(episode1InputKey, episode2InputKey, episode1Fingerprint, episode2Fingerprint, episode1Input, episode2Input, isTitleSequence: false); //<-- we'll change here
                 //Log.Info($"{episode1Input.Parent.Parent.Name} {episode1Input.Parent.Name} Episode: {episode1Input.IndexNumber} matching Episode {episode2Input.IndexNumber} credit sequence detection took {stopWatch.ElapsedMilliseconds} milliseconds.");
             }
             catch { }
@@ -279,15 +287,14 @@ namespace IntroSkip.Detection
         }
 
 
-        private List<SequenceResult> CompareFingerprint(SequenceResult episode1, SequenceResult episode2, BaseItem episode1Input, BaseItem episode2Input, bool isTitleSequence)
+        private List<SequenceResult> CompareFingerprint(SequenceResult episode1, SequenceResult episode2, AudioFingerprint fp1, AudioFingerprint fp2, BaseItem episode1Input, BaseItem episode2Input, bool isTitleSequence)
         {
-            //var creditEncodingDuration = TimeSpan.FromTicks(episode1Input.RunTimeTicks.Value) > TimeSpan.FromMinutes(35) ? 3 : 1.5;
-
+            
             var duration = isTitleSequence ? episode1.Duration * 60 : 3 * 60; //Both episodes should have the same encoding duration
             
 
-            var fingerprint1 = isTitleSequence ? episode1.TitleSequenceFingerprint : episode1.CreditSequenceFingerprint;
-            var fingerprint2 = isTitleSequence ? episode2.TitleSequenceFingerprint : episode2.CreditSequenceFingerprint;
+            var fingerprint1 = isTitleSequence ? fp1.TitleSequenceFingerprint : fp1.CreditSequenceFingerprint;
+            var fingerprint2 = isTitleSequence ? fp2.TitleSequenceFingerprint : fp2.CreditSequenceFingerprint;
 
 
             // We'll cut off a bit of the end if the fingerprints have an odd numbered length
@@ -296,9 +303,7 @@ namespace IntroSkip.Detection
                 fingerprint1 = fingerprint1.GetRange(0, fingerprint1.Count() - 1);
                 fingerprint2 = fingerprint2.GetRange(0, fingerprint2.Count() - 1);
             }
-
             
-
             int offset = GetBestOffset(fingerprint1, fingerprint2);
 
             var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
@@ -306,9 +311,7 @@ namespace IntroSkip.Detection
             // ReSharper disable once TooManyChainedReferences
             List<double> hammingDistances = Enumerable.Range(0, (f1.Count < f2.Count ? f1.Count : f2.Count)).Select(i => GetFastHammingDistance(f1[i], f2[i])).ToList();
            
-
-            //Added for Sam to test upper threshold changes
-            var config = Plugin.Instance.Configuration;
+           
             var (start, end) = FindContiguousRegion(hammingDistances, 8);
 
 

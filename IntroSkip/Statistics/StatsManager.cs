@@ -19,7 +19,6 @@ namespace IntroSkip.Statistics
         private ILibraryManager LibraryManager { get; }
         private IFileSystem FileSystem { get; }
         private IApplicationPaths ApplicationPaths { get; }
-        private char Separator { get; }
         public static StatsManager Instance { get; set; }
 
         public static string statsFilePath;
@@ -34,7 +33,6 @@ namespace IntroSkip.Statistics
             LibraryManager = libraryManager;
             FileSystem = fileSystem;
             ApplicationPaths = applicationPaths;
-            Separator = FileSystem.DirectorySeparatorChar;
             Instance = this;
         }
 
@@ -214,7 +212,7 @@ namespace IntroSkip.Statistics
         private string GetIntroSkipInfoDir()
         {
             var configDir = ApplicationPaths.PluginConfigurationsPath;
-            return $"{configDir}{Separator}IntroSkipInfo";
+            return Path.Combine(configDir, "IntroSkipInfo"); //$"{configDir}{Separator}IntroSkipInfo";
         }
 
         private void CreateStatisticsTextFile()
@@ -223,7 +221,7 @@ namespace IntroSkip.Statistics
             Log.Debug("STATISTICS: Writing statistics to file");
 
             var stats = ReturnedDetectionStatsList;
-            var filePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
+            var filePath = Path.Combine(configDir, "IntroSkipInfo", "DetectionResults.txt");//$"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
             statsFilePath = filePath;
 
             if (stats == null)

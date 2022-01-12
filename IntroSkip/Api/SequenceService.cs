@@ -110,23 +110,17 @@ namespace IntroSkip.Api
         
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
-        private IHttpResultFactory ResultFactory { get; set; }
-        private StatsManager StatsManager { get; set; }
+        
         private IFileSystem FileSystem { get; }
         private IApplicationPaths ApplicationPaths { get; }
-        private char Separator { get; }
-
-
-        // ReSharper disable once TooManyDependencies
-        public SequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, StatsManager statsManager, IApplicationPaths applicationPaths, IFileSystem fileSystem)
+        
+        public SequenceService(IJsonSerializer json, ILogManager logMan, IApplicationPaths applicationPaths, IFileSystem fileSystem)
         {
             JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
-            ResultFactory = resultFactory;
-            StatsManager = statsManager;
             FileSystem = fileSystem;
             ApplicationPaths = applicationPaths;
-            Separator = FileSystem.DirectorySeparatorChar;
+            
         }
 
         public bool Get(HasChromaprintRequest request)
@@ -152,8 +146,8 @@ namespace IntroSkip.Api
                 titleSequence.CreditSequenceStart = item.CreditSequenceStart;
                 titleSequence.HasCreditSequence = item.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
                 titleSequence.Confirmed = true;
-                titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-                titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
+                titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                titleSequence.CreditSequenceFingerprint = new List<uint>();
                 try
                 {
                     repository.SaveResult(titleSequence, CancellationToken.None);
@@ -192,8 +186,8 @@ namespace IntroSkip.Api
             titleSequence.CreditSequenceStart = request.CreditSequenceStart;
             titleSequence.HasCreditSequence = titleSequence.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
             titleSequence.Confirmed = true;
-            titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-            titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
+            titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+            titleSequence.CreditSequenceFingerprint = new List<uint>();
             try
             {
                 repository.SaveResult(titleSequence, CancellationToken.None);
@@ -218,7 +212,7 @@ namespace IntroSkip.Api
         public void Post(ScanSeriesRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            SequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
+            //SequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
             DisposeRepository(repository);
         }
 
@@ -318,20 +312,7 @@ namespace IntroSkip.Api
 
         }
 
-        //public class UIStats
-        //{
-        //    public bool HasIssue { get; set; }
-        //    public string TVShowName { get; set; }
-        //    public string Season { get; set; }
-        //    public long SeasonInternalId { get; set; }
-        //    public int EpisodeCount { get; set; }
-        //    public TimeSpan IntroDuration { get; set; }
-        //    public double PercentDetected { get; set; }
-        //    public double EndPercentDetected { get; set; }
-        //    public string Comment { get; set; } 
-        //    public DateTime Date { get; set; }
-        //}
-
+        
        public string Get(SeasonStatisticsRequest request)
        {
            
@@ -340,7 +321,7 @@ namespace IntroSkip.Api
 
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("STATISTICS: SERVICE - Getting statistics for UI from Text file");
-            string statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
+            string statsFilePath = Path.Combine(configDir, "IntroSkipInfo", "DetectionResults.txt");
 
             if (!FileSystem.FileExists(statsFilePath))
             {   //OMG this is hilarious :)

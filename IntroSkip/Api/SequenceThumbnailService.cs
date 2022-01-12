@@ -114,7 +114,7 @@ namespace IntroSkip.Api
                 {
                     Log.Debug("Returning thumb images from cache.");
                     
-                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/jpeg");
+                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/bmp");
                 }
             }
 
@@ -128,7 +128,7 @@ namespace IntroSkip.Api
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
            
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vframes 1 -f image2pipe -s 175x100 -";
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f image2 -s 175x100 -";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -137,14 +137,14 @@ namespace IntroSkip.Api
                 CreateNoWindow = true,
             };
 
-            Stream output;
+            FileStream output;
            
             //Stream error;
             using (var process = new Process {StartInfo = procStartInfo})
             {
                 process.Start();
                 process.ErrorDataReceived += Process_ErrorDataReceived;
-                output = process.StandardOutput.BaseStream;
+                output = process.StandardOutput.BaseStream as FileStream;
                 //error = process.StandardError.BaseStream;
                 
             }
@@ -154,7 +154,7 @@ namespace IntroSkip.Api
             //    //Log.Debug(await sr.ReadToEndAsync());
             //}
 
-            return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/jpeg"));
+            return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/png"));
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -163,7 +163,7 @@ namespace IntroSkip.Api
         }
 
         public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/jpg"));
+            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/png"));
 
         private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
         {
