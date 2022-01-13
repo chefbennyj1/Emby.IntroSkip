@@ -795,9 +795,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     imageCacheToggle.checked = config.ImageCache;
                 });
 
-                document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
-                    '<a is="emby-linkbutton" class="raised raised-mini headerHelpButton emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
-
+                
                 imageCacheToggle.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     var enabled = view.querySelector('#enableImageCache').checked;
@@ -871,6 +869,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     renderTableItems(introResult.TitleSequences, view);
                     
                 });
+
+                document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
+                    '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+
             });
+
+           
         }
     });

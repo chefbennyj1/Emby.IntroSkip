@@ -210,61 +210,49 @@ namespace IntroSkip.AudioFingerprinting
             
         }
 
-        public bool CreditFingerprintExists(BaseItem item)
-        {
-            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{item.InternalId}") + ".bin");
-            return File.Exists(chromaprintBinaryFilePath);
-        }
+        
 
-        public bool TitleFingerprintExists(BaseItem item)
+        public List<uint> GetCreditSequenceFingerprint(BaseItem episode, TimeSpan duration, CancellationToken cancellationToken)
         {
-            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{item.InternalId}") + ".bin");
-            return File.Exists(chromaprintBinaryFilePath);
-        }
-
-        public List<uint> GetCreditSequenceFingerprint(BaseItem item, TimeSpan duration, CancellationToken cancellationToken)
-        {
-            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{item.InternalId}") + ".bin");
+            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{episode.InternalId}") + ".bin");
             
-            if (CreditFingerprintExists(item)) return SplitByteData(chromaprintBinaryFilePath, item); //<-- return the print is it already exists
+            if (CreditFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print is it already exists
 
-            if (!item.RunTimeTicks.HasValue)
+            if (!episode.RunTimeTicks.HasValue)
             {
-                Log.Warn($"{item.Parent.Parent.Name} {item.Parent.Name} Episode {item.IndexNumber} currently has no runtime value. Can not calculate end credit location...");
+                Log.Warn($"{episode.Parent.Parent.Name} {episode.Parent.Name} Episode {episode.IndexNumber} currently has no runtime value. Can not calculate end credit location...");
                 return new List<uint>(); //<--Empty array. We can't calculate the end credits here. We'll have to wait until the runtime value is calculated by emby, and come back to this later
             } 
-            var sequenceEncodingStart = TimeSpan.FromTicks(item.RunTimeTicks.Value) - duration;
 
-            ExtractFingerprintBinaryData(item, chromaprintBinaryFilePath, duration, cancellationToken, sequenceEncodingStart);
+            var sequenceEncodingStart = TimeSpan.FromTicks(episode.RunTimeTicks.Value) - duration;
+
+            ExtractFingerprintBinaryData(episode, chromaprintBinaryFilePath, duration, cancellationToken, sequenceEncodingStart);
             
-            if (!EnsureFfmpegEol(chromaprintBinaryFilePath))
-            {
-                Log.Warn("ffmpeg process key still available in credit sequence process dictionary...OK");
-            }
+            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("ffmpeg process key still available in credit sequence process dictionary...OK");
             
-            return SplitByteData(chromaprintBinaryFilePath, item);
+            return SplitByteData(chromaprintBinaryFilePath, episode);
 
         }
 
-        public List<uint> GetTitleSequenceFingerprint(BaseItem item, TimeSpan duration, CancellationToken cancellationToken)
+        public List<uint> GetTitleSequenceFingerprint(BaseItem episode, TimeSpan duration, CancellationToken cancellationToken)
         {
-            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{item.InternalId}") + ".bin");
+            var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{episode.InternalId}") + ".bin");
             
-            if(TitleFingerprintExists(item)) return SplitByteData(chromaprintBinaryFilePath, item); //<-- return the print is it already exists
+            if (TitleFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print is it already exists
             
-            ExtractFingerprintBinaryData(item, chromaprintBinaryFilePath, duration, cancellationToken, TimeSpan.Zero);
+            ExtractFingerprintBinaryData(episode, chromaprintBinaryFilePath, duration, cancellationToken, TimeSpan.Zero);
 
-            if (!EnsureFfmpegEol(chromaprintBinaryFilePath))
-            {
-                Log.Warn("ffmpeg process key still available in title sequence process dictionary...OK");
-            }
-
-            return SplitByteData(chromaprintBinaryFilePath, item);
+            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("ffmpeg process key still available in title sequence process dictionary...OK");
+            
+            return SplitByteData(chromaprintBinaryFilePath, episode);
         }
         
         private string GetEncodingDirectory() => Path.Combine(ApplicationPaths.PluginsPath, "data", "intro_encoding"); 
         
-
+        public bool CreditFingerprintExists(BaseItem item) => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{item.InternalId}") + ".bin"));
+        
+        public bool TitleFingerprintExists(BaseItem item)  => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{item.InternalId}") + ".bin"));
+        
         private bool EnsureFfmpegEol(string outputFilePath)
         {
             var process = Process.GetProcesses()
@@ -292,13 +280,8 @@ namespace IntroSkip.AudioFingerprinting
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
-            var args = new[]
-            {
-                "-version",
-               
-            };
-
-            var procStartInfo = new ProcessStartInfo(ffmpegPath, string.Join(" ", args))
+            
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, "-version")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

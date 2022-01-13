@@ -156,23 +156,17 @@ namespace IntroSkip.Detection
                         }
 
 
-                        //After processing, the DB entry is marked as 'processed'. if the item has been processed already, just move on.
+                        //After processing, the DB entry is marked as 'processed'. if all the item has been processed already, just move on.
                         if (dbEpisodes.All(item => item.Processed))
                         {
                             Log.Debug($"{series.Name} {season.Name} have no new episodes to scan.");
-                            //try
-                            //{
-                            //    Clean(season, repository, cancellationToken);
-                            //}
-                            //catch { }
-
                             continue;
                         }
 
 
                         // All our processed episodes with sequences, or user confirmed information
                         var exceptIds = new HashSet<long>(dbEpisodes.Where(e => e.Processed).Select(y => y.InternalId)).Distinct();
-                        // A list of episodes with all our episodes containing sequence data removed from it. All that is left is what we need to process.
+                        // A list of episodes with all our sequence data removed from it. All that is left is what we need to process.
                         var unmatched = episodeQuery.Items.Where(x => !exceptIds.Contains(x.InternalId)).ToList();
 
 
@@ -181,8 +175,7 @@ namespace IntroSkip.Detection
                             continue;
                         }
 
-                        
-                        var episodeResults = new ConcurrentDictionary<long, ConcurrentBag<SequenceResult>>();
+                        var episodeSequenceResults = new ConcurrentDictionary<long, ConcurrentBag<SequenceResult>>();
 
                         Log.Debug($"{series.Name} {season.Name} has {unmatched.Count} items to process...");
                         
@@ -190,7 +183,15 @@ namespace IntroSkip.Detection
 
                         unmatched.AsParallel().WithCancellation(cancellationToken).WithDegreeOfParallelism(config.MaxDegreeOfParallelism == 1 ? 1 : 2).ForAll((unmatchedItem) =>
                         {
-                            
+
+                            //Make sure the database has this entry for this item available to edit. If it doesn't move on to the next item to process.
+                            if(!repository.ResultExists(unmatchedItem.InternalId.ToString()))
+                            {
+                                Log.Warn($"{series.Name} { season.Name} Episode: {unmatchedItem.IndexNumber} doesn't exist in the sequence database.");
+                                return;
+                            }
+
+
                             //Compare the unmatched episode  with every other episode in the season until there is a match.
                             for (var episodeComparableIndex = 0; episodeComparableIndex <= episodeQuery.Items.Count() - 1; episodeComparableIndex++)
                             {
@@ -208,10 +209,15 @@ namespace IntroSkip.Detection
 
                                 var comparableItemFingerprint = new AudioFingerprint();
                                 
-                                //Have we read the comparable item's fingerprint binary yet? if so it will exist in the dictionary.
+                                //Have we read the comparable item's fingerprint binary yet? if so it will exist in the ifngerprints dictionary.
                                 if (!fingerprints.ContainsKey(comparableItem.InternalId))
                                 {
                                     var sequenceResult = dbEpisodes.FirstOrDefault(e => e.InternalId == comparableItem.InternalId);
+                                    if (sequenceResult is null)
+                                    {
+                                        Log.Warn("Comparable item sequence result is null.");
+                                        return;
+                                    }
                                     var duration = TimeSpan.FromMinutes(sequenceResult.Duration);
                                     comparableItemFingerprint.TitleSequenceFingerprint  = AudioFingerprintManager.Instance.GetTitleSequenceFingerprint(comparableItem, duration, cancellationToken);
                                     comparableItemFingerprint.CreditSequenceFingerprint = AudioFingerprintManager.Instance.GetCreditSequenceFingerprint(comparableItem, duration, cancellationToken);
@@ -227,10 +233,15 @@ namespace IntroSkip.Detection
                                 }
 
                                 var unmatchedItemFingerprint = new AudioFingerprint();
-                                //Have we read the unmatched item's fingerprint binary yet? if so it will exist in the dictionary.
+                                //Have we read the unmatched item's fingerprint binary yet? if so it will exist in the dictionary, otherwise we'll have to create it.
                                 if (!fingerprints.ContainsKey(unmatchedItem.InternalId))
                                 {
                                     var sequenceResult = dbEpisodes.FirstOrDefault(e => e.InternalId == unmatchedItem.InternalId);
+                                    if (sequenceResult is null)
+                                    {
+                                        Log.Warn("unmatched item sequence result is null.");
+                                        return;
+                                    }
                                     var duration = TimeSpan.FromMinutes(sequenceResult.Duration);
                                     unmatchedItemFingerprint.TitleSequenceFingerprint  = AudioFingerprintManager.Instance.GetTitleSequenceFingerprint(unmatchedItem, duration, cancellationToken);
                                     unmatchedItemFingerprint.CreditSequenceFingerprint = AudioFingerprintManager.Instance.GetCreditSequenceFingerprint(unmatchedItem, duration, cancellationToken);
@@ -260,12 +271,12 @@ namespace IntroSkip.Detection
                                     var sequences = sequenceDetection.DetectSequences(comparableItem, unmatchedItem, comparableItemFingerprint, unmatchedItemFingerprint, dbResults, stopWatch);
                                     
                                     //Created the keys in the result dictionary if we don't have one yet.
-                                    if (!episodeResults.ContainsKey(unmatchedItem.InternalId))  episodeResults.TryAdd(unmatchedItem.InternalId, new ConcurrentBag<SequenceResult>());
-                                    if (!episodeResults.ContainsKey(comparableItem.InternalId)) episodeResults.TryAdd(comparableItem.InternalId, new ConcurrentBag<SequenceResult>());
+                                    if (!episodeSequenceResults.ContainsKey(unmatchedItem.InternalId))  episodeSequenceResults.TryAdd(unmatchedItem.InternalId, new ConcurrentBag<SequenceResult>());
+                                    if (!episodeSequenceResults.ContainsKey(comparableItem.InternalId)) episodeSequenceResults.TryAdd(comparableItem.InternalId, new ConcurrentBag<SequenceResult>());
                                     
                                     //Add the result to the dictionary key
-                                    episodeResults[unmatchedItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == unmatchedItem.InternalId));
-                                    episodeResults[comparableItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == comparableItem.InternalId));
+                                    episodeSequenceResults[unmatchedItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == unmatchedItem.InternalId));
+                                    episodeSequenceResults[comparableItem.InternalId].Add(sequences.FirstOrDefault(s => s.InternalId == comparableItem.InternalId));
 
                                     stopWatch.Stop();
 
@@ -282,8 +293,8 @@ namespace IntroSkip.Detection
                                         continue;
                                     }
 
-                                    //No comparison results between these two items. Mark them as processed amnd move on.
-                                    if (!episodeResults.ContainsKey(unmatchedItem.InternalId))
+                                    //No comparison results between these two items. Mark them as processed and move on...
+                                    if (!episodeSequenceResults.ContainsKey(unmatchedItem.InternalId))
                                     {
                                         var unmatchedSequence = repository.GetResult(unmatchedItem.InternalId.ToString());
                                         unmatchedSequence.Processed = true;
@@ -293,7 +304,7 @@ namespace IntroSkip.Detection
 
                                     }
 
-                                    if (!episodeResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
+                                    if (!episodeSequenceResults.ContainsKey(episodeQuery.Items[episodeComparableIndex].InternalId))
                                     {
                                         var comparableSequence = repository.GetResult(episodeQuery.Items[episodeComparableIndex].InternalId.ToString());
                                         comparableSequence.Processed = true;
@@ -323,11 +334,11 @@ namespace IntroSkip.Detection
                         });
                         
 
-                        if (!episodeResults.Any()) continue; //Could happen...
+                        if (!episodeSequenceResults.Any()) continue; //Could happen...
                         
                         //All our results from every comparison of this unmatched item.
                         var fullResults = new List<SequenceResult>();
-                        episodeResults.ToList().ForEach(item => fullResults.AddRange(item.Value));
+                        episodeSequenceResults.ToList().ForEach(item => fullResults.AddRange(item.Value));
 
 
                         //Find our common title sequence duration.
@@ -345,7 +356,7 @@ namespace IntroSkip.Detection
                         
 
                         //Calculate the best result from all the possibilities against our common duration results.
-                        foreach (var item in episodeResults) //<-- We can't process this in parallel because there is no throttle when we run ffmpeg, and it pushes the CPU toooo much.
+                        foreach (var item in episodeSequenceResults) //<-- We can't process this in parallel because there is no throttle when we run ffmpeg, and it pushes the CPU toooo much.
                         {
 
                             var sequenceResult = repository.GetResult(item.Key.ToString());
@@ -398,11 +409,11 @@ namespace IntroSkip.Detection
                                     $"\nCredit sequence start time: {sequenceResult.CreditSequenceStart}" +
                                     $"\nCredit sequence end time: {sequenceResult.CreditSequenceEnd}" +
                                     $"\nCredit confidence score: {creditSequenceConfidence}" +
-                                    "\nSequence save successful.");
+                                    "\nSequence save successful.\n");
                             }
                             catch (Exception ex)
                             {
-                                Log.ErrorException(ex.Message, ex);
+                                Log.Warn(ex.Message, ex);
                             }
                             
                             //AudioFingerprintManager.Instance.RemoveEpisodeFingerprintBinFiles(sequenceResult.InternalId);
@@ -623,6 +634,8 @@ namespace IntroSkip.Detection
             var longest         = enumerableGroup.OrderByDescending(g => g.Count()).Select(g => g.Key).First(); //The longest time span in the group
             return longestCommonTimeSpan ? longest : mostCommon;
         }
+
+        
 
         private bool IsComplete(BaseItem season)
         {

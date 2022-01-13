@@ -170,8 +170,7 @@ namespace IntroSkip.ScheduledTasks
                         var averageRuntime = GetSeasonRuntimeAverage(episodeQuery.Items);
                         var duration = GetEncodingDuration(averageRuntime);
                         
-
-                        //If we are processing the final series, increase the amount of episodes to process at once.
+                       
                         foreach (var episode in episodeQuery.Items)
                         {
                             if (cancellationToken.IsCancellationRequested)

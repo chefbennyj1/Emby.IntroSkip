@@ -72,7 +72,7 @@ namespace IntroSkip.Api
             CreateImageCacheDirectoryIfNotExist();
         }
 
-        public async Task<object> Get(ExtractThumbImage request)
+        public object Get(ExtractThumbImage request)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -114,7 +114,7 @@ namespace IntroSkip.Api
                 {
                     Log.Debug("Returning thumb images from cache.");
                     
-                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/bmp");
+                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
                 }
             }
 
@@ -122,13 +122,13 @@ namespace IntroSkip.Api
 
             //If we have gotten this far with ImageCache enabled, then we don't have a copy of the image in the cache. 
             //Now we have to run ffmpeg process to save the image
-            if (config.ImageCache) UpdateImageCache(item.InternalId, request.SequenceImageType, frame);
+            if (config.ImageCache) new TaskFactory().StartNew(() => UpdateImageCache(item.InternalId, request.SequenceImageType, frame)).ConfigureAwait(false);
 
             //Get the extracted frame using FFmpeg. 
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
            
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f image2 -s 175x100 -";
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -r 1 -q:v 2 -an -f image2 -s 175x100 -";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -154,7 +154,7 @@ namespace IntroSkip.Api
             //    //Log.Debug(await sr.ReadToEndAsync());
             //}
 
-            return await Task.Factory.StartNew(() => ResultFactory.GetResult(Request, output, "image/png"));
+            return ResultFactory.GetResult(Request, output, "image/png");
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -232,7 +232,7 @@ namespace IntroSkip.Api
             catch { }
         }
 
-        public void UpdateImageCache(long internalId, SequenceImageType sequenceImageType, string frame)
+        public Task UpdateImageCache(long internalId, SequenceImageType sequenceImageType, string frame)
         {
             var item = LibraryManager.GetItemById(internalId);
 
@@ -243,8 +243,8 @@ namespace IntroSkip.Api
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
            
-            var arguments = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -vcodec mjpeg -vframes 1 -an -f rawvideo -s 175x100 \"{Path.Combine(cache, imageFile)}\"";
-            var processStartInfo = new ProcessStartInfo(ffmpegPath, arguments)
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -r 1 -q:v 2 -an -f image2 -s 175x100 \"{Path.Combine(cache, imageFile)}\"";
+            var processStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -256,7 +256,7 @@ namespace IntroSkip.Api
                 process.Start();
             }
 
-
+            return Task.FromResult(true);
         }
         
     }

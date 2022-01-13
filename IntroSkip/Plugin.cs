@@ -38,6 +38,8 @@ namespace IntroSkip
             {
                 Name = "IntroSkipConfigurationPage",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.html",
+                EnableInMainMenu = true,
+                DisplayName = "Intro/Credit Skip"
             },
             new PluginPageInfo
             {

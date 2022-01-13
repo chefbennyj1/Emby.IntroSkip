@@ -12,9 +12,7 @@ using IntroSkip.AudioFingerprinting;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Plugins;
-using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
-using MediaBrowser.Model.Serialization;
 
 // ReSharper disable ComplexConditionExpression
 
@@ -23,12 +21,9 @@ namespace IntroSkip.Detection
     public class SequenceDetection : SequenceResult, IServerEntryPoint
     {
         public static SequenceDetection Instance { get; private set; }
-        private static ILogger Log { get; set; }
-        private IJsonSerializer JsonSerializer { get; set; }
-        public SequenceDetection(ILogManager logMan, IJsonSerializer json)
+       
+        public SequenceDetection()
         {
-            Log = logMan.GetLogger(Plugin.Instance.Name);
-            JsonSerializer = json;
             Instance = this;
         }
 

@@ -195,6 +195,17 @@ namespace IntroSkip.Data
             }
         }
 
+        public bool ResultExists(string id)
+        {
+            try
+            {
+                return !(GetResult(id) is null);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         //BaseTitleSequence
         public QueryResult<BaseSequence> GetBaseTitleSequenceResults(SequenceResultQuery query)

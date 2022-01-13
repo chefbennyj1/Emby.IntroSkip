@@ -1,14 +1,15 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace IntroSkip.Detection
 {
     public class SequenceInvalidDetectionException : Exception
     {
-        public SequenceInvalidDetectionException() : base() { }
+        public SequenceInvalidDetectionException() { }
         public SequenceInvalidDetectionException(string message) : base(message) { }
-        public SequenceInvalidDetectionException(string message, System.Exception inner) : base(message, inner) { }
+        public SequenceInvalidDetectionException(string message, Exception inner) : base(message, inner) { }
 
-        protected SequenceInvalidDetectionException(System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        protected SequenceInvalidDetectionException(SerializationInfo info,
+            StreamingContext context) : base(info, context) { }
     }
 }

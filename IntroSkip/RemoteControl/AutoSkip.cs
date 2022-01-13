@@ -42,7 +42,6 @@ namespace IntroSkip.RemoteControl
             SessionManager.PlaybackStart    += SessionManager_PlaybackStart;
             SessionManager.PlaybackProgress += SessionManager_PlaybackProgress;
             SessionManager.PlaybackStopped  += SessionManager_PlaybackStopped;
-            //throw new System.NotImplementedException();
         }
         
         private enum SequenceSkip 
@@ -50,13 +49,14 @@ namespace IntroSkip.RemoteControl
             INTRO  = 0,
             CREDIT = 1
         }
-        private void SkipSequence(SessionInfo session, long seek, SequenceSkip sequenceSkip) 
+        private async void SkipSequence(SessionInfo session, long seek, SequenceSkip sequenceSkip) 
         {
-            SessionManager.SendPlaystateCommand(null, session.Id, new PlaystateRequest()
+            await SessionManager.SendPlaystateCommand(null, session.Id, new PlaystateRequest()
             {
                 Command           = PlaystateCommand.Seek,
                 ControllingUserId = UserManager.Users.FirstOrDefault(u => u.Policy.IsAdministrator)?.Id.ToString(),
                 SeekPositionTicks = seek
+
             }, CancellationToken.None);
 
             if (Plugin.Instance.Configuration.ShowAutoTitleSequenceSkipMessage)
@@ -66,7 +66,7 @@ namespace IntroSkip.RemoteControl
                 Log.Debug($"AUTOSKIP:Auto Skip message to {session.Client} was successful.");
             }
 
-            //We have moved the stream to the end of the intro or credits. Remove it from the appropriate  Sequences Dictionary.
+            //We have moved the stream to the end of the intro or credits. Remove it from the appropriate Sequences Dictionary.
             switch (sequenceSkip)
             {
                 case SequenceSkip.INTRO:
@@ -154,8 +154,8 @@ namespace IntroSkip.RemoteControl
             if (!config.EnableAutoSkipTitleSequence && !config.EnableAutoSkipCreditSequence) return; //Both features are not enabled.
             if (config.AutoSkipUsers is null) return;                                                //No users have opt'd in to the feature
             if (!config.AutoSkipUsers.Contains(e.Session.UserId)) return;                            //The list of opt'd users does not contain this sessions user.
+            
 
-           
             var episodeIndex = e.Item.IndexNumber;
             var seasonName   = e.Item.Parent.Name;
             var seriesName   = e.Item.Parent.Parent.Name;
@@ -274,7 +274,6 @@ namespace IntroSkip.RemoteControl
             await SessionManager.SendMessageCommand(session.Id, session.Id,
                 new MessageCommand
                 {
-
                     Header = "",
                     Text = messageText,
                     TimeoutMs = Plugin.Instance.Configuration.AutoTitleSequenceSkipMessageDuration ?? 800

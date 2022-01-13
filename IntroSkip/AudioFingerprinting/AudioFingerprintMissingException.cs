@@ -1,14 +1,15 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace IntroSkip.AudioFingerprinting
 {
     public class AudioFingerprintMissingException : Exception
     {
-        public AudioFingerprintMissingException() : base() { }
+        public AudioFingerprintMissingException() { }
         public AudioFingerprintMissingException(string message) : base(message) { }
-        public AudioFingerprintMissingException(string message, System.Exception inner) : base(message, inner) { }
+        public AudioFingerprintMissingException(string message, Exception inner) : base(message, inner) { }
 
-        protected AudioFingerprintMissingException(System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        protected AudioFingerprintMissingException(SerializationInfo info,
+            StreamingContext context) : base(info, context) { }
     }
 }
