@@ -6,32 +6,31 @@ using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using IntroSkip.Data;
-using IntroSkip.ScheduledTasks;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.IO;
 
 namespace IntroSkip
 {
     public class IntroSkipPluginEntryPoint : IServerEntryPoint
     {
-        public static IntroSkipPluginEntryPoint Instance { get; set; }
+        public static IntroSkipPluginEntryPoint Instance { get; private set; }
         private ISequenceRepository Repository { get; set; }
         private static ILibraryManager LibraryManager { get; set; }
         private static ITaskManager TaskManager { get; set; }
         private static IServerConfigurationManager Config { get; set; }
         private static ILogger Logger { get; set; }
         private static IJsonSerializer _json { get; set; }
-
-        //Handling new items added to the library
-        private static readonly Timer ItemsAddedTimer = new Timer(AllItemsAdded);
+        private IFileSystem FileSystem { get; set; }
        
-        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager)
+       
+        public IntroSkipPluginEntryPoint(ILogManager logManager, IServerConfigurationManager config, IJsonSerializer json, ILibraryManager libraryManager, ITaskManager taskManager, IFileSystem fileSystem)
         {
             _json          = json;
             Config         = config;
             LibraryManager = libraryManager;
             TaskManager    = taskManager;
+            FileSystem     = fileSystem;
             Instance       = this;
             Logger         = logManager.GetLogger(Plugin.Instance.Name);
             
@@ -39,23 +38,33 @@ namespace IntroSkip
 
         public void Dispose()
         {
-            LibraryManager.ItemAdded -= LibraryManager_ItemAdded;
             TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
             var repo = Repository as IDisposable;
             repo?.Dispose();
-            ItemsAddedTimer.Dispose();
-            
+
         }
 
         public void Run()
         {
-            ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            
-            LibraryManager.ItemAdded += LibraryManager_ItemAdded;
             
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
-
+            LibraryManager.ItemRemoved += LibraryManagerItemRemoved;
             Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
+        }
+
+        private void LibraryManagerItemRemoved(object sender, ItemChangeEventArgs e)
+        {
+            if (e.Item.GetType().Name != nameof(Episode)) return;
+            try
+            {
+                var repository = GetRepository();
+                repository.Delete(e.Item.InternalId.ToString());
+                var repo = repository as IDisposable;
+                repo.Dispose();
+            }
+            catch{}
+
+            
         }
 
         private void TaskManagerOnTaskCompleted(object sender, TaskCompletionEventArgs e)
@@ -76,72 +85,27 @@ namespace IntroSkip
                             new TaskOptions());
                     break;
 
-                ////Run the Fingerprinting task after each library scan
-                //case "Scan media library":
-                //    try
-                //    {
-                //        TaskManager.Execute(
-                //            TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting"),
-                //            new TaskOptions());
-                //    }catch {} //If this task is already running, we'll catch the error
+                //Run the Fingerprinting task after each library scan, in case new items have been added.
+                case "Scan media library":
+                    if (!Plugin.Instance.Configuration.EnableItemAddedTaskAutoRun) return;
+                    try
+                    {
+                        TaskManager.Execute(
+                            TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting"),
+                            new TaskOptions());
+                    }
+                    catch { } //If this task is already running, we'll catch the error
 
-                //    break;
+                    break;
 
             }
         }
 
         
-        private void LibraryManager_ItemAdded(object sender, ItemChangeEventArgs e)
-        {
-            if (!Plugin.Instance.Configuration.EnableItemAddedTaskAutoRun)
-            {
-                return;
-            }
-
-            if (e.Item.GetType().Name != "Episode")
-            {
-                return;
-            }
-            
-            //if the timer is reset then a new item has been added
-            //if the timer goes off, then we are ready to scan new items
-            ItemsAddedTimer.Change(5000, Timeout.Infinite); //Wait 5 seconds to see if anything else is about to be added
-
-        }
-        
-
-        private static async void AllItemsAdded(object state)
-        {
-            var libraryTask   = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Scan media library");
-            var detectionTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
-            var fingerprintingTask = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Audio Fingerprinting");
-            
-            if (libraryTask?.State == TaskState.Running || fingerprintingTask?.State == TaskState.Running || detectionTask?.State == TaskState.Running) //We're not ready for fingerprinting yet.
-            {
-                ItemsAddedTimer.Change(5000, Timeout.Infinite ); //Check back in 5 seconds
-                return;
-            }
-
-            //Okay, we're ready for fingerprinting now - go ahead.
-            ItemsAddedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            Logger.Info("New Items are ready to fingerprint scan...");
-            
-
-            if (fingerprintingTask?.State == TaskState.Running) return;
-
-            try
-            {
-                await TaskManager.Execute(fingerprintingTask, new TaskOptions()).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(ex.Message);
-            }
-        }
-
+       
         public ISequenceRepository GetRepository()
         {
-            var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json);
+            var repo = new SqliteSequenceRepository(Logger, Config.ApplicationPaths, _json, FileSystem);
 
             repo.Initialize();
             

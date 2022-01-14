@@ -35,9 +35,9 @@
             });
         }
 
-        function getPrimaryImage(id) {
+        function getLogoImageUrl(id) {
             return new Promise((resolve, reject) => {
-                ApiClient.getJSON(ApiClient.getUrl('Items?Ids=' + id)).then(result => {
+                ApiClient.getUrl('Items?Ids=' + id).then(result => {
                     resolve(result);
                 });
             });
@@ -66,13 +66,9 @@
 
             html += '<td data-title="Library Link" class="detailTableBodyCell" >';
             html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
-            html += '<img style="width:100px" src="' + ApiClient.getLogoImageUrl(baseItem.SeriesId) + '"/>';
-            html += '</td>';
-
-            html += '<td data-title="Date" class="detailTableBodyCell">';
-            html += '<span>' + datetime.toLocaleDateString(date) + '</span>';
-            html += '</td>';
-
+            html += '<img style="width:100px" src="' + getLogoImageUrl(baseItem.SeriesId) + '"/>';
+            html += '</a></td>';
+           
             html += '<td data-title="TV Show" class="detailTableBodyCell" display="" >';
             html += '<span>' + baseItem.SeriesName + '</span>';
             html += '</td>';

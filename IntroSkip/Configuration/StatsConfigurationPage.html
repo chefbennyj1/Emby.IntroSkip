@@ -5,13 +5,16 @@
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
 
                 <div class="sectionTitleContainer flex align-items-center">
-                    <h2 class="sectionTitle">IntroSkip Detection Statistics</h2>
+                    <h2 class="sectionTitle">Detection Statistics</h2>
                 </div>
                 <div>
-                    <h3 class="sectionTitle">In order to Generate Statistics you must run the IntroSkip Statistics Task under Scheduled Tasks</h3>
+                    <h3 class="sectionTitle">Statistical overview of detection successes for TV Shows and Seasons.</h3>
+                    <p>In order to generate statistics, the IntroSkip Statistics Task must be run, under Scheduled Tasks</p>
                 </div>
+
                 <div class="fieldDescription" style="width:45%">
-                    This Page allows you to run statistics on the detection success of all your TV Shows and seasons, allowing you to investigate Seasons which have a problem with their episodes.
+                    Some episodes are broadcast without title sequences, or only include a short title screen which would not be considered a title sequence.<br />
+                    This should be taken into consideration when reading detection statistic data.
                 </div>
 
                 <br />
@@ -30,21 +33,15 @@
                         Disabling will show only statistics for TV Shows and Seasons that do not have 100% detection success
                     </div>
                     <div class="fieldDescription" style="width:45%">
-                        Enabling will show statistics for all TV Shows and Seasons (Good and Bad)
+                        Enabling will show statistical information for all TV Shows and Seasons.
                     </div>
                 </div>
 
                 <div class="sectionTitleContainer flex align-items-center">
-                    <h3 class="sectionTitle" style="margin-right:3%">Update Statistics:</h3>
+                    <!--<h3 class="sectionTitle" style="margin-right:3%">Update Statistics:</h3>-->
                     <button is="emby-button" style="width:15%" type="submit" class="runStatsTaskBtn raised button-submit block emby-button">
-                        <span>GET STATS</span>
+                        <span>Refresh statistic data</span>
                     </button>
-                </div>
-
-                <div class="sectionTitleContainer flex align-items-center">
-                    <h3 class="detectionStatsLink" style="margin-right:3%">Stats File Location:</h3>
-                    <h4 class="detectionStatsLinkLocatin" style="margin-right:3%">{EMBY-SERVER PATH}\programdata\plugins\configurations\IntroSkipInfo</h4>
-
                 </div>
 
                 <hr />
@@ -52,22 +49,30 @@
                 <div class="StatsResults scrollY" style="max-height: 50em; margin:0 2em 2em 2em">
                     <table class="tblStatsResults table detailTable" style="width: 100%;">
                         <thead>
-                            <tr style="text-align: left; color: mediumseagreen; padding-bottom: 2em;">
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Has Issue</th>
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">TV Show</th>
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Season</th>
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">No. Episodes</th>
+                        <!-- ReSharper disable once CssNotResolved -->
+                            <tr style="text-align: left; color: var(--theme-primary-color); padding-bottom: 2em;">
+                                <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Date</th>-->
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2"></th>
+
+                                <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">TV Show</th>-->
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Seasons</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Episode Count</th>
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Intro Duration</th>
                                 <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Intro Results</th>
-                                <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">End Credit Results</th>-->
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Comments</th>
-                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Date</th>
+                                <th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Credit Results</th>
+                                <!--<th class="detailTableHeaderCell" style="position: sticky" data-priority="2">Comments</th>-->
+
                             </tr>
                         </thead>
                         <tbody class="tblStatsResultBody"></tbody>
                     </table>
                 </div>
 
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h3 class="detectionStatsLink" style="margin-right:3%">Stats File Location:</h3>
+                    <h4 class="detectionStatsLinkLocatin" style="margin-right:3%">{EMBY-SERVER PATH}\programdata\plugins\configurations\IntroSkipInfo</h4>
+
+                </div>
 
             </div>
         </div>

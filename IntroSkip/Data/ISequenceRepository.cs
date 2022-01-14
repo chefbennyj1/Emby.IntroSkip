@@ -7,6 +7,9 @@ namespace IntroSkip.Data
 {
     public interface ISequenceRepository : IDisposable
     {
+        bool ResultExists(string id);
+
+        void Backup();
         /// <summary>
         /// Saves the result.
         /// </summary>

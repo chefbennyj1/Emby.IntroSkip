@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller;
+using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Serialization;
@@ -16,14 +17,62 @@ namespace IntroSkip.Data
     public class SqliteSequenceRepository : BaseSqliteRepository, ISequenceRepository
     {
         private readonly IJsonSerializer _json;
-
-        public SqliteSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json) : base(logger)
+        private IFileSystem FileSystem { get; set; }
+        //private ILogger Logger { get; set; }
+        private IServerApplicationPaths AppPaths { get; set; }
+        public SqliteSequenceRepository(ILogger logger, IServerApplicationPaths appPaths, IJsonSerializer json, IFileSystem fileSystem) : base(logger)
         {
             _json = json;
+            FileSystem = fileSystem;
+            AppPaths = appPaths;
             DbFilePath = Path.Combine(appPaths.DataPath, "titlesequence.db");
+            //Logger = logger;
         }
 
+        public void Backup()
+        {
+            var backups = new List<FileSystemMetadata>();
+            try
+            {
+                backups = FileSystem.GetFiles(AppPaths.DataPath).Where(f => f.Name.Contains("titlesequence_"))
+                    .ToList(); //our backup files
+            }
+            catch { }
 
+            if (backups.Any()) //Only remove files if we have more then 2 of them
+            {
+                if (backups.Count > 2)
+                {
+                    foreach (var file in backups)
+                    {
+                        var fileBackupDate =
+                            DateTime.Parse(file.Name.Split('_')[1]
+                                .Split('.')[0]); //The date the file backup happened is on the name
+                        if (fileBackupDate >= DateTime.Now.AddDays(-3))
+                            continue; // only clean up files if the backup is older then 3 days
+                        try
+                        {
+                            FileSystem.DeleteFile(file.FullName); //Get rid of old backups
+                        }
+                        catch (Exception ex)
+                        {
+                            //Logger.Warn(ex.Message);
+                        }
+                    }
+                }
+            }
+
+            try
+            {
+                FileSystem.CopyFile(DbFilePath, Path.Combine(AppPaths.DataPath, $"titlesequence_{DateTime.Now:yy-MM-dd}.db"), true); //Create the new backup
+                //Logger.Debug("Sequence Database backup complete.");
+            }
+            catch (Exception ex)
+            {
+                //Logger.Warn(ex.Message);
+            }
+            
+        }
         /// <summary>
         /// Opens the connection to the database
         /// </summary>
@@ -146,6 +195,17 @@ namespace IntroSkip.Data
             }
         }
 
+        public bool ResultExists(string id)
+        {
+            try
+            {
+                return !(GetResult(id) is null);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         //BaseTitleSequence
         public QueryResult<BaseSequence> GetBaseTitleSequenceResults(SequenceResultQuery query)

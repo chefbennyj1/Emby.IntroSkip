@@ -6,7 +6,12 @@
                 <h3 style="margin: .6em 0; vertical-align: middle; display: inline-block;">
                     Auto Skip
                 </h3>
+                <br />
                 <form>
+                    <div class="infoBanner flex align-items-center">
+                        Auto Skip will not attempt seeking to the end of the sequence while the Fingerprinting, and Detection Tasks are running.
+                    </div>
+                    <br/>
                     <!--Auto Skip feature-->
                     <div class="inputContainer">
                         <label style="width: auto;" class="mdl-switch mdl-js-switch">
@@ -90,7 +95,7 @@
                             <div style="flex-grow: 1;">
                                 <label class="inputLabel inputLabelUnfocused" for="txtMessageDuration">Message Duration:</label><input type="number" id="txtMessageDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Message Duration:" class="emby-input">
                             </div>
-                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
+                            <div class="fieldDescription" style="margin-left: .5em; font-size: 90%; margin-top: 1.3em;">
                                 Duration to show message (milliseconds).
                             </div>
                         </div>
@@ -101,7 +106,7 @@
                             <div style="flex-grow: 1;">
                                 <label class="inputLabel inputLabelUnfocused" for="txtDelayDuration">Delay Auto Skip Duration:</label><input type="number" id="txtDelayDuration" pattern="[0-9]*" required="required" min="0" step="1" label="Auto Skip Delay Duration:" class="emby-input">
                             </div>
-                            <div class="fieldDescription" style="margin-left:.5em;font-size:90%;margin-top:1.3em;">
+                            <div class="fieldDescription" style="margin-left: .5em; font-size: 90%; margin-top: 1.3em;">
                                 Delay Auto Skip (milliseconds).
                             </div>
                         </div>
@@ -129,7 +134,7 @@
                     </h3>
                     <!-- List of user that opt in to Auto Skip -->
                     <div is="emby-itemscontainer" class="itemsContainer flex flex-grow centered padded-bottom-page padded-left padded-left-page padded-right vertical-list virtualItemsContainer" data-virtualscrolllayout="vertical-grid">
-                        <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible user-list" layout="vertical" style="min-height: 24px;">
+                        <div is="virtual-scroller" class="flex-grow virtualScroller virtual-scroller virtual-scroller-overflowvisible user-list" layout="vertical" style="min-height: 116px; overflow-y: auto;">
                         </div>
                     </div>
                 </form>

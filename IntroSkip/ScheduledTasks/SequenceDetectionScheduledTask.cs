@@ -17,7 +17,7 @@ namespace IntroSkip.ScheduledTasks
     {
         private static ILogger Log { get; set; }
         private ITaskManager TaskManager { get; set; }
-       
+
         public SequenceDetectionScheduledTask(ILogManager logManager, ITaskManager taskManager)
         {
             Log = logManager.GetLogger(Plugin.Instance.Name);
@@ -36,28 +36,28 @@ namespace IntroSkip.ScheduledTasks
                 return;
             }
 
-            
+
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
-            
+
             var config = Plugin.Instance.Configuration;
             if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
-            
+
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             try
             {
-                
+
                 SequenceDetectionManager.Instance.Analyze(cancellationToken, progress, repository);
                 await Task.FromResult(true);
-                
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //Log.ErrorException(ex.Message, ex);
-                
+                Log.ErrorException(ex.Message, ex);
+
             }
 
-            var repo = (IDisposable) repository;
+            var repo = (IDisposable)repository;
             repo.Dispose();
             progress.Report(100.0);
         }

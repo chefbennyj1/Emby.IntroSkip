@@ -1,11 +1,12 @@
 ﻿using System;
+using IntroSkip.AudioFingerprinting;
 
 namespace IntroSkip.Sequence
 {
-    public class BaseSequence
-    {
+    public class BaseSequenceDto : AudioFingerprint
+    { 
         public int? IndexNumber { get; set; }
-        public long InternalId { get; set; }
+        //public long InternalId { get; set; }
         public bool HasTitleSequence { get; set; } = false;
         public bool HasCreditSequence { get; set; } = false;
         public TimeSpan CreditSequenceStart { get; set; }
@@ -17,6 +18,5 @@ namespace IntroSkip.Sequence
         public bool Confirmed { get; set; }
         public bool Processed { get; set; } = false;
         public bool HasRecap { get; set; }
-
     }
 }

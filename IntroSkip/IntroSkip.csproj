@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>0.0.1.42</AssemblyVersion> <FileVersion>0.0.1.42</FileVersion> <Version>0.0.1.42</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>0.0.1.69</AssemblyVersion> <FileVersion>0.0.1.69</FileVersion> <Version>0.0.1.69</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -9,34 +9,29 @@
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
 </PropertyGroup>
-
-<ItemGroup>
-  <None Remove="Configuration\4vhannfv.ltn~" />
-  <None Remove="Configuration\AutoSkipConfigurationPage.html" />
-  <None Remove="Configuration\AutoSkipConfigurationPage.js" />
-  <None Remove="Configuration\StatsConfigurationPage.html" />
-  <None Remove="Configuration\StatsConfigurationPage.js" />
-</ItemGroup>
-
+  
 
 <ItemGroup>
   <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\AutoSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\AutoSkipConfigurationPage.js" />
+  <EmbeddedResource Include="Configuration\Chart.js" />
   <EmbeddedResource Include="Configuration\StatsConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\StatsConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\IntroSkipConfigurationPage.js" />
+  <EmbeddedResource Include="no_credit.jpg" />
+  <EmbeddedResource Include="no_intro.jpg" />
   <EmbeddedResource Include="no_intro.png" />
   <EmbeddedResource Include="thumb.jpg" />
 </ItemGroup>
 
 
 <ItemGroup> 
-<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.3" />
+<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.4" />
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 </ItemGroup>
 

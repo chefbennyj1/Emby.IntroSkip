@@ -5,7 +5,7 @@ namespace IntroSkip.Configuration
 {
     public class PluginConfiguration : BasePluginConfiguration
     {
-        public bool FastDetect                          { get; set; } = true;
+        public bool FastDetect                          { get; set; } = false;
         public int TitleSequenceLengthThreshold         { get; set; } = 10; //Default
         public int HammingDistanceThreshold             { get; set; } = 8; //Default
         public int MaxDegreeOfParallelism               { get; set; } = 2; //Default

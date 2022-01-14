@@ -1,7 +1,9 @@
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
@@ -15,6 +17,9 @@ namespace IntroSkip.VideoBlackDetect
 
         private IFfmpegManager FfmpegManager { get; }
         private ILibraryManager LibraryManager { get; }
+
+        private readonly ConcurrentDictionary<long, int> FfmpegProcessMonitor = new ConcurrentDictionary<long, int>();
+
         public VideoBlackDetectionManager(IFfmpegManager ffmpeg, ILibraryManager libraryManager)
         {
             Instance = this;
@@ -27,7 +32,12 @@ namespace IntroSkip.VideoBlackDetect
             var episode = LibraryManager.GetItemById(internalId);
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
-            //TODO: If runtime is null handle it. Library scan needs to run.
+
+            if (!episode.RunTimeTicks.HasValue) //<-- this may not ever happen at this point.
+            {
+                return new List<TimeSpan>(); 
+            }
+
             var runtime = TimeSpan.FromTicks(episode.RunTimeTicks.Value);
             var input = episode.Path;
 
@@ -52,11 +62,9 @@ namespace IntroSkip.VideoBlackDetect
 
             using (var process = new Process { StartInfo = procStartInfo })
             {
-                //process.PriorityClass = ProcessPriorityClass.BelowNormal; //This changes nothing with regards to high CPU usages
-
                 process.Start();
                 process.PriorityClass = ProcessPriorityClass.BelowNormal; 
-
+                FfmpegProcessMonitor.TryAdd(internalId, process.Id);
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
                 string processOutput = null;
 
@@ -84,17 +92,38 @@ namespace IntroSkip.VideoBlackDetect
                     var blackScreenResult = runtime - TimeSpan.FromMinutes(3) + blackFrameStart;
 
                     blackDetections.Add(blackScreenResult);
-
-
+                    
 
                 }
 
             }
 
+            EnsureFfmpegEol(internalId);
             return blackDetections;
 
         }
 
+        private bool EnsureFfmpegEol(long internalId)
+        {
+            var process = Process.GetProcesses()
+                .Where(p => p.Id == FfmpegProcessMonitor.FirstOrDefault(s => s.Key == internalId).Value).ToList().FirstOrDefault();
+
+            if (process is null)
+            {
+                return FfmpegProcessMonitor.TryRemove(internalId, out _);
+            }
+            
+            try
+            {
+                process.Kill();
+            }
+            catch
+            {
+                
+            }
+            
+            return FfmpegProcessMonitor.TryRemove(internalId, out _);
+        }
         public void Dispose()
         {
 

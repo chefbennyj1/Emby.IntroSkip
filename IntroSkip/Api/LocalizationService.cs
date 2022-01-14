@@ -30,7 +30,7 @@ namespace IntroSkip.Api
         }
         public string Get(MessageLanguagesRequest request)
         {
-            return JsonSerializer.SerializeToString(Localization.Languages.Keys);
+            return JsonSerializer.SerializeToString(Localization.IntroSkipLanguages.Keys);
         }
     }
 }

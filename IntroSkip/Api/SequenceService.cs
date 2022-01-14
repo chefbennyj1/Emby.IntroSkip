@@ -10,6 +10,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Net;
 using System.IO;
+using IntroSkip.AudioFingerprinting;
 using IntroSkip.Configuration;
 using IntroSkip.Data;
 using IntroSkip.Detection;
@@ -22,7 +23,12 @@ namespace IntroSkip.Api
     public class SequenceService : IService
     {
         
-      
+        [Route("/HasChromaprint", "GET", Summary = "FFMPEG has chromaprint capabilities")]
+        public class HasChromaprintRequest : IReturn<bool>
+        {
+
+        }
+
         [Route("/ScanSeries", "POST", Summary = "Remove Episode Title Sequence Start and End Data")]
         public class ScanSeriesRequest : IReturnVoid
         {
@@ -104,26 +110,23 @@ namespace IntroSkip.Api
         
         private IJsonSerializer JsonSerializer { get; }
         private ILogger Log { get; }
-        private IHttpResultFactory ResultFactory { get; set; }
-        private StatsManager StatsManager { get; set; }
+        
         private IFileSystem FileSystem { get; }
         private IApplicationPaths ApplicationPaths { get; }
-        private char Separator { get; }
-
-
-        // ReSharper disable once TooManyDependencies
-        public SequenceService(IJsonSerializer json, ILogManager logMan, ILibraryManager libraryManager, IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, StatsManager statsManager, IApplicationPaths applicationPaths, IFileSystem fileSystem)
+        
+        public SequenceService(IJsonSerializer json, ILogManager logMan, IApplicationPaths applicationPaths, IFileSystem fileSystem)
         {
             JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
-            ResultFactory = resultFactory;
-            StatsManager = statsManager;
             FileSystem = fileSystem;
             ApplicationPaths = applicationPaths;
-            Separator = FileSystem.DirectorySeparatorChar;
+            
         }
 
-        
+        public bool Get(HasChromaprintRequest request)
+        {
+            return AudioFingerprintManager.Instance.HasChromaprint();
+        }
        
         public void Post(UpdateAllSeasonSequencesRequest request)
         {
@@ -143,8 +146,8 @@ namespace IntroSkip.Api
                 titleSequence.CreditSequenceStart = item.CreditSequenceStart;
                 titleSequence.HasCreditSequence = item.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
                 titleSequence.Confirmed = true;
-                titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-                titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
+                titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                titleSequence.CreditSequenceFingerprint = new List<uint>();
                 try
                 {
                     repository.SaveResult(titleSequence, CancellationToken.None);
@@ -173,6 +176,7 @@ namespace IntroSkip.Api
             var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
             var titleSequences = dbResults.Items.ToList();
             
+            //We assume this does exist because we have already loaded it in the UI, and we are editing it there.
             var titleSequence = titleSequences.FirstOrDefault(item => item.InternalId == request.InternalId);
 
             
@@ -182,8 +186,8 @@ namespace IntroSkip.Api
             titleSequence.CreditSequenceStart = request.CreditSequenceStart;
             titleSequence.HasCreditSequence = titleSequence.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
             titleSequence.Confirmed = true;
-            titleSequence.TitleSequenceFingerprint = titleSequence.TitleSequenceFingerprint ?? new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
-            titleSequence.CreditSequenceFingerprint = titleSequence.CreditSequenceFingerprint ?? new List<uint>();
+            titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+            titleSequence.CreditSequenceFingerprint = new List<uint>();
             try
             {
                 repository.SaveResult(titleSequence, CancellationToken.None);
@@ -195,6 +199,7 @@ namespace IntroSkip.Api
             }
             if (Plugin.Instance.Configuration.ImageCache)
             {
+                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId);
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
                 SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
@@ -207,7 +212,7 @@ namespace IntroSkip.Api
         public void Post(ScanSeriesRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
-            SequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
+            //SequenceDetectionManager.Instance.Analyze(CancellationToken.None, null, request.InternalIds, repository);
             DisposeRepository(repository);
         }
 
@@ -228,7 +233,7 @@ namespace IntroSkip.Api
                     
                     if (Plugin.Instance.Configuration.ImageCache)
                     {
-                        SequenceThumbnailService.Instance.RemoveCacheImage(item.InternalId);
+                        SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId);
                     }
                 }
                 catch { }
@@ -307,44 +312,32 @@ namespace IntroSkip.Api
 
         }
 
-        public class UIStats
-        {
-            public bool HasIssue { get; set; }
-            public string TVShowName { get; set; }
-            public string Season { get; set; }
-            public int EpisodeCount { get; set; }
-            public TimeSpan IntroDuration { get; set; }
-            public double PercentDetected { get; set; }
-            public double EndPercentDetected { get; set; }
-            public string Comment { get; set; } 
-            public DateTime Date { get; set; }
-        }
-
+        
        public string Get(SeasonStatisticsRequest request)
        {
            
             PluginConfiguration config = Plugin.Instance.Configuration;
-            List<UIStats> statsList = new List<UIStats>();
+            List<DetectionStats> statsList = new List<DetectionStats>();
 
             var configDir = ApplicationPaths.PluginConfigurationsPath;
             Log.Debug("STATISTICS: SERVICE - Getting statistics for UI from Text file");
-            string statsFilePath = $"{configDir}{Separator}IntroSkipInfo{Separator}DetectionResults.txt";
+            string statsFilePath = Path.Combine(configDir, "IntroSkipInfo", "DetectionResults.txt");
 
-            if (FileSystem.FileExists(statsFilePath) == false)
+            if (!FileSystem.FileExists(statsFilePath))
             {   //OMG this is hilarious :)
 
-                statsList.Add(new UIStats
-                {
-                    HasIssue = true,
-                    TVShowName = "Please Run IntroSkip",
-                    Season = "Statistics Task",
-                    EpisodeCount = 0,
-                    IntroDuration = TimeSpan.Parse("12:11:59"),
-                    PercentDetected = 66.6,
-                    //EndPercentDetected = 66.6,
-                    Comment = "Go Run the STATISTICS TASK",
-                    Date = Convert.ToDateTime(DateTime.Now)
-                });
+                //statsList.Add(new DetectionStats
+                //{
+                //    HasIssue = true,
+                //    TVShowName = "Please Run IntroSkip",
+                //    Season = "Statistics Task",
+                //    EpisodeCount = 0,
+                //    IntroDuration = TimeSpan.Parse("12:11:59"),
+                //    PercentDetected = 66.6,
+                //    //EndPercentDetected = 66.6,
+                //    Comment = "Go Run the STATISTICS TASK",
+                    
+                //});
             }
             else
             {
@@ -354,17 +347,17 @@ namespace IntroSkip.Api
                     Log.Info("STATISTICS: LINE = {0}", line);
 
                     var tempLine = line.Split('\t');
-                    statsList.Add(new UIStats
+                    statsList.Add(new DetectionStats()
                     {
                         HasIssue = Convert.ToBoolean(tempLine[0]),
                         TVShowName = tempLine[1],
-                        Season = tempLine[2],
-                        EpisodeCount = Convert.ToInt32(tempLine[3]),
-                        IntroDuration = TimeSpan.Parse(tempLine[4]),
-                        PercentDetected = Convert.ToDouble(tempLine[5]),
-                        //EndPercentDetected = Convert.ToDouble(tempLine[6]),
-                        Comment = tempLine[7],
-                        Date = Convert.ToDateTime(tempLine[8])
+                        SeriesId = Convert.ToInt64(tempLine[2]),
+                        Season = tempLine[3],
+                        SeasonId = Convert.ToInt64(tempLine[4]),
+                        EpisodeCount = Convert.ToInt32(tempLine[5]),
+                        IntroDuration = TimeSpan.Parse(tempLine[6]),
+                        PercentDetected = Convert.ToDouble(tempLine[7]),
+                        EndPercentDetected = tempLine[8] != "NaN" ? Convert.ToDouble(tempLine[8]) : 0,
                     });
                 }
             }

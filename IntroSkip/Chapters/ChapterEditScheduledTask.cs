@@ -1,4 +1,3 @@
-using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Collections.Generic;
@@ -6,8 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Sequence;
-using MediaBrowser.Model.Querying;
-using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Logging;
 
 
@@ -15,28 +12,25 @@ namespace IntroSkip.Chapters
 {
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
-        public ILibraryManager LibraryManager { get; set; }
-        private ITaskManager TaskManager { get; }
-        private ChapterInsertion ChapterInsertion { get; }
+        
+        private ITaskManager TaskManager                  { get; }
+        private ChapterInsertion ChapterInsertion         { get; }
         private ChapterErrorTextFileCreator ErrorTextFile { get; }
-        private IItemRepository ItemRepo { get; }
-        private ILogger Log { get; }
+        private ILogger Log                               { get; }
 
-        public ChapterEditScheduledTask(ILibraryManager libraryManager, ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, IItemRepository itemRepo, ChapterErrorTextFileCreator textFile)
+        public ChapterEditScheduledTask(ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, ChapterErrorTextFileCreator textFile)
         {
-            LibraryManager = libraryManager;
             TaskManager = taskManager;
             Log = logManager.GetLogger(Plugin.Instance.Name);
             ChapterInsertion = chapterInsertion;
             ErrorTextFile = textFile;
-            ItemRepo = itemRepo;
         }
 
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var config = Plugin.Instance.Configuration;
             Task chapterExecute = null;
-            IScheduledTaskWorker detection = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
+            var detection = TaskManager.ScheduledTasks.FirstOrDefault(t => t.Name == "Episode Title Sequence Detection");
 
             while(detection != null && detection.State == TaskState.Running)
             {
@@ -76,11 +70,7 @@ namespace IntroSkip.Chapters
             get
             {
                 var config = Plugin.Instance.Configuration;
-                if (config.EnableChapterInsertion)
-                {
-                    return false;
-                }
-                return true;
+                return !config.EnableChapterInsertion;
             }
         }
 
@@ -89,11 +79,7 @@ namespace IntroSkip.Chapters
             get
             {
                 var config = Plugin.Instance.Configuration;
-                if (config.EnableChapterInsertion)
-                {
-                    return true;
-                }
-                return false;
+                return config.EnableChapterInsertion;
             }
         }
 
@@ -136,7 +122,7 @@ namespace IntroSkip.Chapters
                 if (config.EnableChapterInsertion && (episode.HasTitleSequence || episode.HasCreditSequence))
                 {
                     long id = episode.InternalId;
-                    Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
+                    //Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
                     ChapterInsertion.Instance.InsertIntroChapters(id, episode);
                 }
             }
@@ -150,7 +136,7 @@ namespace IntroSkip.Chapters
             return Task.FromResult(true);
         }
 
-        public Task ProcessChapterImageExtraction()
+        private Task ProcessChapterImageExtraction()
         {
             var thumbnail = TaskManager.ScheduledTasks.FirstOrDefault(task => task.Name == "Thumbnail image extraction");
 

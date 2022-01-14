@@ -38,6 +38,8 @@ namespace IntroSkip
             {
                 Name = "IntroSkipConfigurationPage",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.IntroSkipConfigurationPage.html",
+                EnableInMainMenu = true,
+                DisplayName = "Intro/Credit Skip"
             },
             new PluginPageInfo
             {
@@ -84,7 +86,11 @@ namespace IntroSkip
                 Name = "StatsConfigurationPageJS",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.StatsConfigurationPage.js"
             },
-
+            new PluginPageInfo
+            {
+                Name = "Chart.js",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.Chart.js"
+            },
 
         };
     }
