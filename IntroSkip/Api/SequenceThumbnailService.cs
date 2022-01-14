@@ -27,7 +27,7 @@ namespace IntroSkip.Api
         }
 
         [Route("/ExtractThumbImage", "GET", Summary = "Image jpg resource frame")]
-        public class ExtractThumbImage : IReturn<object>
+        public class ExtractThumbImage : IReturn<string>
         {
             [ApiMember(Name = "ImageFrameTimestamp",
                 Description = "The image frame time stamp to extract from the stream", IsRequired = true,
@@ -72,7 +72,7 @@ namespace IntroSkip.Api
             CreateImageCacheDirectoryIfNotExist();
         }
 
-        public object Get(ExtractThumbImage request)
+        public string Get(ExtractThumbImage request)
         {
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
@@ -99,36 +99,33 @@ namespace IntroSkip.Api
 
             var config = Plugin.Instance.Configuration;
 
-            
+            var cache = GetCacheDirectory();
+            var imageFile = GetHashString($"{item.InternalId}{request.SequenceImageType}");
 
             //We have enabled the the image cache
             if (config.ImageCache)
             {
-                //If we are caching, this will be the file path.
-                var cache = GetCacheDirectory();
-                var imageFile = GetHashString($"{item.InternalId}{request.SequenceImageType}");
-
-               
+                
                 //We have the image in the cache
-                if (CacheImageExists(imageFile))
-                {
-                    Log.Debug("Returning thumb images from cache.");
+                //if (CacheImageExists(imageFile))
+                //{
+                //    Log.Debug("Returning thumb images from cache.");
                     
-                    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
-                }
+                //    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
+                //}
             }
 
             var frame = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}";
 
             //If we have gotten this far with ImageCache enabled, then we don't have a copy of the image in the cache. 
             //Now we have to run ffmpeg process to save the image
-            if (config.ImageCache) new TaskFactory().StartNew(() => UpdateImageCache(item.InternalId, request.SequenceImageType, frame)).ConfigureAwait(false);
+            //if (config.ImageCache) new TaskFactory().StartNew(() => UpdateImageCache(item.InternalId, request.SequenceImageType, frame)).ConfigureAwait(false);
 
             //Get the extracted frame using FFmpeg. 
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
-           
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -r 1 -q:v 2 -an -f image2 -s 175x100 -";
+            //var args = $"-accurate_seek -ss {frame} -threads 1 -copyts -i \"{item.Path}\" -an -vf \"scale=trunc(min(max(iw\\,ih*dar)\\,min(175\\,0*dar))/2)*2:trunc(min(max(iw/dar\\,ih)\\,min(175/dar\\,0))/2)*2,thumbnail=24\" -vsync 0 -f image2pipe -";
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -frames 1 -f image2 -s 175x100 -";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -137,24 +134,32 @@ namespace IntroSkip.Api
                 CreateNoWindow = true,
             };
 
-            FileStream output;
-           
-            //Stream error;
-            using (var process = new Process {StartInfo = procStartInfo})
+            try
             {
-                process.Start();
-                process.ErrorDataReceived += Process_ErrorDataReceived;
-                output = process.StandardOutput.BaseStream as FileStream;
-                //error = process.StandardError.BaseStream;
-                
-            }
-            
-            //using (var sr = new StreamReader(error))
-            //{
-            //    //Log.Debug(await sr.ReadToEndAsync());
-            //}
+                FileStream output;
 
-            return ResultFactory.GetResult(Request, output, "image/png");
+                using (var process = new Process {StartInfo = procStartInfo})
+                {
+
+                    process.Start();
+                    process.ErrorDataReceived += Process_ErrorDataReceived;
+                    output = process.StandardOutput.BaseStream as FileStream;
+                }
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    output.CopyTo(memoryStream);
+                    return Convert.ToBase64String(memoryStream.ToArray());
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+                return "R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
+            }
+            //ResultFactory.GetResult(Request, output, "image/png");
+
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)

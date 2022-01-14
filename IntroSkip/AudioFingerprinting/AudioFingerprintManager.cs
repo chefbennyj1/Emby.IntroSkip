@@ -140,8 +140,7 @@ namespace IntroSkip.AudioFingerprinting
 
                     //Log.Info(processOutput);
                 }
-
-               
+                
 
             }
 

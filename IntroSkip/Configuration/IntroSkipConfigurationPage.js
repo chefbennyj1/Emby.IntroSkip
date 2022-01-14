@@ -255,20 +255,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 var xhr = new XMLHttpRequest();
                 xhr.open("GET", url);
-                xhr.responseType = "blob";
+                xhr.responseType = "text";
                 xhr.onload = function ()
                 {
-                    if (xhr.statusText == "OK") {
-                        var reader = new FileReader();
-                        reader.readAsDataURL(this.response);
-                        reader.onloadend = function() {
-                            const base64data = reader.result;
-                            resolve(base64data);
-                            //return base64data;
-                        }
-                    } else {
-                        resolve("data:image/png;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=");
-                    }
+                   
+                    resolve("data:image/png;base64," + this.response);
+                    
                 }
                 xhr.send();
 

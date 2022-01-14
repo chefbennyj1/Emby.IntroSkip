@@ -67,7 +67,7 @@
             html += '<td data-title="Library Link" class="detailTableBodyCell" >';
             html += '<a href="' + imageLink(baseItem) + '" target="_blank" title="Click to go to Episode">';
             html += '<img style="width:100px" src="' + getLogoImageUrl(baseItem.SeriesId) + '"/>';
-            html += '</td>';
+            html += '</a></td>';
            
             html += '<td data-title="TV Show" class="detailTableBodyCell" display="" >';
             html += '<span>' + baseItem.SeriesName + '</span>';
