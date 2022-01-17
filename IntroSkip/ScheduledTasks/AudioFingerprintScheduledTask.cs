@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +9,6 @@ using IntroSkip.Data;
 using IntroSkip.Sequence;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Serialization;
@@ -65,10 +63,10 @@ namespace IntroSkip.ScheduledTasks
                 progress.Report(1.0);
                 var syncStopWatch = new Stopwatch();
                 syncStopWatch.Start();
-                Log.Info("Syncing Repository Items...");
+                Log.Info("FINGERPRINT: Syncing Repository Items...");
                 RepositoryItemSync(repository, cancellationToken);
                 syncStopWatch.Stop();
-                Log.Info($"Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
+                Log.Info($"FINGERPRINT: Repository item sync completed. Duration: {syncStopWatch.ElapsedMilliseconds} milliseconds.");
             }
             catch (Exception ex)
             {
@@ -78,8 +76,7 @@ namespace IntroSkip.ScheduledTasks
 
             try
             {
-                Log.Info("FINGERPRINT: Starting episode fingerprint task.");
-
+                
                 var config = Plugin.Instance.Configuration;
 
                 var seriesInternalItemQuery = new InternalItemsQuery()
@@ -114,7 +111,7 @@ namespace IntroSkip.ScheduledTasks
                 }
                 catch (Exception)
                 {
-                    Log.Info("Title sequence database is new.");
+                    Log.Info("FINGERPRINT: Title sequence database is new.");
                     titleSequences = new List<SequenceResult>();
                 }
 
@@ -192,7 +189,7 @@ namespace IntroSkip.ScheduledTasks
                                 }
                                 else //If new episodes are added to the season it may alter the encoding duration for the fingerprint. The duration for all fingerprints must be the same.
                                 {
-                                    Log.Info($"Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
+                                    Log.Info($"FINGERPRINT: Encoding duration has changed for {series.Name} - {seasonQuery.Items[seasonIndex].Name}");
                                     repository.Delete(titleSequenceResult.InternalId.ToString());
 
                                     dbResults = repository.GetResults(new SequenceResultQuery());
@@ -237,7 +234,7 @@ namespace IntroSkip.ScheduledTasks
 
                             try
                             {
-                                Log.Info($"{series.Name} {seasonQuery.Items[seasonIndex].Name} Episode: {episode.IndexNumber} Credit and Title Sequence Fingerprinting Successful.");
+                                Log.Info($"FINGERPRINT: {series.Name} {seasonQuery.Items[seasonIndex].Name} Episode: {episode.IndexNumber} Credit and Title Sequence Fingerprinting Successful.");
 
                                 repository.SaveResult(new SequenceResult()
                                 {
@@ -259,7 +256,7 @@ namespace IntroSkip.ScheduledTasks
                                     HasRecap = false
                                 }, cancellationToken);
 
-                                Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds / 1000} seconds.");
+                                Log.Info($"FINGERPRINT: {episode.Parent.Parent.Name} - S:{episode.Parent.IndexNumber} - E:{episode.IndexNumber} complete - {stopWatch.ElapsedMilliseconds} ms.");
                             }
                             catch (NullReferenceException)
                             {
@@ -366,7 +363,7 @@ namespace IntroSkip.ScheduledTasks
             var libraryItems = libraryQuery.Items.ToList();
 
             Log.Debug($"Library episodes count:        {libraryItems.Count}");
-            Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
+            //Log.Debug($"Title Sequence episodes count: {titleSequences.Count}");
 
 
             if (libraryItems.Count >= titleSequences.Count) return; // if we are equal nothing has change, if emby is more we'll pick up the new stuff next.

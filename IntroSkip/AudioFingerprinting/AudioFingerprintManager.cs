@@ -152,7 +152,7 @@ namespace IntroSkip.AudioFingerprinting
             var fingerprint = new List<uint>();
             if (!FileSystem.FileExists(bin))
             {
-                Log.Debug($"{item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist. Ensure FFMPEG can handle Chromprinting Audio.");
+                Log.Debug($"FINGERPRINT: {item.Parent.Parent.Name} - S:{item.Parent.IndexNumber} - E:{item.IndexNumber} .bin file doesn't exist. Ensure FFMPEG can handle Chromprinting Audio.");
                 return fingerprint;
             }
 
@@ -219,7 +219,7 @@ namespace IntroSkip.AudioFingerprinting
 
             if (!episode.RunTimeTicks.HasValue)
             {
-                Log.Warn($"{episode.Parent.Parent.Name} {episode.Parent.Name} Episode {episode.IndexNumber} currently has no runtime value. Can not calculate end credit location...");
+                Log.Warn($"FINGERPRINT: {episode.Parent.Parent.Name} {episode.Parent.Name} Episode {episode.IndexNumber} currently has no runtime value. Can not calculate end credit location...");
                 return new List<uint>(); //<--Empty array. We can't calculate the end credits here. We'll have to wait until the runtime value is calculated by emby, and come back to this later
             } 
 
@@ -227,7 +227,7 @@ namespace IntroSkip.AudioFingerprinting
 
             ExtractFingerprintBinaryData(episode, chromaprintBinaryFilePath, duration, cancellationToken, sequenceEncodingStart);
             
-            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("ffmpeg process key still available in credit sequence process dictionary...OK");
+            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("FINGERPRINT: ffmpeg process exiting...");
             
             return SplitByteData(chromaprintBinaryFilePath, episode);
 
@@ -280,7 +280,7 @@ namespace IntroSkip.AudioFingerprinting
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
             
-            var procStartInfo = new ProcessStartInfo(ffmpegPath, "-version")
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, "-version pipe:1")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

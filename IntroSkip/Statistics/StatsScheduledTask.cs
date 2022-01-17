@@ -14,7 +14,7 @@ namespace IntroSkip.Statistics
 {
     public class StatsScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
-        public ILibraryManager LibraryManager { get; set; }
+        private ILibraryManager LibraryManager { get; set; }
         private ITaskManager TaskManager { get; }
         private ILogger Log { get; }
 

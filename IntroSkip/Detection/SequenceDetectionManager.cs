@@ -281,7 +281,7 @@ namespace IntroSkip.Detection
                                     stopWatch.Stop();
 
                                     // ReSharper disable once AccessToModifiedClosure - its just loggin.
-                                    Log.Debug(
+                                    Log.Info(
                                         $"{series.Name} - {season.Name} - Episode: {unmatchedItem.IndexNumber} and Episode: {comparableItem.IndexNumber} total detection time took {stopWatch.ElapsedMilliseconds} milliseconds.");
 
                                 }
@@ -570,7 +570,7 @@ namespace IntroSkip.Detection
             //Change the offset to 2.1 minutes before the end of the show, to look for black frame
             if (runtime > TimeSpan.FromMinutes(35) && common < TimeSpan.FromSeconds(20) || creditSequenceAudioDetectionStart == TimeSpan.Zero)
             {
-                Log.Debug($"DETECTION Adjusting black frame detection for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber} end credit sequence.");
+                Log.Info($"DETECTION Adjusting black frame detection for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber} end credit sequence.");
                 offset = runtime - TimeSpan.FromMinutes(2.1);
                 upperLimit = runtime;
             }

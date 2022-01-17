@@ -105,7 +105,7 @@ namespace IntroSkip.RemoteControl
                     Log.Debug($"AUTOSKIP:{presentationName} skipping intro...");
                     //Seek the stream to the end of the intro
                     SkipSequence(e.Session, titleSequence.TitleSequenceEnd.Ticks, SequenceSkip.INTRO);
-                    Log.Debug($"AUTOSKIP:{presentationName} intro has been skipped.");
+                    Log.Info($"AUTOSKIP:{presentationName} intro has been skipped.");
                     TitleSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _);
                 }
             }
@@ -116,7 +116,7 @@ namespace IntroSkip.RemoteControl
                 {
                     Log.Debug($"AUTOSKIP:{presentationName} skipping credits...");
                     SkipSequence(e.Session, creditSequence.CreditSequenceEnd.Ticks, SequenceSkip.CREDIT);
-                    Log.Debug($"AUTOSKIP:{presentationName} credit has been skipped.");
+                    Log.Info($"AUTOSKIP:{presentationName} credit has been skipped.");
                     CreditSequenceAutoSkipSessions.TryRemove(e.Session.Id, out _);
                 }
             }

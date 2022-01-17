@@ -1,4 +1,4 @@
-define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle"],
+define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-checkbox", "emby-select", "emby-toggle", "emby-collapse"],
     function(loading, dialogHelper, mainTabsManager) {
 
         const pluginId = "93A5E794-E0DA-48FD-8D3A-606A20541ED6";
@@ -14,6 +14,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 seconds: matches[8] === undefined ? "00" : matches[8] < 10 ? `0${matches[8]}` : matches[8]
             };
         };
+
 
         ApiClient.HasChromaprint = function () {
             const url = this.getUrl("HasChromaprint");
@@ -37,37 +38,37 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //}
         // http://localhost:8096/emby/Items/12056/Refresh?MetadataRefreshMode=FullRefresh&ImageRefreshMode=ValidationOnly&ReplaceAllMetadata=true&ReplaceAllImages=false
 
-        ApiClient.deleteSeasonData = function(seasonId) {
-            var url = this.getUrl(`RemoveSeasonData?SeasonId=${seasonId}`);
+        ApiClient.resetSeasonData = function(seasonId) {
+            var url = this.getUrl(`ResetSeasonData?SeasonId=${seasonId}`);
             return this.ajax({
                 type: "DELETE",
                 url: url
             });
         };
 
-        ApiClient.refreshMetadata = function(id) {
-            var url = this.getUrl(`Items/${id}/Refresh`);
-            return this.ajax({
-                type: "POST",
-                url: url
-            });
-        };
+        //ApiClient.refreshMetadata = function(id) {
+        //    var url = this.getUrl(`Items/${id}/Refresh`);
+        //    return this.ajax({
+        //        type: "POST",
+        //        url: url
+        //    });
+        //};
 
-        ApiClient.updateChapter = function(id) {
-            var url = this.getUrl('UpdateChapter');
-            var options = {
-                InternalId: id
-            }
-            return this.ajax({
-                type: "POST",
-                url: url,
-                data: JSON.stringify(options),
-                contentType: 'application/json'
-            });
-        };
+        //ApiClient.updateChapter = function(id) {
+        //    var url = this.getUrl('UpdateChapter');
+        //    var options = {
+        //        InternalId: id
+        //    }
+        //    return this.ajax({
+        //        type: "POST",
+        //        url: url,
+        //        data: JSON.stringify(options),
+        //        contentType: 'application/json'
+        //    });
+        //};
 
         ApiClient.updateTitleSequence = function(options) {
-            var url = this.getUrl('UpdateSequence');
+            var url = this.getUrl('UpdateEpisodeSequence');
             return this.ajax({
                 type: "POST",
                 url: url,
@@ -77,12 +78,28 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         };
 
         ApiClient.updateAllSeasonSequences = function(options) {
-            var url = this.getUrl('UpdateAllSeasonSequences');
+            const url = this.getUrl('UpdateSeasonSequences');
             return this.ajax({
                 type: "POST",
                 url: url,
                 data: JSON.stringify({ "TitleSequencesUpdate": options }),
                 contentType: 'application/json'
+            });
+        }
+
+        ApiClient.seriesConfirmNoTitleSequences = function(internalId) {
+            const url = this.getUrl('SeriesHasNoTitleSequence?InternalId=' + internalId);
+            return this.ajax({
+                type: "POST",
+                url: url
+            });
+        }
+
+        ApiClient.seriesConfirmNoCreditSequences = function(internalId) {
+            const url = this.getUrl('SeriesHasNoCreditSequence?InternalId=' + internalId);
+            return this.ajax({
+                type: "POST",
+                url: url
             });
         }
 
@@ -138,12 +155,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         var localImageStore = [];
 
+        
+
         function getPagingHtml() {
 
             var html = '';
             html += '<div class="listPaging">';
 
-            var recordEnd = pagination.StartIndex + pagination.Limit > pagination.TotalRecordCount ? pagination.TotalRecordCount : pagination.StartIndex + pagination.Limit;
+            const recordEnd = pagination.StartIndex + pagination.Limit > pagination.TotalRecordCount ? pagination.TotalRecordCount : pagination.StartIndex + pagination.Limit;
             html += '<span style="vertical-align:middle;">';
             html += pagination.StartIndex + 1 + '-' + recordEnd + ' of ' + pagination.TotalRecordCount;
 
@@ -192,6 +211,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
 
             await ApiClient.updateAllSeasonSequences(update);
+
         }
 
         async function saveIntro(row, view) {
@@ -224,13 +244,21 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return await ApiClient.getVideoSequence(sequence, startTimeTicks);
         }
 
+        async function setSeriesTitleSequenceToFalse(seriesId) {
+            return await ApiClient.seriesConfirmNoTitleSequences(seriesId);
+        }
+
+        async function setSeriesCreditSequenceToFalse(seriesId) {
+            return await ApiClient.seriesConfirmNoCreditSequences(seriesId);
+        }
+
         function getSequenceTime(sequence) {
             const titleSequenceStart      = parseISO8601Duration(sequence.TitleSequenceStart);
             const titleSequenceEnd        = parseISO8601Duration(sequence.TitleSequenceEnd);
             const sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
             const sequenceEndTimeString   = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
-            const sequenceStartTime       = new Date('1970-01-01T' + sequenceStartTimeString + 'Z');
-            const sequenceEndTime         = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');
+            const sequenceStartTime       = new Date('1970-01-01T' + sequenceStartTimeString + 'Z'); //That's a hack
+            const sequenceEndTime         = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');   //Also a hack
 
             return {
                 Start: sequenceStartTime.getTime(),
@@ -238,6 +266,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             }
         }
 
+        
         //Backend Enum: SequenceImageTypes
         //IntroStart  = 0
         //IntroEnd    = 1
@@ -246,8 +275,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
         function getExtractedThumbImage(hasSequence, id, imageFrameTimestamp, sequenceImageType) {
             return new Promise((resolve, reject) => {
-                var thumb = !hasSequence
-                    ? 'NoTitleSequenceThumbImage'
+                var thumb = (!hasSequence && sequenceImageType == 0) || (!hasSequence && sequenceImageType == 1)
+                    ? 'NoTitleSequenceThumbImage' 
+                    : !hasSequence && sequenceImageType == 2 ? 'NoCreditSequenceThumbImage' 
                     : `ExtractThumbImage?InternalId=${id}&ImageFrameTimestamp=${encodeURIComponent(imageFrameTimestamp)}&SequenceImageType=${sequenceImageType}&api_key=${ApiClient._serverInfo.AccessToken}`;
 
                 
@@ -269,9 +299,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             
             //return url;
         }
-
-        
-
+         
         function imageLink(baseItem) {
             return ApiClient._serverAddress +
                 "/web/index.html#!/item?id=" +
@@ -294,34 +322,44 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             
             var creditStart = creditStartTimeSpan.hours + ":" + creditStartTimeSpan.minutes + ":" + creditStartTimeSpan.seconds;
             var hasCredit = intro.HasCreditSequence || (creditStartTimeSpan.minutes !== '00');
+            const isMobile = screen.width <= 800;
 
             html += '<tr data-id="' + episode.Id + '" class="detailTableBodyRow detailTableBodyRow-shaded">';
             
             //Index 2
-            html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell">'; 
-            //html +='<a href="' + imageLink(episode) + '" target="_blank" title="Click to go to Episode">';
-            html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center">';
-            
-            html += '<img style="width:175px; height:100px; position:absolute;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/>';
-            if (hasIntro || introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
-                html += `<button style="position:absolute; margin-left:1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit fab hide">`;
-                html += '<i class="md-icon">play_arrow</i>';
-                html += '</button>';
+            if (!isMobile) {
+                html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell">';
+                html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center">';
+                html += '<img style="width:175px; height:100px; position:absolute;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/>';
+                if (hasIntro || introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
+                    html += `<button style="position:absolute; margin-left:1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit fab hide">`;
+                    html += '<i class="md-icon">play_arrow</i>';
+                    html += '</button>';
+                }
+                html += '</div>';
+                //html +='</a>'; 
+                html += '</td>';
             }
-            html += '</div>';
-            //html +='</a>'; 
-            html += '</td>';
+
             //Index 3
-            html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
+            if (!isMobile) {
+                html += '<td data-title="Series" class="detailTableBodyCell fileCell">' + episode.SeriesName + '</td>';
+            }
+
             //Index 4
-            html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
+            if (!isMobile) {
+                html += '<td data-title="Season" class="detailTableBodyCell fileCell">' + episode.SeasonName + '</td>';
+            }
+
             //Index 5
-            html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">Episode: ' + episode.IndexNumber + '</td>';
+            html += '<td data-title="EpisodeIndex" class="detailTableBodyCell fileCell" data-index="' + episode.IndexNumber + '">';
+            if (screen.width > 800) html += 'Episode: ';
+            html += episode.IndexNumber + '</td>';
 
              
             //Index 6
             html += '<td data-title="HasTitleSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
-            html += '<div class="selectContainer" style="top:40px">';
+            html += '<div class="selectContainer" ' + (!isMobile ? 'style="top:40px"' : 'margin-bottom:0 !important') + '>';
             html += '<select is="emby-select" class="emby-select-withcolor emby-select hasIntroSelect">';
             html += '<option value="true" ' + (hasIntro ? 'selected' : "") + '>true</option>';
             html += '<option value="false" ' + (!hasIntro ? 'selected' : "") + '>false</option>';
@@ -334,38 +372,48 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var introEnd = "00:" + introEndTimespan.minutes + ":" + introEndTimespan.seconds;
 
 
-            if (!imageExistsInLocalStore(intro.InternalId)) {
+            //if (!imageExistsInLocalStore(intro.InternalId)) {
                 const introStartImage  = await getExtractedThumbImage(hasIntro, intro.InternalId, introStart, 0);
                 const introEndImage    = await getExtractedThumbImage(hasIntro, intro.InternalId, introEnd, 1);
                 const creditStartImage = await getExtractedThumbImage(hasCredit, intro.InternalId, creditStart, 2);
-                localImageStore.push({
-                    Id                               : intro.InternalId,
-                    ExtractedImageTitleSequenceStart : introStartImage,
-                    ExtractedImageTitleSequenceEnd   : introEndImage,
-                    ExtractedImageCreditSequenceStart: creditStartImage
-                });
-            }
+            //    localImageStore.push({
+            //        Id                               : intro.InternalId,
+            //        ExtractedImageTitleSequenceStart : introStartImage,
+            //        ExtractedImageTitleSequenceEnd   : introEndImage,
+            //        ExtractedImageCreditSequenceStart: creditStartImage
+            //    });
+            //}
             
-            var imageData = localImageStore.filter(i => i.Id === intro.InternalId)[0];
+            //var imageData = localImageStore.filter(i => i.Id === intro.InternalId)[0];
 
-            var extractedImageTitleSequenceStart  = imageData.ExtractedImageTitleSequenceStart;
-            var extractedImageTitleSequenceEnd    = imageData.ExtractedImageTitleSequenceEnd;
-            var extractedImageCreditSequenceStart = imageData.ExtractedImageCreditSequenceStart;
+            //var extractedImageTitleSequenceStart  = imageData.ExtractedImageTitleSequenceStart;
+            //var extractedImageTitleSequenceEnd    = imageData.ExtractedImageTitleSequenceEnd;
+            //var extractedImageCreditSequenceStart = imageData.ExtractedImageCreditSequenceStart;
           
 
             //Index 7
             html += '<td style="position:relative" data-title="IntroStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
-            html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${extractedImageTitleSequenceStart}"/>`;
+            
+            if (!isMobile) {
+                html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${introStartImage}"/>`;
+            }
+
             html += '</td>';
+
             //Index 8
             html += '<td style="position:relative" data-title="IntroEnd" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
-            html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${extractedImageTitleSequenceEnd}"/>`;
+            
+            if (!isMobile) {
+                html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${introEndImage}"/>`;
+            }
+
             html += '</td>';
+
             //Index 9
             html += '<td data-title="HasCreditSequence" class="detailTableBodyCell fileCell" style="display:flex;">';
-            html += '<div class="selectContainer" style="top:40px">';
+            html += '<div class="selectContainer" ' + (!isMobile ? 'style="top:40px"' : 'margin-bottom:0 !important') + '>';
             html += '<select is="emby-select" class="emby-select-withcolor emby-select hasCreditSelect">';
             html += '<option value="true" ' + (hasCredit ? 'selected' : "") + '>true</option>';
             html += '<option value="false" ' + (!hasCredit ? 'selected' : "") + '>false</option>';
@@ -376,17 +424,25 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 10
             html += '<td style="position:relative" data-title="CreditsStart" class="detailTableBodyCell fileCell">';
             html += `<div class="editTimestamp creditStartContentEditable" contenteditable>${creditStart}</div>`;
-            html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${extractedImageCreditSequenceStart}"/>`;
-            html += '</td>';
-            //Index 11
-            html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
-
-            html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
-            html += '<span>Save</span>';
-            html += '</button>';
-
             
+            if (!isMobile) {
+                html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${creditStartImage}"/>`;
+            }
+
+            html += '</td>';
+
+
+            //Index 11
+            if (!isMobile) {
+                html += '<td data-title="titleSequenceDataActions" class="detailTableBodyCell fileCell">';
+                html += `<button style="margin-left: 1em;" data-id="${episode.Id}" class="saveSequence emby-button button-submit">`;
+                html += '<span>Save</span>';
+                html += '</button>';
+                html += '</td>';
+            }
+
             html += '<td class="detailTableBodyCell organizerButtonCell" style="whitespace:no-wrap;"></td>';
+
             html += '</tr>';
 
             return html;
@@ -409,9 +465,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 fadeIn(tableBody);
 
                 view.querySelectorAll('.editTimestamp').forEach(edit => {
-                    edit.style = "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px;";
+                    if (screen.width > 800) {
+                        edit.style = "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px;"; } 
                     fadeIn(edit);
                 });
+
                 view.querySelectorAll('.hasIntroSelect').forEach(element => {
                     element.addEventListener('change',
                         async (e) => {
@@ -504,10 +562,9 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 loading.hide();
             });
 
-            
+           
         }
-
-        
+         
         async function dlgIntroPlayer(view, id) {
             var dlg = dialogHelper.createDialog({
                 removeOnClose: true,
@@ -548,6 +605,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     video.pause();
                 }
             };
+
             dlg.querySelectorAll('.btnCancel').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     dialogHelper.close(dlg);
@@ -615,7 +673,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
 
             async function clearAll(seasonId, page) {
-                ApiClient.deleteSeasonData(seasonId).then(async () => {
+                ApiClient.resetSeasonData(seasonId).then(async () => {
                     //var result = await getIntros(seasonId);
                     var seriesSelect = view.querySelector('#selectEmbySeries');
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
@@ -654,8 +712,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     shouldSwitch = false;
                     /* Get the two elements you want to compare,
                     one from current row and one from the next: */
-                    x = parseInt(rows[i].getElementsByTagName("TD")[3].dataset.index);
-                    y = parseInt(rows[i + 1].getElementsByTagName("TD")[3].dataset.index);
+                    x = parseInt(rows[i].getElementsByTagName("TD")[screen.width > 800 ? 3 : 0].dataset.index);
+                    y = parseInt(rows[i + 1].getElementsByTagName("TD")[screen.width > 800 ? 3 : 0].dataset.index);
                     // Check if the two rows should switch place:
                     if (x > y) {
                         // If so, mark as a switch and break the loop:
@@ -692,14 +750,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 config.ImageCache = enabled;
                 ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                     Dashboard.processPluginConfigurationUpdateResult(r);
-                    localImageStore = [];
+                    //localImageStore = [];
                 });
             });
         }
 
         async function loadPageData(season, view) {
             
-            const removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
+            //const removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
             const pagingContainer = view.querySelector('.pagingContainer');
             
             const result = await getIntros(season.Id);
@@ -707,7 +765,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             pagingContainer.innerHTML = '';
 
             if (result) {
-                if (result.TitleSequences) {
+                if (result.TitleSequences && result.TitleSequences.length) {
 
                     pagination.TotalRecordCount = result.TotalRecordCount;
                     pagingContainer.innerHTML += getPagingHtml();
@@ -715,40 +773,43 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     view.querySelector('.introResultBody').innerHTML = "";
                     const averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
-                    removeSeasonalFingerprintButton.querySelector('span').innerHTML = `Reset ${season.Name} Data`;
-                    if (removeSeasonalFingerprintButton.classList.contains('hide')) {
-                        removeSeasonalFingerprintButton.classList.remove('hide');
-                    }
+                    //removeSeasonalFingerprintButton.querySelector('span').innerHTML = `Reset ${season.Name} Data`;
+                    //if (removeSeasonalFingerprintButton.classList.contains('hide')) {
+                    //    removeSeasonalFingerprintButton.classList.remove('hide');
+                    //}
 
                     view.querySelector('.averageTitleSequenceTime').innerText = `00:${averageLength.minutes}:${averageLength.seconds}`;
 
                     renderTableItems(result.TitleSequences, view);
 
-
-                    view.querySelector('.btnPreviousPage').addEventListener('click', async (btn) => {
-                        btn.preventDefault();
-                        loading.show();
-                        pagination.StartIndex -= pagination.Limit;
-                        await loadPageData(season, view);
-                         
-
-                    });
-
-                    view.querySelector('.btnNextPage').addEventListener('click', async (btn) => {
-                        btn.preventDefault();
-                        loading.show();
-                        pagination.StartIndex += pagination.Limit;
-                        await loadPageData(season, view);
-                         
-                    });
-
-                        
-                } else {
-
-                    view.querySelector('.averageTitleSequenceTime').innerText = "Currently scanning series...";
-                    if (!removeSeasonalFingerprintButton.classList.contains('hide')) {
-                        removeSeasonalFingerprintButton.classList.add('hide');
+                    //TODO: in order to make this responsive for mobile, we'll have to remove table rows and columns here.
+                    if (screen.width <= 800) {
+                        console.log("is mobile view");
+                        const table = view.querySelector('.tblEpisodeIntroResults');
+                        table.querySelector('thead > tr > th:nth-child(1)').classList.toggle('hide'); //Hide the episode thumb image column
+                        table.querySelector('thead > tr > th:nth-child(2)').classList.toggle('hide'); //Hide the Series Name column
+                        table.querySelector('thead > tr > th:nth-child(3)').classList.toggle('hide'); //Hide the Season Name column
+                        table.querySelector('thead > tr > th:nth-child(10)').classList.toggle('hide'); //Hide the Action column
                     }
+
+                    view.querySelector('.btnPreviousPage').addEventListener('click',
+                        async (btn) => {
+                            btn.preventDefault();
+                            loading.show();
+                            pagination.StartIndex -= pagination.Limit;
+                            await loadPageData(season, view);
+                        });
+
+                    view.querySelector('.btnNextPage').addEventListener('click',
+                        async (btn) => {
+                            btn.preventDefault();
+                            loading.show();
+                            pagination.StartIndex += pagination.Limit;
+                            await loadPageData(season, view);
+                        });
+                } else {
+                    console.log("Title sequence result contains no records for this series.");
+                    loading.hide();
                 }
             }
             
@@ -763,23 +824,30 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     view.querySelector('.chromaprintAlert').classList.remove('hide');
                 }
 
-                const isMobile = window.matchMedia("only screen and (max-width: 1676px)").matches;
-                if (!isMobile) {
-                    view.querySelector('.detailLogo').classList.remove('hide');
-                }
+                //const isMobile = window.matchMedia("only screen and (max-width: 1676px)").matches;
+                //if (!isMobile) {
+                //    view.querySelector('.detailLogo').classList.remove('hide');
+                //}
 
-                window.onresize = function() {
-                    if (isMobile) {
-                        view.querySelector('.detailLogo').classList.add('hide');
-                    }
-                }
+                //window.onresize = function() {
+                //    if (isMobile) {
+                //        view.querySelector('.detailLogo').classList.add('hide');
+                //    }
+                //}
 
                 var imageCacheToggle                = view.querySelector('#enableImageCache');
                 var seriesSelect                    = view.querySelector('#selectEmbySeries');
                 var seasonSelect                    = view.querySelector('#selectEmbySeason');
-                var removeSeasonalFingerprintButton = view.querySelector('.removeSeasonalFingerprintData');
-                var primaryImage                    = view.querySelector('.detailLogo');
+                var resetSeasonalFingerprintButton  = view.querySelector('.removeSeasonalFingerprintData');
+                //var primaryImage                    = view.querySelector('.detailLogo');
 
+                var seriesTitleSequenceToFalseButton = view.querySelector('.setSeriesTitleSequenceDataToFalse');
+                var seriesCreditSequenceToFalseButton = view.querySelector('.setSeriesCreditSequenceDataToFalse');
+                var mediaSelectionContainer = view.querySelector('.mediaSelectionContainer');
+
+                if (screen.width < 800) {
+                    mediaSelectionContainer.style = "flex-direction:column";
+                }
 
                 mainTabsManager.setTabs(this, 0, getTabs);
 
@@ -801,6 +869,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 }
 
                 var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                
                 var seasons = await getSeasons(seriesId);
 
                 for (let j = 0; j <= seasons.Items.length - 1; j++) {
@@ -813,8 +882,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 
                 await loadPageData(season, view);
                 
-                primaryImage.innerHTML = `<img src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
-                fadeIn(primaryImage);
+                //primaryImage.innerHTML = `<img src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                //fadeIn(primaryImage);
 
                 seasonSelect.addEventListener('change', async (e) => {
                     e.preventDefault();
@@ -842,16 +911,38 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     pagination.StartIndex = 0;
                     pagination.Limit = 5;
                     await loadPageData(season, view);
-                    primaryImage.innerHTML = `<img src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
-                    fadeIn(primaryImage);
+                    //primaryImage.innerHTML = `<img src="${ApiClient.getPrimaryImageUrl(seriesId)}"/>`;
+                    //fadeIn(primaryImage);
                     
                 });
 
-                removeSeasonalFingerprintButton.addEventListener('click', (e) => {
+                resetSeasonalFingerprintButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     confirm_dlg(view, "ClearAll");
                 });
                 
+                seriesTitleSequenceToFalseButton.addEventListener('click', async () => {
+                    loading.show();
+                    seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                    seasons = await getSeasons(seriesId);
+                    await setSeriesTitleSequenceToFalse(seriesId);
+                    seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                    season = seasons.Items.filter(s => s.Id === seasonId)[0];
+                    //localImageStore = [];
+                    await loadPageData(season, view);
+                });
+
+                seriesCreditSequenceToFalseButton.addEventListener('click', async () => {
+                    loading.show();
+                    seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+                    seasons = await getSeasons(seriesId);
+                    await setSeriesCreditSequenceToFalse(seriesId);
+                    seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                    season = seasons.Items.filter(s => s.Id === seasonId)[0];
+                    //localImageStore = [];
+                    await loadPageData(season, view);
+                });
+
                 view.querySelector('.saveAll').addEventListener('click', async (btn) => {
                     btn.preventDefault();
                     loading.show();
@@ -859,7 +950,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     await saveAllSeasonSequences(rows, seasonId);
                     var introResult = await getIntros(seasonId);
                     renderTableItems(introResult.TitleSequences, view);
-                    
                 });
 
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
@@ -867,6 +957,13 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             });
 
-           
+            var icon = view.querySelector('.tableOptionsExpand');
+            icon.addEventListener('click',
+                (e) => {
+                    var content = view.querySelector('.tableOptions');
+                    content.classList.toggle('hide'); 
+                    content.classList.toggle('expanded');
+                    icon.style.borderRadius = content.classList.contains('hide') ? "20px" : "0px";
+                });
         }
     });

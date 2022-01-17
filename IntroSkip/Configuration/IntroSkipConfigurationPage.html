@@ -1,4 +1,4 @@
-<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle" data-controller="__plugin/IntroSkipConfigurationPageJS">
+<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs IntroTesterConfigurationPage" data-require="emby-button,emby-input,emby-select,emby-toggle,emby-collapse" data-controller="__plugin/IntroSkipConfigurationPageJS">
     <div class="content-primary">
         <div class="verticalSection verticalSection">
             <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
@@ -7,161 +7,141 @@
                     <i class="md-icon" style="padding-right: 1em; font-size: x-large;">error</i>Emby Server doesn't contain Chromaprint libraries
                 </div>
 
-                <div style="display: flex">
-                    <form style="flex-grow: 1">
-                        <div class="infoBanner flex align-items-center">
-                            Must have a minimum of 2 Episodes in the same Season for detection to run. <br/>
-                            You can edit the start/end points & when episode 2 arrives, detection will proceed as normal.
-
-                        </div>
-
-                        <br/>
-                        <div style="align-items: center;">
-
-                            <!-- Emby Series List -->
-                            <div class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
-                                <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                                <div class="selectArrowContainer">
-                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                                </div>
-                                <div class="fieldDescription">
-                                    Show Title Sequence (Intro) data for this TV Show.
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <!-- Recap Skip Option - Hidden at the minute -->
-                        <div class="inputContainer hide">
-
-                            <label style="width: auto;" class="mdl-switch mdl-js-switch">
-                                <input is="emby-toggle" type="checkbox" id="enableShowRecapSkip" class="chkenableShowRecapSkip" data-embytoggle="">
-                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Entire TV Show</span>
-                                <div class="mdl-switch__trackContainer">
-                                    <div class="mdl-switch__track"></div>
-                                    <div class="mdl-switch__thumb">
-                                        <span class="mdl-switch__focus-helper"></span>
-                                    </div>
-                                </div>
-                            </label>
-                            <div class="fieldDescription">
-                                If Enabled - will assume content before the Title Sequence Start is just a recap and skip this
-                            </div>
-                        </div>
-
-
-
-                        <div style="align-items: center;">
-                            <!-- Emby Season List -->
-                            <div class="selectContainer">
-                                <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
-                                <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
-                                <div class="selectArrowContainer">
-                                    <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
-                                </div>
-                                <div class="fieldDescription">
-                                    Show Title Sequence (Intro) data for this season.
-                                </div>
-                            </div>
-                        </div>
-
-
-                        <!-- Recap Skip Option - Hidden at the minute -->
-                        <div class="inputContainer hide">
-                            <label style="width: auto;" class="mdl-switch mdl-js-switch">
-                                <input is="emby-toggle" type="checkbox" id="enableSeasonRecapSkip" class="chkenableSeasonRecapSkip" data-embytoggle="">
-                                <span class="toggleButtonLabel mdl-switch__label">Enable ReCap Skip for Just the selected Season</span>
-
-                                <div class="mdl-switch__trackContainer">
-                                    <div class="mdl-switch__track"></div>
-                                    <div class="mdl-switch__thumb">
-                                        <span class="mdl-switch__focus-helper"></span>
-                                    </div>
-                                </div>
-                            </label>
-                            <div class="fieldDescription">
-                                If Enabled - will assume content before the Title Sequence Start is just a recap and skip this for the selected Season only
-                            </div>
-
-                        </div>
-                        <br/>
-                        <div class="confirmButtonContainer hide">
-                            <button is="emby-button" type="submit" class="confirmSeasonalIntros raised button-submit block emby-button">
-                                <span>Confirm All Season Intros are Correct</span>
-                            </button>
-                            <div class="fieldDescription">
-                                Confirm all intros for this season are correct.
-                            </div>
-                        </div>
-
-                        <br/>
-                        <button is="emby-button" type="submit" class="hide removeSeasonalFingerprintData raised button-submit block emby-button">
-                            <span>Rescan data</span>
-                        </button>
-                        <div class="fieldDescription">
-                            Remove all Detection and Fingerprint data for this season.
-                        </div>
-
-                    </form>
-
-                    <div class="detailLogo hide" style="margin-top: 2em; margin-left: 30%; opacity: 0; top: 0"></div>
+                <!--<div class="infoBanner flex align-items-center">
+        Must have a minimum of 2 Episodes in the same Season for a successful detection. You can edit the start/end points & when episode 2 arrives, detection will proceed as normal. <br />
+        Some episodes are broadcast without title sequences, or only include a short title screen which would not be considered a title sequence.
+    </div>-->
+                <div>
+                    <button is="emby-button" type="button" class="emby-button tableOptionsExpand" style="margin: 0; border-radius: 0; font-size: 1.2em; width: 100%; border-radius: 0px; transition: all 0.5s">
+                        <i class="secondaryText md-icon">tune</i>
+                    </button>
                 </div>
-                <br/>
+                <!-- ReSharper disable once CssNotResolved -->
+                <div style="background: var(--button-background); padding:1em" class="tableOptions">
+                    
+                    <div class="mediaSelectionContainer" style="display:flex">
+                        
+                        <div>
+                            <div style="display: flex">
+                                <div style="align-items: center; padding: 1em">
+                                    <!-- Emby Series List -->
+                                    <div class="selectContainer">
+                                        <label class="selectLabel" for="selectEmbySeries">Select TV Show:</label>
+                                        <select is="emby-select" name="selectEmbySeries" id="selectEmbySeries" label="Series:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                        <div class="selectArrowContainer">
+                                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                        </div>
+                                        <div class="fieldDescription">
+                                            Show Title Sequence (Intro) data for this TV Show.
+                                        </div>
+                                    </div>
+                                </div>
 
-                <hr/>
+                                <div style="align-items: center; padding:1em">
+                                    <!-- Emby Season List -->
+                                    <div class="selectContainer">
+                                        <label class="selectLabel" for="selectEmbySeason">Select Season:</label>
+                                        <select is="emby-select" name="selectEmbySeason" id="selectEmbySeason" label="Seasons:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                                        <div class="selectArrowContainer">
+                                            <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                                        </div>
+                                        <div class="fieldDescription">
+                                            Show Title Sequence (Intro) data for this season.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div class="container" style="display: flex; margin:1em">
+                                <button is="emby-button" type="submit" class="removeSeasonalFingerprintData fab emby-button">
+                                    <i class="secondaryText md-icon">autorenew</i>
+                                </button>
+                                <div class="fieldDescription" style="padding-top:0.6em">
+                                    Reset detection data for this season. Rescan during the next scheduled task.
+                                </div>
+                            </div>
+                            <br/>
+                            <div class="inputContainer">
+                                <label style="width: auto;" class="mdl-switch mdl-js-switch">
+                                    <input is="emby-toggle" type="checkbox" id="enableImageCache" class="chkEnableImageCache" data-embytoggle="">
+                                    <span class="toggleButtonLabel mdl-switch__label">Cache table images</span>
+                                    <div class="mdl-switch__trackContainer">
+                                        <div class="mdl-switch__track"></div>
+                                        <div class="mdl-switch__thumb">
+                                            <span class="mdl-switch__focus-helper"></span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+
+                            <div class="container" style="display: flex; margin: 1em">
+                                <button is="emby-button" type="submit" class="setSeriesTitleSequenceDataToFalse fab emby-button">
+                                    <i class="secondaryText md-icon">remove</i>
+                                </button>
+                                <div class="fieldDescription" style="padding-top: 0.6em">
+                                    Clear all detected title sequences for this series.
+                                </div>
+                            </div>
+
+                            <div class="container" style="display: flex; margin: 1em">
+                                <button is="emby-button" type="submit" class="setSeriesCreditSequenceDataToFalse fab emby-button">
+                                    <i class="secondaryText md-icon">remove</i>
+                                </button>
+                                <div class="fieldDescription" style="padding-top: 0.6em">
+                                    Clear all detected credit sequences for this series.
+                                </div>
+                            </div>
+
+                            <br/>
+
+                        </div>
+
+                    </div>
+                    <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Title sequence length for this season: <span class="averageTitleSequenceTime"></span></h2>
+                </div>
+               
+                <br />
+                
                 <div class="detailSectionHeader" style="padding-bottom: 2em">
                     <div style="display: flex">
 
-                        <div style="flex-grow: 1">
-                            <h2 style="margin: .6em 0; vertical-align: middle; display: inline-block;">Title sequence length for this season: <span class="averageTitleSequenceTime"></span></h2>
-                        </div>
-                        <div class="inputContainer">
-                            <label style="width: auto;" class="mdl-switch mdl-js-switch">
-                                <input is="emby-toggle" type="checkbox" id="enableImageCache" class="chkEnableImageCache" data-embytoggle="">
-                                <span class="toggleButtonLabel mdl-switch__label">Cache table images</span>
-                                <div class="mdl-switch__trackContainer">
-                                    <div class="mdl-switch__track"></div>
-                                    <div class="mdl-switch__thumb">
-                                        <span class="mdl-switch__focus-helper"></span>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
+
                     </div>
 
                     <div class="pagingContainer" style="display: flex; justify-content: center; align-items: center"></div>
 
                     <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
                         <!-- ReSharper disable once CssNotResolved -->
-                        <h3 style="color: var(--theme-primary-color); margin-top: 1em;">Please Edit Options in Green<span class="editableFields"></span>
+                        <h3 style="color: var(--theme-primary-color); margin-top: 1em;">
+                            Please Edit Options in Green<span class="editableFields"></span>
                         </h3>
                     </div>
                 </div>
-                <div class="introResults scrollY" style="max-height: 82em; margin: 0 2em 2em 2em">
-                    <table class="tblEpisodeIntroResults table detailTable responsive" style="width: 100%; border-collapse: collapse !important;">
+                <div class="introResults scrollX" style="max-height: 82em; margin: 0 2em 2em 2em; min-width:100%">
+                    <table class="tblEpisodeIntroResults table detailTable responsive" style="width: 175%; border-collapse: collapse !important; overflow-x: scroll;">
                         <thead>
-                        <tr style="text-align: left;">
-                            <!--<th class="detailTableHeaderCell" data-priority="2">Confirmed</th>-->
-                            <th class="detailTableHeaderCell" data-priority="2"></th>
-                            <th class="detailTableHeaderCell" data-priority="2">Series</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Season</th>
-                            <th class="detailTableHeaderCell" data-priority="2">Episode</th>
-                            <!-- ReSharper disable three CssNotResolved -->
-                            <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Intro</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
-                            <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Credit</th>
-                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
+                            <tr style="text-align: left;">
+                                <!--<th class="detailTableHeaderCell" data-priority="2">Confirmed</th>-->
+                                <th class="detailTableHeaderCell" data-priority="2"></th>
+                                <th class="detailTableHeaderCell" data-priority="2">Series</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Season</th>
+                                <th class="detailTableHeaderCell" data-priority="2">Episode</th>
+                                <!-- ReSharper disable three CssNotResolved -->
+                                <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Intro</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro Start</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Intro End</th>
+                                <th class="detailTableHeaderCell" data-priority="3" style="color: var(--theme-primary-color)">Has Credit</th>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">End Credit Start</th>
 
-                            <!--<th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Has Recap</th>-->
+                                <!--<th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Has Recap</th>-->
 
-                            <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
-                            <th class="detailTableHeaderCell" data-priority="1"></th>
-                            <th class="detailTableHeaderCell" data-priority="1"></th>
-                        </tr>
+                                <th class="detailTableHeaderCell" data-priority="1" style="color: var(--theme-primary-color)">Actions</th>
+                                <th class="detailTableHeaderCell" data-priority="1"></th>
+                                <th class="detailTableHeaderCell" data-priority="1"></th>
+                            </tr>
                         </thead>
                         <tbody class="introResultBody"></tbody>
                     </table>
