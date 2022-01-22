@@ -64,8 +64,7 @@ namespace IntroSkip.Api
 
         // ReSharper disable once TooManyDependencies
         public SequenceThumbnailService(ILogManager logMan, ILibraryManager libraryManager,
-            IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, IServerApplicationPaths paths,
-            IFileSystem file)
+            IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, IServerApplicationPaths paths, IFileSystem file)
         {
             Log = logMan.GetLogger(Plugin.Instance.Name);
             LibraryManager = libraryManager;
@@ -306,7 +305,7 @@ namespace IntroSkip.Api
                 using (var memoryStream = new MemoryStream())
                 {
                     output.CopyTo(memoryStream);
-                    using (var sw = new StreamWriter(Path.Combine(cache, imageFile)))
+                    using (var sw = new StreamWriter(Path.Combine(cache, imageFile), false))
                     {
                         sw.Write(Convert.ToBase64String(memoryStream.ToArray()));
                     }

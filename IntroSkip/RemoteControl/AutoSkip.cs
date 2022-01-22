@@ -96,7 +96,7 @@ namespace IntroSkip.RemoteControl
             var seasonName   = e.Item.Parent.Name;
             var seriesName   = e.Item.Parent.Parent.Name;
 
-            var presentationName = $"AUTOSKIP:{seriesName} - {seasonName} Episode {episodeIndex}";
+            var presentationName = $"{seriesName} - {seasonName} Episode {episodeIndex}";
 
             if (titleSequence != null)
             {

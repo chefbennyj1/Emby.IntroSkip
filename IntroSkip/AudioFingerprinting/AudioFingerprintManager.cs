@@ -24,8 +24,8 @@ namespace IntroSkip.AudioFingerprinting
         private IFfmpegManager FfmpegManager           { get; }
         private ILogger Log                            { get; }
 
-        //While the ffmpeg process is being run inside a parallel loop, it is possible that it may not end correctly
-        //Keep track of all the ffmpeg processes, and make sure that they have ended correctly.
+        //While the ffmpeg process is being run inside a parallel loop, it is possible that it may not exit correctly
+        //Keep track of all the created ffmpeg processes, and make sure that they have ended correctly.
         /// <summary>
         /// Key: output file name, Value: ffmpeg process ID
         /// </summary>
@@ -215,7 +215,7 @@ namespace IntroSkip.AudioFingerprinting
         {
             var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{episode.InternalId}") + ".bin");
             
-            if (CreditFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print is it already exists
+            if (CreditFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print, it already exists
 
             if (!episode.RunTimeTicks.HasValue)
             {
@@ -237,11 +237,11 @@ namespace IntroSkip.AudioFingerprinting
         {
             var chromaprintBinaryFilePath = Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{episode.InternalId}") + ".bin");
             
-            if (TitleFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print is it already exists
+            if (TitleFingerprintExists(episode)) return SplitByteData(chromaprintBinaryFilePath, episode); //<-- return the print, it already exists
             
             ExtractFingerprintBinaryData(episode, chromaprintBinaryFilePath, duration, cancellationToken, TimeSpan.Zero);
 
-            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("ffmpeg process key still available in title sequence process dictionary...OK");
+            if (!EnsureFfmpegEol(chromaprintBinaryFilePath)) Log.Warn("FINGERPRINT: ffmpeg process exiting...");
             
             return SplitByteData(chromaprintBinaryFilePath, episode);
         }
@@ -260,7 +260,6 @@ namespace IntroSkip.AudioFingerprinting
             if (process is null)
             {
                 return FfmpegProcessMonitor.TryRemove(outputFilePath, out _);
-                //Log.Debug("Ffmpeg fingerprint instance exited successfully.");
             }
 
             Log.Debug("Ffmpeg fingerprint instance exiting...");

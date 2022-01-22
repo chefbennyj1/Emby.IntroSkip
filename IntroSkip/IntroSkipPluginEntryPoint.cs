@@ -6,6 +6,8 @@ using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using IntroSkip.Data;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.IO;
@@ -44,9 +46,10 @@ namespace IntroSkip
 
         }
 
+        //private static Timer NewItemAddedTimer = new Timer(RunFingerprinting);
+
         public void Run()
         {
-            
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
             LibraryManager.ItemRemoved += LibraryManagerItemRemoved;
             Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);

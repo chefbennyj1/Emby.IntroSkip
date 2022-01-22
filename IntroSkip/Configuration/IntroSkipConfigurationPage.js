@@ -87,18 +87,18 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
         }
 
-        ApiClient.seriesConfirmNoTitleSequences = function(internalId) {
-            const url = this.getUrl('SeriesHasNoTitleSequence?InternalId=' + internalId);
+        ApiClient.deleteSeriesTitleSequences = function(internalId) {
+            const url = this.getUrl('SeriesTitleSequences?InternalId=' + internalId);
             return this.ajax({
-                type: "POST",
+                type: "DELETE",
                 url: url
             });
         }
 
-        ApiClient.seriesConfirmNoCreditSequences = function(internalId) {
-            const url = this.getUrl('SeriesHasNoCreditSequence?InternalId=' + internalId);
+        ApiClient.deleteSeriesCreditSequences = function(internalId) {
+            const url = this.getUrl('SeriesCreditSequences?InternalId=' + internalId);
             return this.ajax({
-                type: "POST",
+                type: "DELETE",
                 url: url
             });
         }
@@ -245,24 +245,24 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         }
 
         async function setSeriesTitleSequenceToFalse(seriesId) {
-            return await ApiClient.seriesConfirmNoTitleSequences(seriesId);
+            return await ApiClient.deleteSeriesTitleSequences(seriesId);
         }
 
         async function setSeriesCreditSequenceToFalse(seriesId) {
-            return await ApiClient.seriesConfirmNoCreditSequences(seriesId);
+            return await ApiClient.deleteSeriesCreditSequences(seriesId);
         }
 
-        function getSequenceTime(sequence) {
+        function getSequenceTimeInMilliseconds(sequence) {
             const titleSequenceStart      = parseISO8601Duration(sequence.TitleSequenceStart);
             const titleSequenceEnd        = parseISO8601Duration(sequence.TitleSequenceEnd);
-            const sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
-            const sequenceEndTimeString   = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
-            const sequenceStartTime       = new Date('1970-01-01T' + sequenceStartTimeString + 'Z'); //That's a hack
-            const sequenceEndTime         = new Date('1970-01-01T' + sequenceEndTimeString + 'Z');   //Also a hack
+            //const sequenceStartTimeString = titleSequenceStart.hours + ":" + titleSequenceStart.minutes + ":" + titleSequenceStart.seconds;
+            //const sequenceEndTimeString   = titleSequenceEnd.hours + ":" + titleSequenceEnd.minutes + ":" + titleSequenceEnd.seconds;
+            const sequenceStartTime = (titleSequenceStart.minutes * 60000) + (titleSequenceStart.seconds * 1000);
+            const sequenceEndTime   = (titleSequenceEnd.minutes * 60000) + (titleSequenceEnd.seconds * 1000); // new Date('1970-01-01T' + sequenceEndTimeString + 'Z');   //Also a hack
 
             return {
-                Start: sequenceStartTime.getTime(),
-                End  : sequenceEndTime.getTime()
+                StartMs: sequenceStartTime,
+                EndMs  : sequenceEndTime
             }
         }
 
@@ -578,10 +578,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             dlg.style.maxWidth = '25%';
             dlg.style.maxHeight = '55%';
             const seasonSelect = view.querySelector('#selectEmbySeason');
+            
             const result = await getIntros(seasonSelect.value);
+
             const sequence = result.TitleSequences.filter(s => s.InternalId == id)[0];
-            var sequenceTime = getSequenceTime(sequence);
-            const sequenceStartTimeTicks = ((sequenceTime.Start * 10000) + 621355968000000000);
+            var sequenceTime = getSequenceTimeInMilliseconds(sequence);
+            const sequenceStartTimeTicks = ((sequenceTime.StartMs * 10000) + 621355968000000000);
 
             var html = '';
             html += '<div class="formDialogHeader">';
@@ -593,15 +595,17 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += '<div class="dialogContentInner" style="max-width: 100%; display: flex;align-items: center;justify-content: center;">';
 
             html += '<video style="width:100%; height:100%" preload="metadata" autoplay="autoplay" webkit-playsinline="" playsinline="" crossorigin="anonymous" controls src="' + await getSequenceVideo(sequence, sequenceStartTimeTicks) + '"></video>';
-            
+            html += '<h1 class="progression"></h1>';
             html += '</div>';
             html += '</div>';
 
             dlg.innerHTML = html;
 
             const video = dlg.querySelector('video');
+
             video.onprogress = function() {
-                if (video.currentTime >= (sequenceTime.End - sequenceTime.Start )/1000) {
+
+                if (video.currentTime >= ( sequenceTime.EndMs - sequenceTime.StartMs )) {
                     video.pause();
                 }
             };
@@ -728,8 +732,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     switching = true;
                 }
             }
-            
-            
         }
 
         function fadeIn(element) {
@@ -763,14 +765,14 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             const result = await getIntros(season.Id);
 
             pagingContainer.innerHTML = '';
-
+            view.querySelector('.introResultBody').innerHTML = "";
             if (result) {
                 if (result.TitleSequences && result.TitleSequences.length) {
 
                     pagination.TotalRecordCount = result.TotalRecordCount;
                     pagingContainer.innerHTML += getPagingHtml();
 
-                    view.querySelector('.introResultBody').innerHTML = "";
+                    
                     const averageLength = parseISO8601Duration(result.CommonEpisodeTitleSequenceLength);
 
                     //removeSeasonalFingerprintButton.querySelector('span').innerHTML = `Reset ${season.Name} Data`;
@@ -785,6 +787,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     //TODO: in order to make this responsive for mobile, we'll have to remove table rows and columns here.
                     if (screen.width <= 800) {
                         console.log("is mobile view");
+                        view.querySelector('.tblEpisodeIntroResults').style = "width:50em !important;";                           
                         const table = view.querySelector('.tblEpisodeIntroResults');
                         table.querySelector('thead > tr > th:nth-child(1)').classList.toggle('hide'); //Hide the episode thumb image column
                         table.querySelector('thead > tr > th:nth-child(2)').classList.toggle('hide'); //Hide the Series Name column
@@ -823,24 +826,12 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 if (!ApiClient.HasChromaprint()) {
                     view.querySelector('.chromaprintAlert').classList.remove('hide');
                 }
-
-                //const isMobile = window.matchMedia("only screen and (max-width: 1676px)").matches;
-                //if (!isMobile) {
-                //    view.querySelector('.detailLogo').classList.remove('hide');
-                //}
-
-                //window.onresize = function() {
-                //    if (isMobile) {
-                //        view.querySelector('.detailLogo').classList.add('hide');
-                //    }
-                //}
-
+               
                 var imageCacheToggle                = view.querySelector('#enableImageCache');
                 var seriesSelect                    = view.querySelector('#selectEmbySeries');
                 var seasonSelect                    = view.querySelector('#selectEmbySeason');
                 var resetSeasonalFingerprintButton  = view.querySelector('.removeSeasonalFingerprintData');
-                //var primaryImage                    = view.querySelector('.detailLogo');
-
+                
                 var seriesTitleSequenceToFalseButton = view.querySelector('.setSeriesTitleSequenceDataToFalse');
                 var seriesCreditSequenceToFalseButton = view.querySelector('.setSeriesCreditSequenceDataToFalse');
                 var mediaSelectionContainer = view.querySelector('.mediaSelectionContainer');
@@ -953,7 +944,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 });
 
                 document.querySelector('.pageTitle').innerHTML = "Intro Skip " +
-                    '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://emby.media/community/index.php?/topic/101687-introskip-instructions-beta-releases/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+                    '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://github.com/chefbennyj1/Emby.IntroSkip.Release/wiki"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
 
             });
 
