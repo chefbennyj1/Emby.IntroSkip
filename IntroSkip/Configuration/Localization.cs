@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 
 namespace IntroSkip.Configuration
-{
+{     
+   
     public class Localization
     {
         public static Dictionary<string, string> IntroSkipLanguages = new Dictionary<string, string>()
@@ -19,7 +20,7 @@ namespace IntroSkip.Configuration
             //Danish (Denmark)
             {"Danish", "Intro springet over"},
             //German (Germany)
-            {"German", "Einführung übersprungen"},
+            {"German", "Intro übersprungen"},
             //Greek (Greece)
             {"Greek", "Η εισαγωγή παραβλέφθηκε"},
             //English 
@@ -90,83 +91,83 @@ namespace IntroSkip.Configuration
         public static Dictionary<string, string> CreditSkipLanguages = new Dictionary<string, string>()
         {
             //Arabic (Saudi Arabia)
-            {"Arabic", "تم تخطي المقدمة"},
+            {"Arabic", "تم تخطي الاعتمادات"},
             //Bulgarian (Bulgaria)
-            {"Bulgarian", "Въведението е пропуснато"},
+            {"Bulgarian", "Кредити пропуснати"},
             //Catalan (Catalan)
-            {"Catalan", "S'ha omès la introducció"},
+            {"Catalan", "Crèdits saltats"},
             //Chinese (Taiwan)
-            {"Chinese", "简介已跳过"},
+            {"Chinese", "学分跳过"},
             //Czech (Czech Republic)
-            {"Czech", "Úvod přeskočen"},
+            {"Czech", "Kredity přeskočeny"},
             //Danish (Denmark)
-            {"Danish", "Intro springet over"},
+            {"Danish", "Credits sprunget over"},
             //German (Germany)
-            {"German", "Einführung übersprungen"},
+            {"German", "Credits übersprungen"},
             //Greek (Greece)
-            {"Greek", "Η εισαγωγή παραβλέφθηκε"},
+            {"Greek", "Οι πιστώσεις παραλείφθηκαν"},
             //English 
             {"English", "Credits Skipped"},
             //Finnish (Finland)
-            {"Finnish", "Johdanto ohitettu"},
+            {"Finnish", "Krediitit ohitettu"},
             //French (France)
-            {"French", "Introduction ignorée"},
+            {"French", "Crédits ignorés"},
             //Hebrew (Israel)
-            {"Hebrew", "דילוג על הקדמה"},
+            {"Hebrew", "קרדיטים דילגו"},
             //Hungarian (Hungary)
-            {"Hungarian", "Intro Kihagyva"},
+            {"Hungarian", "Kredit kihagyva"},
             //Icelandic (Iceland)
-            {"Icelandic", "Inngangi sleppt"},
+            {"Icelandic", "Inneign sleppt"},
             //Italian (Italy)
-            {"Italian", "Intro saltato"},
+            {"Italian", "Crediti saltati"},
             //Japanese (Japan)
-            {"Japanese", "イントロスキップ"},
+            {"Japanese", "スキップされたクレジット"},
             //Korean (Korea)
-            {"Korean", "인트로 건너뜀"},
+            {"Korean", "건너뛴 크레딧"},
             //Dutch (Netherlands)
-            {"Dutch", "Inleiding overgeslagen"},
+            {"Dutch", "Tegoeden overgeslagen"},
             //Norwegian, BokmÃ¥l (Norway)
-            {"Norwegian", "Intro hoppet over"},
+            {"Norwegian", "Kreditter hoppet over"},
             //Polish (Poland)
-            {"Polish", "Pominięto wprowadzenie"},
+            {"Polish", "Kredyty pominięte"},
             //Portuguese (Brazil)
-            {"Portuguese", "Introdução pulada"},
+            {"Portuguese", "Créditos ignorados"},
             //Romanian (Romania)
-            {"Romanian", "Introducere omisă"},
+            {"Romanian", "Credite ignorate"},
             //Russian (Russia)
-            {"Russian", "Вступление пропущено"},
+            {"Russian", "Кредиты пропущены"},
             //Croatian (Croatia)
-            {"Croatian", "Uvod preskočen"},
+            {"Croatian", "Zasluge su preskočene"},
             //Slovak (Slovakia)
-            {"Slovak", "Uvod preskočen"},
+            {"Slovak", "Kredity preskočené"},
             //Albanian (Albania)
-            {"Albanian", "Hyrja u anashkalua"},
+            {"Albanian", "Kreditë e anashkaluara"},
             //Swedish (Sweden)
-            {"Swedish", "Introt hoppade över"},
+            {"Swedish", "Krediter hoppade över"},
             //Thai (Thailand)
-            {"Thai", "ข้ามบทนำ"},
+            {"Thai", "เครดิตข้าม"},
             //Turkish (Turkey)
-            {"Turkish", "Giriş Atlandı"},
+            {"Turkish", "Krediler Atlandı"},
             //Urdu (Islamic Republic of Pakistan)
-            {"Urdu", "تعارف چھوڑ دیا گیا۔"},
+            {"Urdu", "کریڈٹ چھوڑ دیا گیا۔"},
             //Indonesian (Indonesia)
-            {"Indonesian", "Intro Dilewati"},
+            {"Indonesian", "Kredit Dilewati"},
             //Ukrainian (Ukraine)
-            {"Ukrainian", "Вступ пропущено"},
+            {"Ukrainian", "Кредити пропущені"},
             //Belarusian (Belarus)
-            {"Belarusian", "Увядзенне прапушчана"},
+            {"Belarusian", "Крэдыты прапушчаны"},
             //Slovenian (Slovenia)
-            {"Slovenian", "Uvod preskočen"},
+            {"Slovenian", "Zasluge preskočene"},
             //Vietnamese (Vietnam)
-            {"Vietnamese", "Đã bỏ qua phần giới thiệu"},
+            {"Vietnamese", "Tín dụng bị bỏ qua"},
             //Afrikaans (South Africa)
-            {"Afrikaans", "Inleiding oorgeslaan"},
+            {"Afrikaans", "Krediete oorgeslaan"},
             //Hindi (India)
-            {"Hindi", "परिचय छोड़ दिया गया"},
+            {"Hindi", "क्रेडिट छोड़ दिया गया"},
             //Punjabi (India)
-            {"Punjabi", "ਜਾਣ-ਪਛਾਣ ਛੱਡੀ ਗਈ"},
+            {"Punjabi", "ਕ੍ਰੈਡਿਟ ਛੱਡਿਆ ਗਿਆ"},
             //Spanish (Mexico)
-            {"Spanish", "Intro omitido"},
+            {"Spanish", "Créditos saltados"},
 
         };
     }

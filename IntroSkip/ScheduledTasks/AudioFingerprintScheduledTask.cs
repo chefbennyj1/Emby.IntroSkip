@@ -11,7 +11,6 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
-using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 
 // ReSharper disable ComplexConditionExpression
@@ -25,15 +24,12 @@ namespace IntroSkip.ScheduledTasks
         private ILibraryManager LibraryManager { get; }
         private ILogger Log { get; }
         private ITaskManager TaskManager { get; }
-        private IJsonSerializer JsonSerializer { get; }
-        //private IDtoService DtoService { get; set; }
-        // ReSharper disable once TooManyDependencies
-        public AudioFingerprintScheduledTask(ILogManager logMan, IUserManager userManager, ILibraryManager libraryManager, ITaskManager taskManager, IJsonSerializer json)
+      
+        public AudioFingerprintScheduledTask(ILogManager logMan, IUserManager userManager, ILibraryManager libraryManager, ITaskManager taskManager)
         {
             UserManager = userManager;
             LibraryManager = libraryManager;
             TaskManager = taskManager;
-            JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
         }
 
@@ -73,6 +69,7 @@ namespace IntroSkip.ScheduledTasks
                 Log.Warn(ex.Message);
             }
 
+            if(!AudioFingerprintManager.Instance.HasChromaprint()) Log.Warn("Ffmpeg does not contain Chromaprint libraries.");
 
             try
             {
@@ -117,7 +114,7 @@ namespace IntroSkip.ScheduledTasks
 
                 progress.Report(0.1); //Give the user some kind of progress to show the task has started
 
-                //We divide by two because we are going to split up the parallel function for both series and episodes.
+               
                 var fpMax = config.FingerprintingMaxDegreeOfParallelism;
 
                 Parallel.ForEach(seriesQuery.Items, new ParallelOptions() { MaxDegreeOfParallelism = fpMax }, (series, state) =>
@@ -176,7 +173,7 @@ namespace IntroSkip.ScheduledTasks
                             }
                             
                             //The episode data exists in the database
-                            // ReSharper disable twice AccessToModifiedClosure <-- no again, it's right there!
+                            // ReSharper disable twice AccessToModifiedClosure 
                             if (titleSequences.Exists(result => result.InternalId == episode.InternalId))
                             {
                                 var titleSequenceResult = titleSequences.FirstOrDefault(result => result.InternalId == episode.InternalId);
@@ -260,13 +257,13 @@ namespace IntroSkip.ScheduledTasks
                             }
                             catch (NullReferenceException)
                             {
-                                //This is stream files. We'll just ignore it.
+                                //These is stream files. We'll just ignore the null exception. yup we are.
                                 stopWatch.Stop();
                             }
                             catch (Exception ex)
                             {
                                 stopWatch.Stop();
-                                Log.Error(ex.Message);
+                                Log.Error(ex.Message); //but not all exceptions
                             }
 
                         }
@@ -280,6 +277,10 @@ namespace IntroSkip.ScheduledTasks
             catch (TaskCanceledException)
             {
                 progress.Report(100.0);
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorException(ex.Message, ex);
             }
 
             Log.Info("FINGERPRINT: Chromaprint Task Complete");

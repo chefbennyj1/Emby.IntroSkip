@@ -9,7 +9,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             var matches = iso8601Duration.match(iso8601DurationRegex);
 
             return {
-                hours: matches[6] === undefined ? "00" : matches[6] < 10 ? `0${matches[6]}` : matches[6],
+                hours: matches[6]   === undefined ? "00" : matches[6] < 10 ? `0${matches[6]}` : matches[6],
                 minutes: matches[7] === undefined ? "00" : matches[7] < 10 ? `0${matches[7]}` : matches[7],
                 seconds: matches[8] === undefined ? "00" : matches[8] < 10 ? `0${matches[8]}` : matches[8]
             };
@@ -38,8 +38,11 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
         //}
         // http://localhost:8096/emby/Items/12056/Refresh?MetadataRefreshMode=FullRefresh&ImageRefreshMode=ValidationOnly&ReplaceAllMetadata=true&ReplaceAllImages=false
 
-        ApiClient.resetSeasonData = function(seasonId) {
+        ApiClient.resetSeasonData = function(seasonId, removeFingerprintBinaryFile = false) {
             var url = this.getUrl(`ResetSeasonData?SeasonId=${seasonId}`);
+            if (removeFingerprintBinaryFile) {
+                url += "&RemoveFingerprintBinaryData=true";
+            }
             return this.ajax({
                 type: "DELETE",
                 url: url
@@ -181,9 +184,10 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             return html;
         }
 
-        async function getSeries() {
+        async function getSeries(config) {
+            var excludeList = config.IgnoredList && config.IgnoredList.length ? '&ExcludeItemIds=' + config.IgnoredList.join(',') : '';
             return await ApiClient.getJSON(ApiClient.getUrl(
-                'Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName'));
+                'Items?ExcludeLocationTypes=Virtual&Recursive=true&IncludeItemTypes=Series&SortBy=SortName' + excludeList));
         }
 
         async function getEpisode(episodeId) {
@@ -628,26 +632,33 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             dlg.classList.add('background-theme-a');
 
             dlg.classList.add('formDialog');
-            dlg.style.maxWidth = '30%';
-            dlg.style.maxHeight = '20%';
+            dlg.style.maxWidth = '35%';
+            dlg.style.maxHeight = '35%';
 
             var html = '';
             html += '<div class="formDialogHeader">';
             html += '<button is="paper-icon-button-light" class="btnCancel autoSize" tabindex="-1"><i class="md-icon">&#xE5C4;</i></button>';
-            html += `<h3 class="formDialogHeaderTitle">${confirmAction === "ClearAll" ? "Reset Season" : "Confirm Season"}</h3>`;
+            html += `<h3 class="formDialogHeaderTitle">Reset Season</h3>`;
             html += '</div>';
             html += '<div class="formDialogContent" style="margin:2em">';
-            html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display: flex;align-items: center;justify-content: center;">';
+            html += '<div class="dialogContentInner" style="max-width: 100%; max-height:100%; display:flex; align-items:center; justify-content:center">';
 
-            //Submit - Confirm
-            html += '<button is="emby-button" type="button" style="width:35%" class="btnConfirm raised button-submit block emby-button">';
-            html += '<span>Confirm</span>';
+            html += '<div>';
+            //Submit
+            html += '<button is="emby-button" type="button" style="margin:2em" class="btnResetDetectionData raised button-submit block emby-button">';
+            html += '<span>Reset Detection Data (Recommended)</span>';
+            html += '</button>';
+
+            html += '<button is="emby-button" type="button" style="margin:2em" class="btnResetDetectionAndRemoveBinaryFile raised button-submit block emby-button">';
+            html += '<span>Reset Detection Data and Remove Fingerprint Binary Data</span>';
             html += '</button>';
 
             //Cancel
-            html += '<button is="emby-button" type="button" class="btnCancel raised button-cancel">';
+            html += '<button is="emby-button" type="button" class="btnCancel raised button-cancel" style="margin-left: 45%;">';
             html += '<span>Cancel</span>';
             html += '</button>';
+
+            html += '</div>';
 
             html += '</div>';
             html += '</div>';
@@ -661,30 +672,33 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
 
 
-            dlg.querySelector('.btnConfirm').addEventListener('click', async () => {
+            dlg.querySelector('.btnResetDetectionData').addEventListener('click', async () => {
                 var seasonSelect = view.querySelector('#selectEmbySeason');
                 var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
-                switch (confirmAction) {
-                    case "ClearAll":
-                        await clearAll(seasonId, view);
-                        dialogHelper.close(dlg);
-                        break;
-                    case "ConfirmAll":
-                        await confirmAll(seasonId, view);
-                        dialogHelper.close(dlg);
-                        break;
-                }
+                await resetData(seasonId, false, view);
+                dialogHelper.close(dlg);
             });
 
-            async function clearAll(seasonId, page) {
-                ApiClient.resetSeasonData(seasonId).then(async () => {
+            dlg.querySelector('.btnResetDetectionAndRemoveBinaryFile').addEventListener('click', async () => {
+                var seasonSelect = view.querySelector('#selectEmbySeason');
+                var seasonId = seasonSelect[seasonSelect.selectedIndex].value;
+                await resetData(seasonId, true, view);
+                dialogHelper.close(dlg);
+            });
+
+            async function resetData(seasonId, deleteBinaryFile, page) {
+                ApiClient.resetSeasonData(seasonId, deleteBinaryFile).then(async () => {
                     //var result = await getIntros(seasonId);
-                    var seriesSelect = view.querySelector('#selectEmbySeries');
+
+                    var seriesSelect = page.querySelector('#selectEmbySeries');
                     var seriesId = seriesSelect[seriesSelect.selectedIndex].value;
+
                     var seasons = await getSeasons(seriesId);
                     var season = seasons.Items.filter(s => s.Id === seasonId)[0];
+
                     pagination.TotalRecordCount = 0;
                     await loadPageData(season, page);
+
                 });
             }
 
@@ -842,18 +856,18 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 mainTabsManager.setTabs(this, 0, getTabs);
 
-                ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                    imageCacheToggle.checked = config.ImageCache;
-                });
-
+                var config = await ApiClient.getPluginConfiguration(pluginId); 
                 
+                imageCacheToggle.checked = config.ImageCache;
+
                 imageCacheToggle.addEventListener('change', (elem) => {
                     elem.preventDefault();
                     var enabled = view.querySelector('#enableImageCache').checked;
                     enableImageCache(enabled);
                 });
-                 
-                var series = await getSeries();
+
+               
+                var series = await getSeries(config);
 
                 for (let i = 0; i <= series.Items.length - 1; i++) {
                     seriesSelect.innerHTML += `<option value="${series.Items[i].Id}">${series.Items[i].Name}</option>`;

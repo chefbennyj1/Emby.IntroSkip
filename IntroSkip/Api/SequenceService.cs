@@ -43,7 +43,10 @@ namespace IntroSkip.Api
         public class RemoveSeasonDataRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long SeasonId { get; set; }           
+            public long SeasonId { get; set; }  
+            
+            [ApiMember(Name = "RemoveFingerprintBinaryData", Description = "Remove the fingeprint binary data associated with this season", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
+            public bool? RemoveFingerprintBinaryData { get; set; } 
         }
         
 
@@ -333,6 +336,43 @@ namespace IntroSkip.Api
                     titleSequences.Remove(item);
                 }
                 catch { }
+
+                if (request.RemoveFingerprintBinaryData.HasValue)
+                {
+                    if (request.RemoveFingerprintBinaryData.Value) 
+                    {
+                        //Try to remove the Binary File for the title sequence
+                        if (AudioFingerprintManager.Instance.TitleFingerprintExists(item.InternalId))
+                        {
+                            var titleSequenceBinFilePath = AudioFingerprintManager.Instance.GetTitleSequenceBinaryFilePath(item.InternalId);
+                            try
+                            {
+                                FileSystem.DeleteFile(titleSequenceBinFilePath);
+                                Log.Debug("Removing title sequence binary file successful.");
+                            }
+                            catch
+                            {
+                                Log.Warn("unable to remove title sequence fingerprint binary file path.");
+                            }
+                        }
+
+                        //Try to remove the binary file for the Credit Sequence
+                        if (AudioFingerprintManager.Instance.CreditFingerprintExists(item.InternalId))
+                        {
+                            var creditSequenceBinFilePath = AudioFingerprintManager.Instance.GetCreditSequenceBinaryFilePath(item.InternalId);
+                            try
+                            {
+                                FileSystem.DeleteFile(creditSequenceBinFilePath);
+                                Log.Debug("Removing credit sequence binary file successful.");
+                            }
+                            catch
+                            {
+                                Log.Warn("unable to remove credit sequence fingerprint binary file path.");
+                            }
+                        }
+                        
+                    }
+                }
                 
                 if (!Plugin.Instance.Configuration.ImageCache) continue;
                 SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart);

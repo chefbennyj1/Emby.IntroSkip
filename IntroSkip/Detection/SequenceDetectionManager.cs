@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Data;
 using IntroSkip.Sequence;
-using IntroSkip.Statistics;
 using IntroSkip.VideoBlackDetect;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -17,7 +16,6 @@ using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Querying;
 
-// ReSharper disable TooManyChainedReferences
 
 namespace IntroSkip.Detection
 {
@@ -95,10 +93,10 @@ namespace IntroSkip.Detection
             Parallel.ForEach(seriesQuery.Items,
                 new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
                 {
-                    //LibraryMonitor.ReportFileSystemChangeBeginning(series.Path);
+                    
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        //LibraryMonitor.ReportFileSystemChangeComplete(series.Path, false);
+                        
                         state.Break();
                         progress.Report(100.0);
                     }
@@ -182,6 +180,7 @@ namespace IntroSkip.Detection
                         var sequenceResultMemoization = new ConcurrentDictionary<long, ConcurrentBag<SequenceResult>>();
                         var fingerprintMemoization    = new ConcurrentDictionary<long, AudioFingerprint>();
                         
+                        //Begin our episode Matrix O(n2). 
                         unmatched.AsParallel().WithCancellation(cancellationToken).WithDegreeOfParallelism(config.MaxDegreeOfParallelism == 1 ? 1 : 2).ForAll((unmatchedItem) =>
                         {
 
@@ -212,7 +211,7 @@ namespace IntroSkip.Detection
                                 //Currently we will compare them again. Example E:5 with E:6, and again E:6 with E:5.
                                 //The more data we accumulate, the more sampling weights we get.
                                 //Uncomment this condition below, if we decided that we don't need the extra sampling data.
-                                //if (fingerprints.ContainsKey(comparableItem.InternalId) || fingerprints.ContainsKey(unmatchedItem.InternalId)) continue;
+                                //if (fingerprintMemoization.ContainsKey(comparableItem.InternalId) || fingerprints.ContainsKey(unmatchedItem.InternalId)) continue;
 
 
                                 var unmatchedItemFingerprint  = new AudioFingerprint(); //Will hold our unmatchedItem fingerprint data from the .bin file
@@ -280,7 +279,7 @@ namespace IntroSkip.Detection
 
                                     var sequences = sequenceDetection.DetectSequences(comparableItem, unmatchedItem, comparableItemFingerprint, unmatchedItemFingerprint, dbResults);
                                     
-                                    //Created the keys in memoization table if we don't have one yet.
+                                    //Created the keys in memoization table for sequence results, if we don't have them yet.
                                     if (!sequenceResultMemoization.ContainsKey(unmatchedItem.InternalId))  sequenceResultMemoization.TryAdd(unmatchedItem.InternalId, new ConcurrentBag<SequenceResult>());
                                     if (!sequenceResultMemoization.ContainsKey(comparableItem.InternalId)) sequenceResultMemoization.TryAdd(comparableItem.InternalId, new ConcurrentBag<SequenceResult>());
                                     
@@ -290,7 +289,7 @@ namespace IntroSkip.Detection
 
                                     stopWatch.Stop();
 
-                                    // ReSharper disable once AccessToModifiedClosure - its just loggin.
+                                    // ReSharper disable once AccessToModifiedClosure - its just logging.
                                     Log.Info(
                                         $"{series.Name} - {season.Name} - Episode: {unmatchedItem.IndexNumber} and Episode: {comparableItem.IndexNumber} total detection time took {stopWatch.ElapsedMilliseconds} milliseconds.");
 
@@ -428,7 +427,7 @@ namespace IntroSkip.Detection
                             //AudioFingerprintManager.Instance.RemoveEpisodeFingerprintBinFiles(sequenceResult.InternalId);
 
 
-                        };
+                        }
                         
                         
                     }
@@ -440,6 +439,10 @@ namespace IntroSkip.Detection
 
             //progress.Report(100.0);
         }
+
+
+        
+       
 
 
         private Tuple<double, SequenceResult> GetBestTitleSequenceResult(TimeSpan common, ConcurrentBag<SequenceResult> titleSequences, CancellationToken cancellationToken)
@@ -471,6 +474,7 @@ namespace IntroSkip.Detection
                     var commonEnd = CommonTimeSpan(endGroups);
 
 
+                    //Start with a high weight, and then narrow results by dividing, makeing the weights lower
                     double durationWeight = 1.0;
                     double startWeight = 1.0;
                     double endWeight = 1.0;
@@ -489,9 +493,10 @@ namespace IntroSkip.Detection
                     if (result.TitleSequenceEnd != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
                     {
                         endWeight = (double)result.TitleSequenceEnd.Ticks / commonEnd.Ticks;
-                    }
+                    }                    
 
                     var score = durationWeight + startWeight + endWeight;
+
                     var avg = Math.Round(score / 3, 2, MidpointRounding.ToEven) - 0.1;
                     
                     //Add a weight to each result, by adding up the differences between them. 
@@ -635,6 +640,8 @@ namespace IntroSkip.Detection
 
         }
         
+       
+
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, SequenceResult>> groups, bool longestCommonTimeSpan = false)
         {
             var enumerableGroup = groups.ToList();

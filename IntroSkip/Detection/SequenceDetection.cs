@@ -56,6 +56,11 @@ namespace IntroSkip.Detection
         //    return setBits;
         //}
 
+        
+
+
+
+
         private static double GetFastHammingDistance(uint x, uint y)
         {
             var i = x ^ y;
@@ -68,25 +73,40 @@ namespace IntroSkip.Detection
         }
 
         // Calculate the similarity of two fingerprints
-        private static double CompareFingerprints(List<uint> f1, List<uint> f2)
+        private static double CompareFingerprints(List<uint> fp1, List<uint> fp2)
         {
-            double dist = 0.0;
-            if (f1.Count != f2.Count)
+            var distance = 0.0;
+            if (fp1.Count != fp2.Count)
             {
                 return 0;
             }
-
-            foreach (var i in Enumerable.Range(0, f1.Count))
+            var max = Math.Max(fp1.Count, fp2.Count);
+            for (var i = 0; i < max; i++)
             {
-                var hammingDistance = GetFastHammingDistance(f1[i], f2[i]);
-                dist += hammingDistance;
+                distance += GetFastHammingDistance(fp1[i], fp2[i]);
             }
 
-            var score = 1 - dist / (f1.Count * 32);
-            return score;
+            return 1.0 - distance / (max * 32);
         }
+        // private static double CompareFingerprints(List<uint> f1, List<uint> f2)
+        // {
+        //     double dist = 0.0;
+        //     if (f1.Count != f2.Count)
+        //     {
+        //         return 0;
+        //     }
 
-        // Slide fingerprints to find best offset
+        //     foreach (var i in Enumerable.Range(0, f1.Count))
+        //     {
+        //         var hammingDistance = GetFastHammingDistance(f1[i], f2[i]);
+        //         dist += hammingDistance;
+        //     }
+
+        //     var score = 1 - dist / (f1.Count * 32);
+        //     return score;
+        // }
+
+        // Slide fingerprints to find best offset        
         private static int GetBestOffset(List<uint> f1, List<uint> f2)
         {
             var length = f1.Count;
@@ -143,6 +163,7 @@ namespace IntroSkip.Detection
         }
 
         // Align the fingerprints according to the calculated offset
+        
         private static Tuple<List<uint>, List<uint>> GetAlignedFingerprints(int offset, List<uint> fingerprint1, List<uint> fingerprint2)
         {
             List<uint> offsetCorrectedF2 = new List<uint>();
@@ -165,7 +186,7 @@ namespace IntroSkip.Detection
             return Tuple.Create(offsetCorrectedF1, offsetCorrectedF2);
         }
 
-        // Find the intro region based on Hamming distances
+        // Find the intro region based on Hamming distances           
         private static Tuple<int, int> FindContiguousRegion(List<double> hammingDistances, int upperLimit)
         {
             var start = -1;
@@ -309,7 +330,7 @@ namespace IntroSkip.Detection
             var (f1, f2) = GetAlignedFingerprints(offset, fingerprint1, fingerprint2);
 
             
-            var range = f1.Count < f2.Count ? f1.Count : f2.Count;
+            var range = Math.Min(f1.Count, f2.Count);
             var hammingDistances = Enumerable.Range(0, range).Select(i => GetFastHammingDistance(f1[i], f2[i])).ToList();
            
            

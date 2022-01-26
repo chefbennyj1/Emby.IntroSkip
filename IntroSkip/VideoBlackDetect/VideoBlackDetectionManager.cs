@@ -26,7 +26,7 @@ namespace IntroSkip.VideoBlackDetect
             FfmpegManager = ffmpeg;
             LibraryManager = libraryManager;
         }
-
+        
         public List<TimeSpan> Analyze(long internalId, CancellationToken cancellationToken)
         {
             var episode = LibraryManager.GetItemById(internalId);
