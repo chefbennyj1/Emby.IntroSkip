@@ -46,7 +46,12 @@ namespace IntroSkip.Api
         }
 
         [Route("/NoTitleSequenceThumbImage", "GET", Summary = "No Title Sequence Thumb Image")]
-        public class NoTitleSequenceThumbImageRequest : IReturn<object> { }
+        public class NoTitleSequenceThumbImageRequest : IReturn<string> { }
+
+        [Route("/NoCreditSequenceThumbImage", "GET", Summary = "No Credit Sequence Thumb Image")]
+        public class NoCreditSequenceThumbImageRequest : IReturn<string> { }
+
+       
 
         private ILogger Log { get; }
         private ILibraryManager LibraryManager { get; }
@@ -59,8 +64,7 @@ namespace IntroSkip.Api
 
         // ReSharper disable once TooManyDependencies
         public SequenceThumbnailService(ILogManager logMan, ILibraryManager libraryManager,
-            IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, IServerApplicationPaths paths,
-            IFileSystem file)
+            IHttpResultFactory resultFactory, IFfmpegManager ffmpegManager, IServerApplicationPaths paths, IFileSystem file)
         {
             Log = logMan.GetLogger(Plugin.Instance.Name);
             LibraryManager = libraryManager;
@@ -87,13 +91,11 @@ namespace IntroSkip.Api
                 case SequenceImageType.CreditStart:
                     break;
                 case SequenceImageType.IntroStart:
-                    requestFrame +=
-                        TimeSpan.FromSeconds(7); //<--push the image frame so it isn't always a black screen.
+                    requestFrame += TimeSpan.FromSeconds(7); //<--push the image frame so it isn't always a black screen.
                     break;
                 case SequenceImageType.CreditEnd:
                 case SequenceImageType.IntroEnd:
-                    requestFrame -=
-                        TimeSpan.FromSeconds(7); //<--back up the image frame so it isn't always a black screen.
+                    requestFrame -= TimeSpan.FromSeconds(7); //<--back up the image frame so it isn't always a black screen.
                     break;
             }
 
@@ -105,27 +107,25 @@ namespace IntroSkip.Api
             //We have enabled the the image cache
             if (config.ImageCache)
             {
-                
                 //We have the image in the cache
-                //if (CacheImageExists(imageFile))
-                //{
-                //    Log.Debug("Returning thumb images from cache.");
-                    
-                //    return ResultFactory.GetResult(Request, new FileStream(Path.Combine(cache, imageFile), FileMode.Open), "image/png");
-                //}
+                if (CacheImageExists(imageFile))
+                {
+                    Log.Debug("Returning thumb images from cache.");
+
+                    using (var sr = new StreamReader(Path.Combine(cache, imageFile)))
+                    {
+                        return sr.ReadToEnd();
+                    }
+                }
             }
 
             var frame = $"{requestFrame.Hours}:{requestFrame.Minutes}:{requestFrame.Seconds}";
-
-            //If we have gotten this far with ImageCache enabled, then we don't have a copy of the image in the cache. 
-            //Now we have to run ffmpeg process to save the image
-            //if (config.ImageCache) new TaskFactory().StartNew(() => UpdateImageCache(item.InternalId, request.SequenceImageType, frame)).ConfigureAwait(false);
-
+            
             //Get the extracted frame using FFmpeg. 
             //If the cache is enabled, but we don't have the image yet, return the image stream
             //If the cache is disabled, return the image stream
             //var args = $"-accurate_seek -ss {frame} -threads 1 -copyts -i \"{item.Path}\" -an -vf \"scale=trunc(min(max(iw\\,ih*dar)\\,min(175\\,0*dar))/2)*2:trunc(min(max(iw/dar\\,ih)\\,min(175/dar\\,0))/2)*2,thumbnail=24\" -vsync 0 -f image2pipe -";
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -frames 1 -f image2 -s 175x100 -";
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -frames 1 -f image2pipe -s 175x100 pipe:1";
             var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
@@ -136,20 +136,28 @@ namespace IntroSkip.Api
 
             try
             {
-                FileStream output;
+                Stream output;
 
                 using (var process = new Process {StartInfo = procStartInfo})
                 {
-
                     process.Start();
-                    process.ErrorDataReceived += Process_ErrorDataReceived;
-                    output = process.StandardOutput.BaseStream as FileStream;
+                    output = process.StandardOutput.BaseStream;
+                    //process.WaitForExit(2000);
                 }
 
                 using (var memoryStream = new MemoryStream())
                 {
                     output.CopyTo(memoryStream);
-                    return Convert.ToBase64String(memoryStream.ToArray());
+                    var base64Image = Convert.ToBase64String(memoryStream.ToArray());
+                    
+                    if (!config.ImageCache) return base64Image;
+                    //Update the saved base64 image
+                    using(var sw = new StreamWriter(Path.Combine(cache, imageFile), append: false))
+                    {
+                        sw.Write(base64Image);
+                    }
+
+                    return base64Image;
 
                 }
             }
@@ -161,22 +169,37 @@ namespace IntroSkip.Api
             //ResultFactory.GetResult(Request, output, "image/png");
 
         }
-
-        private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+       
+        public string Get(NoTitleSequenceThumbImageRequest request)
         {
-            Log.Warn(e.Data);
+            var img = GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/png");
+            using (var memoryStream = new MemoryStream())
+            {
+                img.CopyTo(memoryStream);
+                return Convert.ToBase64String(memoryStream.ToArray());
+
+            }
         }
+        
+        public string Get(NoCreditSequenceThumbImageRequest request)
+        {
+            var img = GetEmbeddedResourceStream("no_credit.jpg".AsSpan(), "image/png");
+            using (var memoryStream = new MemoryStream())
+            {
+                img.CopyTo(memoryStream);
+                return Convert.ToBase64String(memoryStream.ToArray());
 
-        public async Task<object> Get(NoTitleSequenceThumbImageRequest request) =>
-            await Task<object>.Factory.StartNew(() => GetEmbeddedResourceStream("no_intro.jpg".AsSpan(), "image/png"));
+            }
+        }
+        
 
-        private object GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
+        private Stream GetEmbeddedResourceStream(ReadOnlySpan<char> resourceName, string contentType)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var resourceNameAsString = resourceName.ToString();
             var name = assembly.GetManifestResourceNames().Single(s => s.EndsWith(resourceNameAsString));
 
-            return ResultFactory.GetResult(Request, GetType().Assembly.GetManifestResourceStream(name), contentType);
+            return GetType().Assembly.GetManifestResourceStream(name);
         }
 
         private bool CacheImageExists(string fileName)
@@ -211,33 +234,44 @@ namespace IntroSkip.Api
             return sb.ToString();
         }
 
-        public void RemoveCacheImages(long internalId)
+        public void RemoveCacheImages(long internalId, SequenceImageType imageType)
         {
             var cache = GetCacheDirectory();
-            var titleSequenceStartImageFile = GetHashString($"{internalId}{SequenceImageType.IntroStart}");
-            var titleSequenceEndImageFile = GetHashString($"{internalId}{SequenceImageType.IntroEnd}");
+            var titleSequenceStartImageFile  = GetHashString($"{internalId}{SequenceImageType.IntroStart}");
+            var titleSequenceEndImageFile    = GetHashString($"{internalId}{SequenceImageType.IntroEnd}");
             var creditSequenceStartImageFile = GetHashString($"{internalId}{SequenceImageType.CreditStart}");
 
-            try
+            switch (imageType)
             {
-                FileSystem.DeleteFile(Path.Combine(cache, titleSequenceStartImageFile));
-            }
-            catch { }
+                case SequenceImageType.IntroStart:
+                    try
+                    {
+                        FileSystem.DeleteFile(Path.Combine(cache, titleSequenceStartImageFile));
+                    }
+                    catch { }
 
-            try
-            {
-                FileSystem.DeleteFile(Path.Combine(cache, titleSequenceEndImageFile));
-            }
-            catch { }
+                    break;
 
-            try
-            {
-                FileSystem.DeleteFile(Path.Combine(cache, creditSequenceStartImageFile));
+                case SequenceImageType.IntroEnd:
+                    try
+                    {
+                        FileSystem.DeleteFile(Path.Combine(cache, titleSequenceEndImageFile));
+                    }
+                    catch { }
+
+                    break;
+
+                case SequenceImageType.CreditStart:
+                    try
+                    {
+                        FileSystem.DeleteFile(Path.Combine(cache, creditSequenceStartImageFile));
+                    }
+                    catch { }
+                    break;
             }
-            catch { }
         }
 
-        public Task UpdateImageCache(long internalId, SequenceImageType sequenceImageType, string frame)
+        public void UpdateImageCache(long internalId, SequenceImageType sequenceImageType, string frame)
         {
             var item = LibraryManager.GetItemById(internalId);
 
@@ -248,20 +282,39 @@ namespace IntroSkip.Api
             var ffmpegConfiguration = FfmpegManager.FfmpegConfiguration;
             var ffmpegPath = ffmpegConfiguration.EncoderPath;
            
-            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -r 1 -q:v 2 -an -f image2 -s 175x100 \"{Path.Combine(cache, imageFile)}\"";
-            var processStartInfo = new ProcessStartInfo(ffmpegPath, args)
+            var args = $"-accurate_seek -ss {frame} -i \"{item.Path}\" -frames 1 -f image2pipe -s 175x100 pipe:1";
+            var procStartInfo = new ProcessStartInfo(ffmpegPath, args)
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
-            using (var process = new Process {StartInfo = processStartInfo})
-            {
-                process.Start();
-            }
 
-            return Task.FromResult(true);
+            try
+            {
+                Stream output;
+
+                using (var process = new Process {StartInfo = procStartInfo})
+                {
+                    process.Start();
+                    output = process.StandardOutput.BaseStream;
+                    //process.WaitForExit(2000);
+                }
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    output.CopyTo(memoryStream);
+                    using (var sw = new StreamWriter(Path.Combine(cache, imageFile), false))
+                    {
+                        sw.Write(Convert.ToBase64String(memoryStream.ToArray()));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex.Message);
+            }
         }
         
     }

@@ -7,13 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Controller.Net;
 using System.IO;
 using IntroSkip.AudioFingerprinting;
 using IntroSkip.Configuration;
 using IntroSkip.Data;
-using IntroSkip.Detection;
 using IntroSkip.Sequence;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.IO;
@@ -42,11 +39,14 @@ namespace IntroSkip.Api
 
         }
 
-        [Route("/RemoveSeasonData", "DELETE", Summary = "Remove Episode Title Sequences for an entire season Start and End Data")]
+        [Route("/ResetSeasonData", "DELETE", Summary = "Reset Episode Sequence data for an entire season.")]
         public class RemoveSeasonDataRequest : IReturn<string>
         {
             [ApiMember(Name = "SeasonId", Description = "The Internal Id of the Season", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
-            public long SeasonId { get; set; }           
+            public long SeasonId { get; set; }  
+            
+            [ApiMember(Name = "RemoveFingerprintBinaryData", Description = "Remove the fingeprint binary data associated with this season", IsRequired = false, DataType = "bool", ParameterType = "query", Verb = "DELETE")]
+            public bool? RemoveFingerprintBinaryData { get; set; } 
         }
         
 
@@ -74,14 +74,14 @@ namespace IntroSkip.Api
             //No args to pass - all code is done in the request below
         }
 
-        [Route("/UpdateAllSeasonSequences", "POST", Summary = "Season Title Sequence Update Data")]
-        public class UpdateAllSeasonSequencesRequest : IReturn<string>
+        [Route("/UpdateSeasonSequences", "POST", Summary = "Season Title Sequence Update Data")]
+        public class UpdateSeasonSequencesRequest : IReturn<string>
         {
-            public List<UpdateTitleSequenceRequest> TitleSequencesUpdate { get; set; }
+            public List<UpdateEpisodeSequenceRequest> TitleSequencesUpdate { get; set; }
         }
 
-        [Route("/UpdateSequence", "POST", Summary = "Episode Title Sequence Update Data")]
-        public class UpdateTitleSequenceRequest : IReturn<string>
+        [Route("/UpdateEpisodeSequence", "POST", Summary = "Episode Title Sequence Update Data")]
+        public class UpdateEpisodeSequenceRequest : IReturn<string>
         {
             [ApiMember(Name = "InternalId", Description = "The episode internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long InternalId { get; set; }
@@ -103,22 +103,35 @@ namespace IntroSkip.Api
 
             [ApiMember(Name = "SeasonId", Description = "The season internal Id", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "POST")]
             public long SeasonId { get; set; }
-
-            
         }
 
+
+        [Route("/SeriesTitleSequences", "DELETE", Summary = "Reset an entire series title sequence data.")]
+        public class DeleteSeriesTitleSequenceRequest : IReturn<string>
+        {
+            [ApiMember(Name = "InternalId", Description = "The series internal Id", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long InternalId { get; set; }
+        }
+
+        [Route("/SeriesCreditSequences", "DELETE", Summary = "Reset an entire series credit sequence data.")]
+        public class DeleteSeriesCreditSequenceRequest : IReturn<string>
+        {
+            [ApiMember(Name = "InternalId", Description = "The series internal Id", IsRequired = true, DataType = "long", ParameterType = "query", Verb = "DELETE")]
+            public long InternalId { get; set; }
+        }
         
-        private IJsonSerializer JsonSerializer { get; }
-        private ILogger Log { get; }
-        
-        private IFileSystem FileSystem { get; }
+        private IJsonSerializer JsonSerializer     { get; }
+        private ILogger Log                        { get; }
+        private ILibraryManager LibraryManager     { get; }
+        private IFileSystem FileSystem             { get; }
         private IApplicationPaths ApplicationPaths { get; }
         
-        public SequenceService(IJsonSerializer json, ILogManager logMan, IApplicationPaths applicationPaths, IFileSystem fileSystem)
+        public SequenceService(IJsonSerializer json, ILogManager logMan, IApplicationPaths applicationPaths, IFileSystem fileSystem, ILibraryManager libraryManager)
         {
             JsonSerializer = json;
             Log = logMan.GetLogger(Plugin.Instance.Name);
             FileSystem = fileSystem;
+            LibraryManager = libraryManager;
             ApplicationPaths = applicationPaths;
             
         }
@@ -127,8 +140,86 @@ namespace IntroSkip.Api
         {
             return AudioFingerprintManager.Instance.HasChromaprint();
         }
-       
-        public void Post(UpdateAllSeasonSequencesRequest request)
+
+        public string Delete(DeleteSeriesTitleSequenceRequest request)
+        {
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults = repository.GetResults(new SequenceResultQuery());
+            var titleSequences = dbResults.Items.Where(item => item.SeriesId == request.InternalId);
+            foreach (var sequence in titleSequences)
+            {
+                sequence.TitleSequenceStart = TimeSpan.Zero;
+                sequence.TitleSequenceEnd = TimeSpan.Zero;
+                sequence.HasTitleSequence = false;
+                sequence.Confirmed = true;
+                sequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                sequence.CreditSequenceFingerprint = new List<uint>();
+                try
+                {
+                    repository.SaveResult(sequence, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(ex.Message);
+                }
+
+                if (Plugin.Instance.Configuration.ImageCache)
+                {
+                    SequenceThumbnailService.Instance.RemoveCacheImages(sequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart);
+                    SequenceThumbnailService.Instance.RemoveCacheImages(sequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd);
+                }
+            }
+
+            var baseItem = LibraryManager.GetItemById(request.InternalId);
+            Log.Info(
+                $"\nTitle Sequences Removed: {baseItem.Name}\n" +
+                "Save Successful.\n");
+
+            DisposeRepository(repository);
+            return "OK";
+
+        }
+
+        public string Delete(DeleteSeriesCreditSequenceRequest request)
+        {
+            var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
+            var dbResults = repository.GetResults(new SequenceResultQuery());
+            var titleSequences = dbResults.Items.Where(item => item.SeriesId == request.InternalId);
+            
+            foreach (var sequence in titleSequences)
+            {
+                sequence.CreditSequenceStart = TimeSpan.Zero;
+                sequence.CreditSequenceEnd = TimeSpan.Zero;
+                sequence.HasCreditSequence = false;
+                sequence.Confirmed = true;
+                sequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
+                sequence.CreditSequenceFingerprint = new List<uint>();
+                try
+                {
+                    repository.SaveResult(sequence, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(ex.Message);
+                }
+
+                if (Plugin.Instance.Configuration.ImageCache)
+                {
+                    SequenceThumbnailService.Instance.RemoveCacheImages(sequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart);
+                }
+            }
+
+            var baseItem = LibraryManager.GetItemById(request.InternalId);
+            Log.Info(
+                $"\nCredit Sequences Removed: {baseItem.Name}\n" +
+                "Save Successful.\n");
+
+            DisposeRepository(repository);
+            return "OK";
+        }
+
+
+        public void Post(UpdateSeasonSequencesRequest request)
         {
             var update = request.TitleSequencesUpdate;
             var seasonId = update.FirstOrDefault()?.SeasonId; //Get the season Id from the first item (they are all from the same season.
@@ -144,7 +235,7 @@ namespace IntroSkip.Api
                 titleSequence.TitleSequenceEnd = item.TitleSequenceEnd;
                 titleSequence.HasTitleSequence = item.HasTitleSequence;
                 titleSequence.CreditSequenceStart = item.CreditSequenceStart;
-                titleSequence.HasCreditSequence = item.CreditSequenceStart != TimeSpan.FromSeconds(0); //this was not getting updated when user clicked save
+                titleSequence.HasCreditSequence = item.CreditSequenceStart != TimeSpan.FromSeconds(0); 
                 titleSequence.Confirmed = true;
                 titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
                 titleSequence.CreditSequenceFingerprint = new List<uint>();
@@ -163,6 +254,12 @@ namespace IntroSkip.Api
                     SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
                     SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
                 }
+                var baseItem = LibraryManager.GetItemById(titleSequence.InternalId);
+                Log.Info($"\nSequence Edit: {baseItem.Parent.Parent.Name} {baseItem.Parent.Name} Episode:{baseItem.IndexNumber}\n" +
+                         $"Title Sequence Start: {titleSequence.TitleSequenceStart}\n" +
+                         $"Title Sequence End: {titleSequence.TitleSequenceEnd}\n" +
+                         $"Credit Sequence Start: {titleSequence.CreditSequenceStart}\n" +
+                         "Save Successful.\n");
             }
 
             DisposeRepository(repository);
@@ -170,7 +267,7 @@ namespace IntroSkip.Api
 
         }
 
-        public void Post(UpdateTitleSequenceRequest request)
+        public void Post(UpdateEpisodeSequenceRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var dbResults = repository.GetResults(new SequenceResultQuery() { SeasonInternalId = request.SeasonId });
@@ -188,6 +285,7 @@ namespace IntroSkip.Api
             titleSequence.Confirmed = true;
             titleSequence.TitleSequenceFingerprint = new List<uint>(); //<-- fingerprint might have been removed form the DB, but we have to have something here.
             titleSequence.CreditSequenceFingerprint = new List<uint>();
+            
             try
             {
                 repository.SaveResult(titleSequence, CancellationToken.None);
@@ -199,11 +297,20 @@ namespace IntroSkip.Api
             }
             if (Plugin.Instance.Configuration.ImageCache)
             {
-                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId);
-                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
-                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
-                SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
+                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart);
+                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd);
+                SequenceThumbnailService.Instance.RemoveCacheImages(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart);
+
+                //SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart, titleSequence.TitleSequenceStart.ToString(@"hh\:mm\:ss"));
+                //SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd, titleSequence.TitleSequenceEnd.ToString(@"hh\:mm\:ss"));
+                //SequenceThumbnailService.Instance.UpdateImageCache(titleSequence.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart, titleSequence.CreditSequenceStart.ToString(@"hh\:mm\:ss"));
             }
+            var baseItem = LibraryManager.GetItemById(titleSequence.InternalId);
+            Log.Info($"\nSequence Edit: {baseItem.Parent.Parent.Name} {baseItem.Parent.Name} Episode:{baseItem.IndexNumber}\n" +
+                      $"Title Sequence Start: {titleSequence.TitleSequenceStart}\n" +
+                      $"Title Sequence End: {titleSequence.TitleSequenceEnd}\n" +
+                      $"Credit Sequence Start: {titleSequence.CreditSequenceStart}\n" +
+                      "Save Successful.\n");
             DisposeRepository(repository);
             //return "OK";
 
@@ -216,8 +323,6 @@ namespace IntroSkip.Api
             DisposeRepository(repository);
         }
 
-        
-
         public string Delete(RemoveSeasonDataRequest request)
         {
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
@@ -227,25 +332,62 @@ namespace IntroSkip.Api
             {
                 try
                 {
-
                     repository.Delete(item.InternalId.ToString());
                     titleSequences.Remove(item);
-                    
-                    if (Plugin.Instance.Configuration.ImageCache)
-                    {
-                        SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId);
-                    }
                 }
                 catch { }
+
+                if (request.RemoveFingerprintBinaryData.HasValue)
+                {
+                    if (request.RemoveFingerprintBinaryData.Value) 
+                    {
+                        //Try to remove the Binary File for the title sequence
+                        if (AudioFingerprintManager.Instance.TitleFingerprintExists(item.InternalId))
+                        {
+                            var titleSequenceBinFilePath = AudioFingerprintManager.Instance.GetTitleSequenceBinaryFilePath(item.InternalId);
+                            try
+                            {
+                                FileSystem.DeleteFile(titleSequenceBinFilePath);
+                                Log.Debug("Removing title sequence binary file successful.");
+                            }
+                            catch
+                            {
+                                Log.Warn("unable to remove title sequence fingerprint binary file path.");
+                            }
+                        }
+
+                        //Try to remove the binary file for the Credit Sequence
+                        if (AudioFingerprintManager.Instance.CreditFingerprintExists(item.InternalId))
+                        {
+                            var creditSequenceBinFilePath = AudioFingerprintManager.Instance.GetCreditSequenceBinaryFilePath(item.InternalId);
+                            try
+                            {
+                                FileSystem.DeleteFile(creditSequenceBinFilePath);
+                                Log.Debug("Removing credit sequence binary file successful.");
+                            }
+                            catch
+                            {
+                                Log.Warn("unable to remove credit sequence fingerprint binary file path.");
+                            }
+                        }
+                        
+                    }
+                }
+                
+                if (!Plugin.Instance.Configuration.ImageCache) continue;
+                SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId, SequenceThumbnailService.SequenceImageType.IntroStart);
+                SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId, SequenceThumbnailService.SequenceImageType.IntroEnd);
+                SequenceThumbnailService.Instance.RemoveCacheImages(item.InternalId, SequenceThumbnailService.SequenceImageType.CreditStart);
+
             }
+            var baseItem = LibraryManager.GetItemById(request.SeasonId);
+            Log.Info($"{baseItem.Parent.Name} - {baseItem.Name} sequence data was reset.");
 
             DisposeRepository(repository);
 
             return JsonSerializer.SerializeToString(titleSequences);
 
         }
-
-
 
         private class SeasonTitleSequenceResponse
         {
@@ -342,24 +484,19 @@ namespace IntroSkip.Api
             else
             {
                 var lines = File.ReadLines(statsFilePath).Skip(1);
-                foreach (string line in lines)
+                statsList.AddRange(lines.Select(line => line.Split('\t'))
+                .Select(line => new DetectionStats()
                 {
-                    Log.Info("STATISTICS: LINE = {0}", line);
-
-                    var tempLine = line.Split('\t');
-                    statsList.Add(new DetectionStats()
-                    {
-                        HasIssue = Convert.ToBoolean(tempLine[0]),
-                        TVShowName = tempLine[1],
-                        SeriesId = Convert.ToInt64(tempLine[2]),
-                        Season = tempLine[3],
-                        SeasonId = Convert.ToInt64(tempLine[4]),
-                        EpisodeCount = Convert.ToInt32(tempLine[5]),
-                        IntroDuration = TimeSpan.Parse(tempLine[6]),
-                        PercentDetected = Convert.ToDouble(tempLine[7]),
-                        EndPercentDetected = tempLine[8] != "NaN" ? Convert.ToDouble(tempLine[8]) : 0,
-                    });
-                }
+                    HasIssue = Convert.ToBoolean(line[0]),
+                    TVShowName = line[1],
+                    SeriesId = Convert.ToInt64(line[2]),
+                    Season = line[3],
+                    SeasonId = Convert.ToInt64(line[4]),
+                    EpisodeCount = Convert.ToInt32(line[5]),
+                    IntroDuration = TimeSpan.Parse(line[6]),
+                    PercentDetected = Convert.ToDouble(line[7]),
+                    EndPercentDetected = line[8] != "NaN" ? Convert.ToDouble(line[8]) : 0,
+                }));
             }
             if (!config.EnableFullStatistics)
             {
@@ -372,11 +509,11 @@ namespace IntroSkip.Api
 
        private TimeSpan CalculateCommonTitleSequenceLength(List<BaseSequence> season)
         {
-            var titleSequences = season.Where(intro => intro.HasTitleSequence);
-            var groups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
+            var titleSequences      = season.Where(intro => intro.HasTitleSequence);
+            var groups              = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd - sequence.TitleSequenceStart);
             var enumerableSequences = groups.ToList();
-            int maxCount = enumerableSequences.Max(g => g.Count());
-            var mode = enumerableSequences.First(g => g.Count() == maxCount).Key;
+            int maxCount            = enumerableSequences.Max(g => g.Count());
+            var mode                = enumerableSequences.First(g => g.Count() == maxCount).Key;
             return mode;
         }
         

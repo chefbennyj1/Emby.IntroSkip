@@ -1,14 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using IntroSkip.Configuration;
-using IntroSkip.Statistics;
-using MediaBrowser.Common.Configuration;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.MediaEncoding;
+﻿using IntroSkip.Configuration;
 using MediaBrowser.Controller.Net;
-using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Services;
 

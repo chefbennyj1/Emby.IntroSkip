@@ -40,8 +40,9 @@ namespace IntroSkip.ScheduledTasks
 
             Log.Info("DETECTION: Beginning Title Sequence Task");
 
-            var config = Plugin.Instance.Configuration;
-            if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
+            //No longer use Fast Detect!!
+            //var config = Plugin.Instance.Configuration;
+            //if (!config.FastDetect) Log.Debug($"DETECTION Confidence: {config.DetectionConfidence}"); //<--This will be useful for debugging user issues.
 
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             try

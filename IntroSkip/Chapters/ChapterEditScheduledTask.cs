@@ -39,7 +39,6 @@ namespace IntroSkip.Chapters
             
             if (config.EnableChapterInsertion)
             {
-                Log.Debug("CHAPTER TASK IS STARTING");
                 //Run the ChapterEdit task and wait for it to finish before moving on to Image extraction
                 chapterExecute = Task.Run(ProcessEpisodeChaptersPoints, cancellationToken);
                 chapterExecute.Wait(cancellationToken);
