@@ -98,7 +98,7 @@ namespace IntroSkip.RemoteControl
                 var titleSequenceAutoSkipData = TitleSequenceAutoSkipSessions[e.Session.Id];
                 titleSequenceAutoSkipData.PlaybackMonitor.Change(Timeout.Infinite, Timeout.Infinite);
             }
-            else //Sync the progress with out monitors
+            else //Sync the progress with our monitor
             {
                 if (TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id))
                 {
