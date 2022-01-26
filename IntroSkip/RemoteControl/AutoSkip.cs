@@ -98,7 +98,7 @@ namespace IntroSkip.RemoteControl
                 var titleSequenceAutoSkipData = TitleSequenceAutoSkipSessions[e.Session.Id];
                 titleSequenceAutoSkipData.PlaybackMonitor.Change(Timeout.Infinite, Timeout.Infinite);
             }
-            else //Sync the progress with out monitors
+            else //Sync the progress with our monitor
             {
                 if (TitleSequenceAutoSkipSessions.ContainsKey(e.Session.Id))
                 {
@@ -129,7 +129,7 @@ namespace IntroSkip.RemoteControl
         
         private void SessionManager_PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
-            //We can not use Auto Skip while Detection or Fingerprinting tasks are running. Possibly because we need to access the database.
+            //Apparently we can not use Auto Skip while Detection or Fingerprinting tasks are running. Possibly because we need to access the database.
             var tasks = TaskManager.ScheduledTasks.ToList();
             if (tasks.FirstOrDefault(task => task.Name == "Episode Title Sequence Detection")?.State == TaskState.Running)
             {
