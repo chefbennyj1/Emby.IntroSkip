@@ -93,10 +93,8 @@ namespace IntroSkip.Detection
             Parallel.ForEach(seriesQuery.Items,
                 new ParallelOptions() { MaxDegreeOfParallelism = config.MaxDegreeOfParallelism }, (series, state) =>
                 {
-                    
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        
                         state.Break();
                         progress.Report(100.0);
                     }
@@ -119,7 +117,6 @@ namespace IntroSkip.Detection
                             break;
                         }
 
-
                         //Our database info
                         QueryResult<SequenceResult> dbResults = null;
                         try
@@ -134,7 +131,6 @@ namespace IntroSkip.Detection
 
                             continue;
                         }
-
 
                         var episodeQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                         {
@@ -407,7 +403,7 @@ namespace IntroSkip.Detection
                                 var baseItem = LibraryManager.GetItemById(sequenceResult.InternalId); //TODO:Shouldn't have this library manager call in the same try catch as the save result.
                                 Log.Debug(
                                     $"\n\n{season.Parent.Name} { season.Name } Episode {baseItem.IndexNumber}:" +
-                                    $"\nCommon intro duration: { commonTitleSequenceDuration }" +
+                                    $"\nCommon intro duration: { commonTitleSequenceDuration } {(commonTitleSequenceDuration == TimeSpan.Zero ? "- unable to target dissimilar sequence audio." : "")}" +
                                     $"\nCommon credit duration: { commonCreditSequenceDuration }" +
                                     $"\nDetection processed {memoizedSequenceResults.Count} results" +
                                     $"\nResults with highest confidence score:" +
