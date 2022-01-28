@@ -127,7 +127,7 @@
                     var chkIgnoreEpisodeOneTitleSequenceSkip = view.querySelector('#chkIgnoreEpisodeOneTitleSequenceSkip');
                     var txtMessageDuration = view.querySelector('#txtMessageDuration');
                     var selectMessageLocalization = view.querySelector('#selectMessageLocalization');
-                    var txtAutoSkipDelay = view.querySelector('#txtDelayDuration');
+                    //var txtAutoSkipDelay = view.querySelector('#txtDelayDuration');
 
                     await loadLanguageSelect(selectMessageLocalization);
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
@@ -139,7 +139,7 @@
                         chkIgnoreEpisodeOneTitleSequenceSkip.checked = config.IgnoreEpisodeOneTitleSequenceSkip ?? false;
                         txtMessageDuration.value = config.AutoTitleSequenceSkipMessageDuration;
                         
-                        txtAutoSkipDelay.value = config.AutoSkipDelay ?? 0;
+                        //txtAutoSkipDelay.value = config.AutoSkipDelay ?? 0;
 
                         if (config.AutoSkipUsers) {
                             reloadList(config.AutoSkipUsers, userList, view);
@@ -151,10 +151,10 @@
                         }
                     });
 
-                    txtAutoSkipDelay.addEventListener('change', (elem) => {
-                        elem.preventDefault();
-                        updateAutoSkipDelay(txtAutoSkipDelay.value);
-                    });
+                    //txtAutoSkipDelay.addEventListener('change', (elem) => {
+                    //    elem.preventDefault();
+                    //    updateAutoSkipDelay(txtAutoSkipDelay.value);
+                    //});
 
                     chkIgnoreEpisodeOneTitleSequenceSkip.addEventListener('change', (elem) => {
                         elem.preventDefault();

@@ -135,8 +135,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             TotalRecordCount: 0
         }
 
-        var localImageStore = [];
-           
         function getPagingHtml() {
 
             var html = '';
@@ -220,7 +218,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             await ApiClient.updateTitleSequence(options);
             
-            loadPageData(view);
+            //loadPageData(view);
 
         }
          
@@ -300,8 +298,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
             var html = '';
             var episode = result.Items[0];
-            var introStartTimespan = parseISO8601Duration(intro.TitleSequenceStart);
-            var introEndTimespan = parseISO8601Duration(intro.TitleSequenceEnd);
+            var introStartTimespan  = parseISO8601Duration(intro.TitleSequenceStart);
+            var introEndTimespan    = parseISO8601Duration(intro.TitleSequenceEnd);
             var creditStartTimeSpan = parseISO8601Duration(intro.CreditSequenceStart);
 
             var hasIntro = intro.HasTitleSequence || (introEndTimespan.minutes !== '00' && introEndTimespan.seconds !== '00'); //<-- looks like we have to check those minute and second values too.
@@ -315,7 +313,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             //Index 2
             if (!isMobile) {
                 html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell">';
-                html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center">';
+                html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center; border: 1px black solid;border-radius: 3px;">';
                 html += '<img style="width:175px; height:100px; position:absolute;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/>';
                 if (hasIntro || introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
                     html += `<button style="position:absolute; margin-left:1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit fab hide">`;
@@ -323,7 +321,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     html += '</button>';
                 }
                 html += '</div>';
-                //html +='</a>'; 
                 html += '</td>';
             }
 
@@ -754,12 +751,18 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                     //TODO: in order to make this responsive for mobile, we'll have to remove table rows and columns here.
                     if (screen.width <= 800) {
                         console.log("is mobile view");
-                        view.querySelector('.tblEpisodeIntroResults').style = "width:50em !important;";                           
-                        const table = view.querySelector('.tblEpisodeIntroResults');
-                        table.querySelector('thead > tr > th:nth-child(1)').classList.toggle('hide'); //Hide the episode thumb image column
-                        table.querySelector('thead > tr > th:nth-child(2)').classList.toggle('hide'); //Hide the Series Name column
-                        table.querySelector('thead > tr > th:nth-child(3)').classList.toggle('hide'); //Hide the Season Name column
-                        table.querySelector('thead > tr > th:nth-child(10)').classList.toggle('hide'); //Hide the Action column
+                        view.querySelector('.tblEpisodeIntroResults').style = "width:50em !important;"; 
+
+                        const table      = view.querySelector('.tblEpisodeIntroResults');
+                        const thumb      = table.querySelector('thead > tr > th:nth-child(1)'); //Hide the episode thumb image column
+                        const seriesName = table.querySelector('thead > tr > th:nth-child(2)'); //Hide the Series Name column
+                        const seasonName = table.querySelector('thead > tr > th:nth-child(3)'); //Hide the Season Name column
+                        const actions    = table.querySelector('thead > tr > th:nth-child(10)'); //Hide the Action column
+
+                        if (!thumb.classList.contains('hide')) thumb.classList.add('hide');
+                        if (!seriesName.classList.contains('hide')) seriesName.classList.add('hide');
+                        if (!seasonName.classList.contains('hide')) seasonName.classList.add('hide');
+                        if (!actions.classList.contains('hide')) actions.classList.add('hide');
                     }
 
                     view.querySelector('.btnPreviousPage').addEventListener('click',
@@ -837,7 +840,6 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 seasonSelect.addEventListener('change', async (e) => {
                     e.preventDefault();
                     loading.show();
-                    
                     pagination.StartIndex = 0;
                     pagination.Limit = 5;
                     await loadPageData(view);
@@ -901,7 +903,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             icon.addEventListener('click',
                 (e) => {
                     var content = view.querySelector('.tableOptions');
-                    content.classList.toggle('hide'); 
+                    content.classList.toggle('hide');
+                    content.classList.contains('hide') ? content.style.opacity = 0 : fadeIn(content);
                     content.classList.toggle('expanded');
                     icon.style.borderRadius = content.classList.contains('hide') ? "20px" : "0px";
                 });

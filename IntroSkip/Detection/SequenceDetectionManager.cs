@@ -403,7 +403,7 @@ namespace IntroSkip.Detection
                                 var baseItem = LibraryManager.GetItemById(sequenceResult.InternalId); //TODO:Shouldn't have this library manager call in the same try catch as the save result.
                                 Log.Debug(
                                     $"\n\n{season.Parent.Name} { season.Name } Episode {baseItem.IndexNumber}:" +
-                                    $"\nCommon intro duration: { commonTitleSequenceDuration } {(commonTitleSequenceDuration == TimeSpan.Zero ? "- unable to target dissimilar sequence audio." : "")}" +
+                                    $"\nCommon intro duration: { commonTitleSequenceDuration } {(commonTitleSequenceDuration == TimeSpan.Zero ? "- unable to target similar sequence audio." : "")}" +
                                     $"\nCommon credit duration: { commonCreditSequenceDuration }" +
                                     $"\nDetection processed {memoizedSequenceResults.Count} results" +
                                     $"\nResults with highest confidence score:" +
@@ -451,9 +451,9 @@ namespace IntroSkip.Detection
                 .WithCancellation(cancellationToken)
                 .ForAll(result =>
                 {
-                    //We're close enough to the beginning of the stream, we'll call it the beginning.
+                    //We're close enough to the beginning of the stream, we'll call it the beginning, and the end time is not zero.
                     //Make the end the common title sequence duration.
-                    if (result.TitleSequenceStart - TimeSpan.FromSeconds(20) <= TimeSpan.Zero)
+                    if (result.TitleSequenceStart - TimeSpan.FromSeconds(20) <= TimeSpan.Zero && result.TitleSequenceEnd != TimeSpan.Zero)
                     {
                         result.TitleSequenceStart = TimeSpan.Zero;
                         result.TitleSequenceEnd = common;
