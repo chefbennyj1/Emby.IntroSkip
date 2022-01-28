@@ -56,7 +56,7 @@ namespace IntroSkip.ScheduledTasks
             //Sync repository Items
             try
             {
-                progress.Report(1.0);
+                progress.Report(0.1);
                 var syncStopWatch = new Stopwatch();
                 syncStopWatch.Start();
                 Log.Info("FINGERPRINT: Syncing Repository Items...");
@@ -70,6 +70,8 @@ namespace IntroSkip.ScheduledTasks
             }
 
             if(!AudioFingerprintManager.Instance.HasChromaprint()) Log.Warn("Ffmpeg does not contain Chromaprint libraries.");
+
+            var step = CalculateProgressStep();
 
             try
             {
@@ -94,9 +96,11 @@ namespace IntroSkip.ScheduledTasks
 
                 var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 
-                var step = 100.0 / seriesQuery.TotalRecordCount;
+                //var step = 100.0 / seriesQuery.TotalRecordCount;
                 var currentProgress = 0.1;
+                
                 progress.Report(currentProgress);
+                
                 //Our database info
                 QueryResult<SequenceResult> dbResults = null;
                 List<SequenceResult> titleSequences = null;
@@ -111,9 +115,7 @@ namespace IntroSkip.ScheduledTasks
                     Log.Info("FINGERPRINT: Title sequence database is new.");
                     titleSequences = new List<SequenceResult>();
                 }
-
-                progress.Report(0.1); //Give the user some kind of progress to show the task has started
-
+                
                
                 var fpMax = config.FingerprintingMaxDegreeOfParallelism;
 
@@ -124,7 +126,7 @@ namespace IntroSkip.ScheduledTasks
                         state.Break();
                         progress.Report(100.0);
                     }
-                    progress.Report((currentProgress += step) - 1);
+                    //progress.Report((currentProgress += step) - 1);
                     var seasonQuery = LibraryManager.GetItemsResult(new InternalItemsQuery()
                     {
                         Parent = series,
@@ -172,6 +174,8 @@ namespace IntroSkip.ScheduledTasks
                                 break;
                             }
                             
+                            progress.Report((currentProgress += step) - 1);
+
                             //The episode data exists in the database
                             // ReSharper disable twice AccessToModifiedClosure 
                             if (titleSequences.Exists(result => result.InternalId == episode.InternalId))
@@ -292,7 +296,19 @@ namespace IntroSkip.ScheduledTasks
 
         }
 
+        private double CalculateProgressStep()
+        {
+            var totalEpisodeCount = LibraryManager.GetItemsResult(new InternalItemsQuery()
+            {
+                Recursive = true,
+                IncludeItemTypes = new[] { "Episode" },
+                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator),
+                IsVirtualItem = false
 
+            }).TotalRecordCount;
+
+            return 100.0 / totalEpisodeCount;
+        }
 
         private int GetEncodingDuration(TimeSpan? averageRuntime)
         {
