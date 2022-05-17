@@ -12,11 +12,7 @@
   
 
 <ItemGroup>
-  <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.html" />
-  <EmbeddedResource Include="Configuration\AdvancedSettingsConfigurationPage.js" />
-  <EmbeddedResource Include="Configuration\AutoSkipConfigurationPage.html" />
-  <EmbeddedResource Include="Configuration\AutoSkipConfigurationPage.js" />
-  <EmbeddedResource Include="Configuration\Chart.js" />
+    <EmbeddedResource Include="Configuration\Chart.js" />
   <EmbeddedResource Include="Configuration\StatsConfigurationPage.html" />
   <EmbeddedResource Include="Configuration\StatsConfigurationPage.js" />
   <EmbeddedResource Include="Configuration\ChapterEditorConfigurationPage.html" />
@@ -31,7 +27,7 @@
 
 
 <ItemGroup> 
-<PackageReference Include="mediabrowser.server.core" Version="4.6.0.50" /> <PackageReference Include="System.Memory" Version="4.5.4" />
+<PackageReference Include="mediabrowser.server.core" Version="4.7.0.30" /> <PackageReference Include="System.Memory" Version="4.5.4" />
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 </ItemGroup>
 

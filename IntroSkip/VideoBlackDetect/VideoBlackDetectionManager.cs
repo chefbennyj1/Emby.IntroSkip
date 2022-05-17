@@ -119,9 +119,9 @@ namespace IntroSkip.VideoBlackDetect
             }
             catch
             {
-                
+                // ignored
             }
-            
+
             return FfmpegProcessMonitor.TryRemove(internalId, out _);
         }
         public void Dispose()

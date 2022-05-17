@@ -60,6 +60,7 @@ namespace IntroSkip.Chapters
                         {
                             Name = chap.Name,
                             StartPositionTicks = chap.StartPositionTicks,
+                            MarkerType = chap.MarkerType,
                         });
                         //Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
                         //    ConvertTicksToTime(chap.StartPositionTicks));
@@ -69,7 +70,7 @@ namespace IntroSkip.Chapters
                     var titleSequenceEnd    = TimeSpan.FromTicks(sequence.TitleSequenceEnd.Ticks);
                     var creditSequenceStart = TimeSpan.FromTicks(sequence.CreditSequenceStart.Ticks);
 
-                    const string introStartChapterName = "Title Sequence";
+                    const string introStartChapterName = "Intro Start";
                     const string introEndChapterName   = "Intro End";
                     const string endCreditChapterName  = "End Credits";
 
@@ -100,12 +101,13 @@ namespace IntroSkip.Chapters
                             {
                                 Log.Debug("CHAPTER: Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
                                     tvShowName, seasonName, episodeNo.ToString(), item.Name, creditSequenceStart);
+                                
 
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = endCreditChapterName,
-                                    StartPositionTicks = creditSequenceStart.Ticks
-
+                                    StartPositionTicks = (creditSequenceStart.Ticks - 1000),
+                                    MarkerType = MarkerType.Chapter,
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -119,7 +121,8 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks - 1000,
+                                    MarkerType= MarkerType.Chapter
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -133,7 +136,8 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks - 1000,
+                                    MarkerType = MarkerType.Chapter
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -173,7 +177,8 @@ namespace IntroSkip.Chapters
                                 ChapterInfo edit = new ChapterInfo
                                 {
                                     Name = newVal,
-                                    StartPositionTicks = titleSequenceEnd.Ticks,
+                                    StartPositionTicks = titleSequenceEnd.Ticks + 1000,
+                                    MarkerType = MarkerType.Chapter
 
                                 };
                                 //add the entry and lets arrange the chapter list
@@ -188,7 +193,7 @@ namespace IntroSkip.Chapters
                             }
 
                             ItemRepository.SaveChapters(id, chapters);
-                            Log.Info("CHAPTER: Successfully added Title Sequence for {0} - {1} - {2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
+                            Log.Debug("CHAPTER: Successfully added Title Sequence for {0} - {1} - {2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                         }
                     }
                     catch (Exception e)
@@ -202,7 +207,7 @@ namespace IntroSkip.Chapters
             }
             catch
             {
-                Log.Info("CHAPTER INSERTION ERROR: THIS ID DOES NOT CONTAIN ANY INFORMATION AND CANNOT BE PROCESSED {0}", id);
+                Log.Error("CHAPTER INSERTION ERROR: THIS ID DOES NOT CONTAIN ANY INFORMATION AND CANNOT BE PROCESSED {0}", id);
             }
         }
 
