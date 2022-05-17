@@ -42,8 +42,7 @@ namespace IntroSkip.AudioFingerprinting
         
         private byte[] GetHash(string inputString)
         {
-            using (HashAlgorithm algorithm = SHA256.Create())
-                return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
+            using (HashAlgorithm algorithm = SHA256.Create()) return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
         }
 
         private string GetHashString(string inputString)
@@ -125,8 +124,7 @@ namespace IntroSkip.AudioFingerprinting
 
 
                 // ReSharper disable once NotAccessedVariable <-- Resharper is incorrect. It is being used
-                string processOutput = null;
-              
+                string processOutput = null;              
                
                 while ((processOutput = process.StandardError.ReadLine()) != null)
                 {
@@ -138,14 +136,9 @@ namespace IntroSkip.AudioFingerprinting
                         }
                         catch { }
                     }
-
                     //Log.Info(processOutput);
                 }
-                
-
-            }
-
-            
+            } 
         }
 
 
@@ -210,7 +203,6 @@ namespace IntroSkip.AudioFingerprinting
             }
             
         }
-
         
 
         public List<uint> GetCreditSequenceFingerprint(BaseItem episode, TimeSpan duration, CancellationToken cancellationToken)
@@ -258,14 +250,12 @@ namespace IntroSkip.AudioFingerprinting
         public string GetCreditSequenceBinaryFilePath(BaseItem item)   => Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{item.InternalId}") + ".bin");
 
         //Binary File Existing with overloads
-        public bool TitleFingerprintExists(long internalId)  => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{internalId}") + ".bin"));
+        public bool TitleFingerprintExists(long internalId)  =>  File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{internalId}") + ".bin"));
         public bool TitleFingerprintExists(BaseItem item)    => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"title_sequence{item.InternalId}") + ".bin"));
         public bool CreditFingerprintExists(long internalId) => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{internalId}") + ".bin"));
         public bool CreditFingerprintExists(BaseItem item)   => File.Exists(Path.Combine(GetEncodingDirectory(), GetHashString($"credit_sequence{item.InternalId}") + ".bin"));
        
         
-
-
         private bool EnsureFfmpegEol(string outputFilePath)
         {
             var process = Process.GetProcesses()

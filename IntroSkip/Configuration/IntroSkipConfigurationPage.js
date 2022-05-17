@@ -85,8 +85,8 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             });
         }
 
-        ApiClient.getLogoImageUrl = function(id) {
-            var url = this.getUrl(`Items/${id}/Images/Logo?maxHeight=327&amp;maxWidth=236&amp;quality=90`);
+        ApiClient.getLogoImageUrl = function(seriesId) {
+            var url = this.getUrl(`Items/${seriesId}/Images/Logo?maxHeight=327&amp;maxWidth=236&amp;quality=90`);
             return url;
         }
 
@@ -315,6 +315,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
                 html += '<td data-title="EpisodeImage" class="detailTableBodyCell fileCell">';
                 html += '<div style="position:relative; width:175px; height:100px;display:flex; align-items:center; justify-content:center; border: 1px black solid;border-radius: 3px;">';
                 html += '<img style="width:175px; height:100px; position:absolute;" src="' + ApiClient.getPrimaryImageUrl(episode.Id) + '"/>';
+                html += '<img style="max-height:35%; max-width:65%; position:absolute;bottom: 2px;right: 7px; filter:drop-shadow(2px 2px 2px black)" src="' + ApiClient.getLogoImageUrl(intro.SeriesId) + '">';
                 if (hasIntro || introEndTimespan.minutes !== "00" && introEndTimespan.seconds !== "00") {
                     html += `<button style="position:absolute; margin-left:1em;" data-id="${episode.Id}" class="playSequence emby-button button-submit fab hide">`;
                     html += '<i class="md-icon">play_arrow</i>';
@@ -379,7 +380,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += `<div class="editTimestamp introStartContentEditable" contenteditable>${introStart}</div>`;
             
             if (!isMobile) {
-                html += `<img class="introStartThumb lazy" style="width:175px; height:100px" src="${introStartImage}"/>`;
+                html += `<img class="introStartThumb lazy" style="width:175px; height:100px; border: 1px black solid; border-radius: 3px;" src="${introStartImage}"/>`;
             }
 
             html += '</td>';
@@ -389,7 +390,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += `<div class="editTimestamp introEndContentEditable" contenteditable>${introEnd}</div>`;
             
             if (!isMobile) {
-                html += `<img class="introEndThumb lazy" style="width:175px; height:100px" src="${introEndImage}"/>`;
+                html += `<img class="introEndThumb lazy" style="width:175px; height:100px; border: 1px black solid; border-radius: 3px;" src="${introEndImage}"/>`;
             }
 
             html += '</td>';
@@ -409,7 +410,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
             html += `<div class="editTimestamp creditStartContentEditable" contenteditable>${creditStart}</div>`;
             
             if (!isMobile) {
-                html += `<img class="creditStartThumb lazy" style="width:175px; height:100px" src="${creditStartImage}"/>`;
+                html += `<img class="creditStartThumb lazy" style="width:175px; height:100px; border: 1px black solid;border-radius: 3px;" src="${creditStartImage}"/>`;
             }
 
             html += '</td>';
@@ -445,7 +446,7 @@ define(["loading", "dialogHelper", "mainTabsManager", "formDialogStyle", "emby-c
 
                 view.querySelectorAll('.editTimestamp').forEach(element => {
                     if (screen.width > 800) {
-                        element.style = "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px;";
+                        element.style = "position: absolute;bottom: 7px;left: 1px;color: white;background: black;width: 175px; border-bottom-left-radius: 3px;border-bottom-right-radius: 3px;";
                     } 
                     fadeIn(element);
                 });

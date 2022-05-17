@@ -10,7 +10,7 @@ namespace IntroSkip.Configuration
         public int HammingDistanceThreshold             { get; set; } = 8; //Default
         public int MaxDegreeOfParallelism               { get; set; } = 2; //Default
         public double DetectionConfidence               { get; set; } = 0.60; //Default
-        //public bool LockMaxDegreeOfParallelism { get; set; } = true; //Default
+        
         public int FingerprintingMaxDegreeOfParallelism { get; set; } = 2; //Default
         public double BlackDetectionPixelThreshold      { get; set; } = 0.00; //Default
         public double BlackDetectionSecondIntervals     { get; set; } = 0.05; //Default
@@ -26,15 +26,15 @@ namespace IntroSkip.Configuration
         public bool ImageCache { get; set; } = false;
         
         //AUTO SKIP
-        public bool EnableAutoSkipCreditSequence { get; set; }
-        public bool EnableAutoSkipTitleSequence         { get; set; }
-        public bool ShowAutoTitleSequenceSkipMessage    { get; set; } = true;
+        public bool EnableAutoSkipCreditSequence          { get; set; }
+        public bool EnableAutoSkipTitleSequence           { get; set; }
+        public bool ShowAutoTitleSequenceSkipMessage      { get; set; } = true;
         public long? AutoTitleSequenceSkipMessageDuration { get; set; } = 800L;
-        public bool EnableAutoSkipEndCreditSequence     { get; set; }
-        public List<string> AutoSkipUsers               { get; set; }
-        public bool IgnoreEpisodeOneTitleSequenceSkip  { get; set; } = false;
-        public string AutoSkipLocalization { get; set; } = "English";
-        public int? AutoSkipDelay { get; set; }
+        public bool EnableAutoSkipEndCreditSequence       { get; set; }
+        public List<string> AutoSkipUsers                 { get; set; }
+        public bool IgnoreEpisodeOneTitleSequenceSkip     { get; set; } = false;
+        public string AutoSkipLocalization                { get; set; } = "English";
+        public int? AutoSkipDelay                         { get; set; }
 
         public PluginConfiguration()
         {
