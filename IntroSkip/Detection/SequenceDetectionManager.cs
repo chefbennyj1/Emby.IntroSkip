@@ -34,22 +34,22 @@ namespace IntroSkip.Detection
             Instance = this;
         }
 
-        public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, long[] seriesInternalIds, ISequenceRepository repo)
-        {
-            var config = Plugin.Instance.Configuration;
-            var seriesInternalItemQuery = new InternalItemsQuery()
-            {
-                Recursive = true,
-                ItemIds = seriesInternalIds,
-                IncludeItemTypes = new[] { "Series" },
-                ExcludeItemIds = config.IgnoredList.ToArray(),
-                User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
-            };
+        //public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, long[] seriesInternalIds, ISequenceRepository repo)
+        //{
+        //    var config = Plugin.Instance.Configuration;
+        //    var seriesInternalItemQuery = new InternalItemsQuery()
+        //    {
+        //        Recursive = true,
+        //        ItemIds = seriesInternalIds,
+        //        IncludeItemTypes = new[] { "Series" },
+        //        ExcludeItemIds = config.IgnoredList.ToArray(),
+        //        User = UserManager.Users.FirstOrDefault(user => user.Policy.IsAdministrator)
+        //    };
 
-            var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
+        //    var seriesQuery = LibraryManager.QueryItems(seriesInternalItemQuery);
 
-            Analyze(seriesQuery, progress, cancellationToken, repo);
-        }
+        //    Analyze(seriesQuery, progress, cancellationToken, repo);
+        //}
 
         public void Analyze(CancellationToken cancellationToken, IProgress<double> progress, ISequenceRepository repository)
         {
@@ -73,9 +73,7 @@ namespace IntroSkip.Detection
             Analyze(seriesQuery, progress, cancellationToken, repository);
 
         }
-
-        // ReSharper disable once ExcessiveIndentation
-        // ReSharper disable once TooManyArguments
+       
 
         private void Analyze(QueryResult<BaseItem> seriesQuery, IProgress<double> progress, CancellationToken cancellationToken, ISequenceRepository repository)
         {
@@ -436,23 +434,27 @@ namespace IntroSkip.Detection
             //progress.Report(100.0);
         }
 
-
-        
-       
-
-
         private Tuple<double, SequenceResult> GetBestTitleSequenceResult(TimeSpan common, ConcurrentBag<SequenceResult> titleSequences, CancellationToken cancellationToken)
         {
-            var weightedResults = new ConcurrentDictionary<double, SequenceResult>();
-           
+            //var weightedResults = new ConcurrentDictionary<double, SequenceResult>();
+            var sequenceResult = titleSequences.First();
+            
+            var bestEndTime = TimeSpan.Zero;
+            var endTimeConfidence = 0.0;
+
+            var bestStartTime = TimeSpan.Zero;
+            var startTimeConfidence = 0.0;
+
+            var bestDurationConfidence = 0.0;
+
             titleSequences
                 .AsParallel()
                 .WithDegreeOfParallelism(2)
                 .WithCancellation(cancellationToken)
                 .ForAll(result =>
                 {
-                    //We're close enough to the beginning of the stream, we'll call it the beginning, and the end time is not zero.
-                    //Make the end the common title sequence duration.
+                    //We're close enough to the beginning of the stream and the end time is not zero, we'll call it the beginning.
+                    //Make the end the common title sequence duration for the season.
                     if (result.TitleSequenceStart - TimeSpan.FromSeconds(20) <= TimeSpan.Zero && result.TitleSequenceEnd != TimeSpan.Zero)
                     {
                         result.TitleSequenceStart = TimeSpan.Zero;
@@ -468,50 +470,71 @@ namespace IntroSkip.Detection
 
                     var endGroups = titleSequences.GroupBy(sequence => sequence.TitleSequenceEnd);
                     var commonEnd = CommonTimeSpan(endGroups);
-
-
-                    //Start with a high weight, and then narrow results by dividing, makeing the weights lower
-                    double durationWeight = 1.0;
+                    
+                    
+                    double durationWeight = 0.0;
+                    //Start with a high weight, and then narrow results by dividing, making the weights lower
                     double startWeight = 1.0;
                     double endWeight = 1.0;
 
 
                     if (common != TimeSpan.Zero)
                     {
-                        durationWeight = (double)duration.Ticks / common.Ticks;
+                        durationWeight = (double) duration.Ticks / common.Ticks;
                     }
 
                     if (result.TitleSequenceStart != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
                     {
-                        startWeight = (double)result.TitleSequenceStart.Ticks / commonStart.Ticks;
+                        startWeight = (double) result.TitleSequenceStart.Ticks / commonStart.Ticks;
                     }
 
                     if (result.TitleSequenceEnd != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
                     {
-                        endWeight = (double)result.TitleSequenceEnd.Ticks / commonEnd.Ticks;
+                        endWeight = (double) result.TitleSequenceEnd.Ticks / commonEnd.Ticks;
                     }                    
+                    
+                    if(startWeight > startTimeConfidence && durationWeight >= bestDurationConfidence)
+                    {
+                        startTimeConfidence = startWeight;
+                        bestStartTime = result.TitleSequenceStart;
+                    }
 
-                    var score = durationWeight + startWeight + endWeight;
+                    if(endWeight > endTimeConfidence && durationWeight >= bestDurationConfidence)
+                    {
+                        endTimeConfidence = endWeight;
+                        bestEndTime = result.TitleSequenceEnd;
+                    }
 
-                    var avg = Math.Round(score / 3, 2, MidpointRounding.ToEven) - 0.1;
+                    if (durationWeight > bestDurationConfidence)
+                    {
+                        bestDurationConfidence = durationWeight;
+                    }
+                   
+                    //var score = durationWeight + startWeight + endWeight;
+
+                    //var avg = Math.Round(score / 3, 2);
                     
                     //Add a weight to each result, by adding up the differences between them. 
-                    weightedResults.TryAdd(avg, result);
+                    //weightedResults.TryAdd(avg, result);
 
 
-                });
+                });  
 
-            //Log.Debug($"HIGHEST SCORE: {weightedResults.Keys.Max()}");
-            //Log.Debug($"COMMON SCORE:  {CommonScore(weightedResults)}");
             
-            var bestResult = weightedResults[weightedResults.Keys.Max()];
-            var confidence = weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
-            return Tuple.Create(confidence, bestResult); //<-- Take the result with the highest rank. 
+            //var bestResult = weightedResults[weightedResults.Keys.Max()]; //We could take any of the results, but this is the best in the list.
+            sequenceResult.TitleSequenceStart = bestStartTime;
+            sequenceResult.TitleSequenceEnd   = bestEndTime;
+
+            var confidence = Math.Round(startTimeConfidence + endTimeConfidence / 2, 2); //weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
+            confidence = confidence > 1.0 ? 0.99 : confidence;
+            return Tuple.Create(confidence, sequenceResult); 
 
         }
 
         private Tuple<double, SequenceResult> GetBestCreditSequenceResult(TimeSpan common, ConcurrentBag<SequenceResult> sequences, CancellationToken cancellationToken)
         {
+            
+
             var weightedResults = new ConcurrentDictionary<double, SequenceResult>();
             var config = Plugin.Instance.Configuration;
             sequences
@@ -530,24 +553,26 @@ namespace IntroSkip.Detection
 
                     if (common != TimeSpan.Zero)
                     {
-                        durationWeight = (double)duration.Ticks / common.Ticks;
+                        durationWeight = (double) duration.Ticks / common.Ticks;
                     }
 
                     if (result.CreditSequenceStart != TimeSpan.Zero || commonStart != TimeSpan.Zero) //Start weight remains 1
                     {
-                        startWeight = (double)result.CreditSequenceStart.Ticks / commonStart.Ticks;
+                        startWeight = (double) result.CreditSequenceStart.Ticks / commonStart.Ticks;
                     }
 
+                   
                     var score = durationWeight + startWeight;
-                    var avg = Math.Round(score / 2, 2, MidpointRounding.ToEven) - 0.1;
+                    var avg = Math.Round(score / 2, 2);
                     weightedResults.TryAdd(avg, result);
 
                 });
 
-            var bestResult = weightedResults[weightedResults.Keys.Max()];
+            var bestResult = weightedResults[weightedResults.Keys.Max()]; 
+            
             var item = LibraryManager.GetItemById(bestResult.InternalId);
-
-            var confidence = weightedResults.Keys.Max() > 1 ? 1 : weightedResults.Keys.Max();
+            
+            var confidence = weightedResults.Keys.Max() > 1 ? 0.99 : weightedResults.Keys.Max();
 
             //Look for a black screen close to where the fingerprint found comparisons in our bestResult.
             var runtime = TimeSpan.Zero;
@@ -557,13 +582,11 @@ namespace IntroSkip.Detection
             }
             else
             {
-                Log.Warn($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber} has no runtime metadata. Exiting...");
-                bestResult.HasCreditSequence = false;
-                confidence = 0.0;
+                Log.Warn($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber} has no runtime metadata to calculate black frames for credit sequences.");
+                bestResult.HasCreditSequence = bestResult.CreditSequenceStart != TimeSpan.Zero && bestResult.CreditSequenceEnd != TimeSpan.Zero;               
                 bestResult.Processed = true;
                 return Tuple.Create(confidence, bestResult);
             }
-
 
             var offset = runtime > TimeSpan.FromMinutes(35)
                 ? bestResult.CreditSequenceStart.Add(-TimeSpan.FromSeconds(35))
@@ -599,7 +622,7 @@ namespace IntroSkip.Detection
                 var blackDetection = blackDetections.FirstOrDefault(d => d >= offset && d <= upperLimit); //The results found in our contiguous region.
 
 
-                if (!Equals(blackDetection, TimeSpan.Zero))
+                if (blackDetection != TimeSpan.Zero)
                 {
                     Log.Debug($"{item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}:" +
                               $"\nCredit sequence audio detection start: {creditSequenceAudioDetectionStart}." +
@@ -608,7 +631,7 @@ namespace IntroSkip.Detection
                     bestResult.CreditSequenceStart = blackDetection;
                     bestResult.CreditSequenceEnd = TimeSpan.FromTicks(item.RunTimeTicks.Value);
                     bestResult.HasCreditSequence = true;
-                    confidence = creditSequenceAudioDetectionStart == blackDetection ? 1 : confidence; //<-- If the audio result was the same/ or close to a black frame detection we are perfect.
+                    confidence = creditSequenceAudioDetectionStart == blackDetection ? 0.99 : confidence; //<-- If the audio result was the same/ or close to a black frame detection we are perfect.
                 }
                 else
                 {
@@ -627,7 +650,6 @@ namespace IntroSkip.Detection
             if (bestResult.CreditSequenceStart == TimeSpan.Zero) //<-- this is impossible. So we are incorrect with our result.
             {
                 bestResult.HasCreditSequence = false;
-                confidence = 0.0;
                 Log.Debug($"Unable to find credit sequence for {item.Parent.Parent.Name} { item.Parent.Name} Episode {item.IndexNumber}");
             }
 
@@ -636,8 +658,6 @@ namespace IntroSkip.Detection
 
         }
         
-       
-
         private TimeSpan CommonTimeSpan(IEnumerable<IGrouping<TimeSpan, SequenceResult>> groups, bool longestCommonTimeSpan = false)
         {
             var enumerableGroup = groups.ToList();
