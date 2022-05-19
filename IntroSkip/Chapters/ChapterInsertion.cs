@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Persistence;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace IntroSkip.Chapters
 
         public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo, ILibraryManager libraryManager)
         {
-            Log = logManager.GetLogger(Plugin.Instance.Name);
+            Log = logManager.GetLogger(Plugin.Instance.Name+":Chapters");
             LibraryManager = libraryManager;
             ItemRepository = itemRepo;
             Instance = this;
@@ -43,8 +44,8 @@ namespace IntroSkip.Chapters
                 var seasonName = item.Parent.Name;
                 var episodeNo = item.IndexNumber;
 
-                //Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
-                //Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
+                Log.Debug("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
+                Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
                 var config = Plugin.Instance.Configuration;
 
@@ -60,9 +61,10 @@ namespace IntroSkip.Chapters
                         {
                             Name = chap.Name,
                             StartPositionTicks = chap.StartPositionTicks,
+                            MarkerType = (MarkerType.Chapter)
+
                         });
-                        //Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
-                        //    ConvertTicksToTime(chap.StartPositionTicks));
+                        Log.Debug("Fetch Existing Chapters: {0} Starts at {1} with MarkerType = {2}", chap.Name, ConvertTicksToTime(chap.StartPositionTicks), chap.MarkerType);
                     }
 
                     var titleSequenceStart  = TimeSpan.FromTicks(sequence.TitleSequenceStart.Ticks);
@@ -104,7 +106,8 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = endCreditChapterName,
-                                    StartPositionTicks = creditSequenceStart.Ticks
+                                    StartPositionTicks = creditSequenceStart.Ticks,
+                                    MarkerType = MarkerType.Chapter
 
                                 });
 
@@ -119,7 +122,8 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks - 10000000,
+                                    MarkerType = MarkerType.Chapter
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -133,7 +137,8 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks,
+                                    MarkerType = MarkerType.Chapter
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -173,7 +178,8 @@ namespace IntroSkip.Chapters
                                 ChapterInfo edit = new ChapterInfo
                                 {
                                     Name = newVal,
-                                    StartPositionTicks = titleSequenceEnd.Ticks,
+                                    StartPositionTicks = titleSequenceEnd.Ticks + 10000000,
+                                    MarkerType = MarkerType.Chapter
 
                                 };
                                 //add the entry and lets arrange the chapter list
@@ -211,13 +217,13 @@ namespace IntroSkip.Chapters
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
 
-        //private static string ConvertTicksToTime(long ticks)
-        //{
-        //    TimeSpan time = TimeSpan.FromTicks(ticks);
-        //    string output = time.ToString(@"hh\:mm\:ss");
+        private static string ConvertTicksToTime(long ticks)
+        {
+            TimeSpan time = TimeSpan.FromTicks(ticks);
+            string output = time.ToString(@"hh\:mm\:ss");
 
-        //    return output;
-        //}
+            return output;
+        }
 
         public void Dispose()
         {
