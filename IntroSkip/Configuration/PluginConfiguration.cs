@@ -36,6 +36,10 @@ namespace IntroSkip.Configuration
         public string AutoSkipLocalization                { get; set; } = "English";
         public int? AutoSkipDelay                         { get; set; }
 
+
+        //Core IntroSkip Features
+        public bool DisableCoreIntroSkip { get; set; } = false;
+        public bool DisableCoreTask { get; set; } = true;
         public PluginConfiguration()
         {
 

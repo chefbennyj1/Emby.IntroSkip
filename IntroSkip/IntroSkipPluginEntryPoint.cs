@@ -9,6 +9,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using IntroSkip.Data;
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.IO;
 
@@ -21,6 +23,7 @@ namespace IntroSkip
         private static ILibraryManager LibraryManager { get; set; }
         private static ITaskManager TaskManager { get; set; }
         private static IServerConfigurationManager Config { get; set; }
+        private static User User { get; set; }
         private static ILogger Logger { get; set; }
         private static IJsonSerializer _json { get; set; }
         private IFileSystem FileSystem { get; set; }
@@ -47,12 +50,21 @@ namespace IntroSkip
         }
 
         //private static Timer NewItemAddedTimer = new Timer(RunFingerprinting);
+        private IServerConfigurationManager GetConfig()
+        {
+            return Config.GetConfiguration<IServerConfigurationManager>("system");
+            //system.xml <ShowIntroDetectionScheduledTask>false</ShowIntroDetectionScheduledTask>
+            //Folder options.xml
+            //<EnableMarkerDetection>false</EnableMarkerDetection>
+            //<EnableMarkerDetectionDuringLibraryScan> false </EnableMarkerDetectionDuringLibraryScan>
 
+        }
         public void Run()
         {
             TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
             LibraryManager.ItemRemoved += LibraryManagerItemRemoved;
             Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
+            
         }
 
         private void LibraryManagerItemRemoved(object sender, ItemChangeEventArgs e)
