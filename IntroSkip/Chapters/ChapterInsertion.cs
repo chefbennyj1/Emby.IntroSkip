@@ -23,7 +23,7 @@ namespace IntroSkip.Chapters
 
         public ChapterInsertion(ILogManager logManager, IItemRepository itemRepo, ILibraryManager libraryManager)
         {
-            Log = logManager.GetLogger(Plugin.Instance.Name);
+            Log = logManager.GetLogger(Plugin.Instance.Name+":Chapters");
             LibraryManager = libraryManager;
             ItemRepository = itemRepo;
             Instance = this;
@@ -43,8 +43,8 @@ namespace IntroSkip.Chapters
                 var seasonName = item.Parent.Name;
                 var episodeNo = item.IndexNumber;
 
-                //Log.Info("CHAPTER INSERT: TV Show: {0} - {1}", tvShowName, seasonName);
-                //Log.Debug("CHAPTER INSERT: Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
+                Log.Debug("TV Show: {0} - {1}", tvShowName, seasonName);
+                Log.Debug("Getting Chapter Info for {0}: {1}", episodeNo, item.Name);
 
                 var config = Plugin.Instance.Configuration;
 
@@ -60,9 +60,10 @@ namespace IntroSkip.Chapters
                         {
                             Name = chap.Name,
                             StartPositionTicks = chap.StartPositionTicks,
+                            MarkerType = chap.MarkerType
+
                         });
-                        //Log.Debug("CHAPTER INSERT: Fetch Existing Chapters: {0} Starts at {1}", chap.Name,
-                        //    ConvertTicksToTime(chap.StartPositionTicks));
+                        Log.Debug("Fetch Existing Chapters: {0} Starts at {1} with MarkerType = {2}", chap.Name, ConvertTicksToTime(chap.StartPositionTicks), chap.MarkerType);
                     }
 
                     var titleSequenceStart  = TimeSpan.FromTicks(sequence.TitleSequenceStart.Ticks);
@@ -98,14 +99,19 @@ namespace IntroSkip.Chapters
                         {
                             if (sequence.HasCreditSequence && !chapters.Exists(chapterPoint => chapterPoint.Name == endCreditChapterName))
                             {
-                                Log.Debug("CHAPTER: Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
+                                Log.Debug("Adding End Credit Chapter Point for {0}: {1}, Episode{2}: {3} at {4}",
                                     tvShowName, seasonName, episodeNo.ToString(), item.Name, creditSequenceStart);
 
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = endCreditChapterName,
-                                    StartPositionTicks = creditSequenceStart.Ticks
-
+                                    StartPositionTicks = creditSequenceStart.Ticks,
+                                    MarkerType = MarkerType.Chapter
+                                });
+                                chapters.Add(new ChapterInfo
+                                {
+                                    StartPositionTicks = creditSequenceStart.Ticks,
+                                    MarkerType = MarkerType.CreditsStart
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -119,7 +125,13 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks,
+                                    MarkerType = MarkerType.Chapter
+                                });
+                                chapters.Add(new ChapterInfo
+                                {
+                                    StartPositionTicks = titleSequenceStart.Ticks,
+                                    MarkerType = MarkerType.IntroStart
                                 });
 
                                 chapters.Sort(CompareStartTimes);
@@ -133,9 +145,14 @@ namespace IntroSkip.Chapters
                                 chapters.Add(new ChapterInfo
                                 {
                                     Name = introStartChapterName,
-                                    StartPositionTicks = titleSequenceStart.Ticks
+                                    StartPositionTicks = titleSequenceStart.Ticks,
+                                    MarkerType = MarkerType.Chapter
                                 });
-
+                                chapters.Add(new ChapterInfo
+                                {
+                                    StartPositionTicks = titleSequenceStart.Ticks,
+                                    MarkerType = MarkerType.IntroStart
+                                });
                                 chapters.Sort(CompareStartTimes);
                             }
 
@@ -156,27 +173,36 @@ namespace IntroSkip.Chapters
                                     FilePathString = item.Path
                                 });
 
-                                Log.Warn("CHAPTER: Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}",
+                                Log.Warn("Not enough Chapter Markers to insert Title Sequence for {0}: {1}, Episode{2}: {3}",
                                     tvShowName, seasonName, episodeNo.ToString(), item.Name);
-                                Log.Warn("CHAPTER: {0} has been added to Bad Chapter List", item.Name);
+                                Log.Warn("{0} has been added to Bad Chapter List", item.Name);
                             }
 
                             if (startIndex < lastIndex)
                             {
-                                ChapterInfo neededChapInfo = chapters[startIndex + 1];
+                                ChapterInfo neededChapInfo = chapters[startIndex + 2];
                                 string chapName = neededChapInfo.Name;
                                 //Log.Debug("CHAPTER: Organizing..... New Chapter name after Insert = {0}", chapName);
                                 string newVal = introEndChapterName.Replace(introEndChapterName, chapName);
 
-                                int changeStart = startIndex + 1;
+                                int changeStart = startIndex + 2;
                                 chapters.RemoveAt(changeStart);
                                 ChapterInfo edit = new ChapterInfo
                                 {
                                     Name = newVal,
                                     StartPositionTicks = titleSequenceEnd.Ticks,
+                                    MarkerType = MarkerType.IntroEnd
+
+                                };
+                                ChapterInfo edit2 = new ChapterInfo
+                                {
+                                    Name = newVal,
+                                    StartPositionTicks = titleSequenceEnd.Ticks,
+                                    MarkerType = MarkerType.Chapter
 
                                 };
                                 //add the entry and lets arrange the chapter list
+                                chapters.Add(edit2);
                                 chapters.Add(edit);
                                 chapters.Sort(CompareStartTimes);
 
@@ -188,7 +214,7 @@ namespace IntroSkip.Chapters
                             }
 
                             ItemRepository.SaveChapters(id, chapters);
-                            Log.Info("CHAPTER: Successfully added Title Sequence for {0} - {1} - {2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
+                            Log.Info("Successfully added Title Sequence for {0} - {1} - {2}: {3}", tvShowName, seasonName, episodeNo, item.Name);
                         }
                     }
                     catch (Exception e)
@@ -211,13 +237,13 @@ namespace IntroSkip.Chapters
             return tick1.StartPositionTicks.CompareTo(tick2.StartPositionTicks);
         }
 
-        //private static string ConvertTicksToTime(long ticks)
-        //{
-        //    TimeSpan time = TimeSpan.FromTicks(ticks);
-        //    string output = time.ToString(@"hh\:mm\:ss");
+        private static string ConvertTicksToTime(long ticks)
+        {
+            TimeSpan time = TimeSpan.FromTicks(ticks);
+            string output = time.ToString(@"hh\:mm\:ss");
 
-        //    return output;
-        //}
+            return output;
+        }
 
         public void Dispose()
         {
