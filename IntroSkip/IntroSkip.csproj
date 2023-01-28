@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>1.0.0.0</AssemblyVersion> <FileVersion>1.0.0.0</FileVersion> <Version>1.0.0.0</Version> </PropertyGroup>
+<PropertyGroup> <TargetFrameworks>netstandard2.0;</TargetFrameworks> <AssemblyVersion>1.0.0.4</AssemblyVersion> <FileVersion>1.0.0.4</FileVersion> <Version>1.0.0.4</Version> </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
   <CodeAnalysisRuleSet />
@@ -31,8 +31,13 @@
 
 
 <ItemGroup> 
-<PackageReference Include="mediabrowser.server.core" Version="4.7.0.32-beta" /> <PackageReference Include="System.Memory" Version="4.5.4" />
+<PackageReference Include="mediabrowser.server.core" Version="4.7.9" /> <PackageReference Include="System.Memory" Version="4.5.5" />
 <PackageReference Include="SQLitePCL.pretty.core" Version="1.2.2" />
 </ItemGroup>
+
+
+<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Exec Command="xcopy &quot;C:\Users\davey\Documents\GitHub\Emby.IntroSkip\IntroSkip\bin\Debug\netstandard2.0\IntroSkip.dll&quot; &quot;C:\Users\davey\AppData\Roaming\Emby-Server\programdata\plugins\&quot; /Y" />
+</Target>
 
 </Project>

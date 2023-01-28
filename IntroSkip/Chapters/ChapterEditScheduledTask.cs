@@ -5,27 +5,40 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntroSkip.Sequence;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
+using SQLitePCL.pretty;
 
 
 namespace IntroSkip.Chapters
 {
     public class ChapterEditScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
-        
+        private BaseItem[] _episodeItems;
+        private int _totalEpisodes;
+
         private ITaskManager TaskManager                  { get; }
         private ChapterInsertion ChapterInsertion         { get; }
         private ChapterErrorTextFileCreator ErrorTextFile { get; }
         private ILogger Log                               { get; }
+        private IItemRepository ItemRepository            { get; }
+        private ILibraryManager LibraryManager            { get; }
 
-        public ChapterEditScheduledTask(ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, ChapterErrorTextFileCreator textFile)
+        
+        public ChapterEditScheduledTask(ITaskManager taskManager, ILogManager logManager, ChapterInsertion chapterInsertion, ChapterErrorTextFileCreator textFile, IItemRepository itemRepository, ILibraryManager libraryManager)
         {
             TaskManager = taskManager;
-            Log = logManager.GetLogger(Plugin.Instance.Name);
+            Log = logManager.GetLogger(Plugin.Instance.Name + "-CHAPTER-TASK");
             ChapterInsertion = chapterInsertion;
             ErrorTextFile = textFile;
+            ItemRepository = itemRepository;
+            LibraryManager = libraryManager;
         }
 
+        
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
             var config = Plugin.Instance.Configuration;
@@ -57,7 +70,7 @@ namespace IntroSkip.Chapters
             }
             else
             {
-                Log.Debug("CHAPTER TASK: FAILED - You may need to enable this in the Plugin Configuration");
+                Log.Debug("FAILED - You may need to enable this in the Plugin Configuration");
             }
 
             //we need to return the Chapter Point Edit Task to close out that the task has completed otherwise the process flags as "Failed"
@@ -92,6 +105,7 @@ namespace IntroSkip.Chapters
 
         public string Category => "Intro Skip";
 
+        
 
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -106,33 +120,87 @@ namespace IntroSkip.Chapters
             };
         }
 
-        private Task ProcessEpisodeChaptersPoints()
+        private async Task<BaseItem[]> GetCoreEpisodes()
         {
-            Log.Debug("CHAPTER TASK: Starting episode chapter insertion...");
+            Log.Info("Getting Episodes in Library");
+            var episodeList = new InternalItemsQuery()
+            {
+                Recursive = false,
+                IncludeItemTypes = new[] { "Episode" },
+                //IsVirtualItem = false,
+            };
+            var episodeItems = LibraryManager.GetItemList(episodeList);
+            _totalEpisodes = _episodeItems.Length;
+            Log.Info("Total Episodes in Library = {0} ", _totalEpisodes);
+            return episodeItems;
+        }
+        
+
+        private async Task ProcessEpisodeChaptersPoints()
+        {
+            Log.Debug("Starting episode chapter insertion...");
             var config = Plugin.Instance.Configuration;
 
             var repository = IntroSkipPluginEntryPoint.Instance.GetRepository();
             var dbResults = repository.GetResults(new SequenceResultQuery());
+           //var coreEpisodes = GetCoreEpisodes();
 
             ChapterInsertion.ChapterErrors.Clear();
+            var repo = repository as IDisposable;
 
             foreach (var episode in dbResults.Items)
             {
-                if (config.EnableChapterInsertion && (episode.HasTitleSequence || episode.HasCreditSequence))
+                try
                 {
-                    long id = episode.InternalId;
-                    //Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
-                    ChapterInsertion.Instance.InsertIntroChapters(id, episode);
+                    bool hasCoreIntro = false;
+
+                    //Core Check for chapters
+                    var item = LibraryManager.GetItemById(episode.InternalId);
+                    Log.Debug("CHAPTER TASK: Getting core Chapters");
+                    List<ChapterInfo> getChapters = ItemRepository.GetChapters(item);
+                    Log.Debug("CHAPTER TASK: Core Chapters Retrieved");
+
+                    foreach (var chapterInfo in getChapters)
+                    {
+                        if (chapterInfo.MarkerType == MarkerType.IntroStart)
+                        {
+                            hasCoreIntro = true;
+                            Log.Debug("Core Intro Detected!!");
+    
+                        }
+                    }
+                    
+                    if (config.EnableChapterInsertion && (episode.HasTitleSequence || episode.HasCreditSequence) && hasCoreIntro == false)
+                    {
+                        Log.Debug("Plugin holds Intro/Credit info for {0} - Core has no information", episode.InternalId);
+                        long id = episode.InternalId;
+                        //Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
+                        await ChapterInsertion.Instance.InsertIntroChapters(id, episode);
+                    }
+                    if (config.EnableChapterInsertion && episode.HasCreditSequence && hasCoreIntro == true)
+                    {
+                        Log.Debug("Core holds Intro Info for {0} - But Plugin has End Credit info",
+                            episode.InternalId);
+                        long id = episode.InternalId;
+                        //Log.Debug("CHAPTER TASK: EPISODE ID = {0}", id);
+                        await ChapterInsertion.Instance.InsertIntroChapters(id, episode);
+                        hasCoreIntro = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.ErrorException("Failed to insert chapters:", ex);
+                   
+                    if (repo != null)
+                    {
+                        repo.Dispose();
+                    }
                 }
             }
-
-            var repo = repository as IDisposable;
             if (repo != null)
             {
                 repo.Dispose();
             }
-
-            return Task.FromResult(true);
         }
 
         private Task ProcessChapterImageExtraction()
